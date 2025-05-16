@@ -56,20 +56,6 @@ services:
       - ./notebooks:/app/notebooks
     depends_on:
       - neo4j
-  db:
-    image: pgvector/pgvector:pg17 # PostgreSQL with pgvector support
-    container_name: pgvector-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: default
-    networks: 
-      - my_network 
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
   backendapi:
     build: .
     container_name: fastapi-container
@@ -95,10 +81,9 @@ services:
     volumes:
       - ./src:/app/src
       - ./data:/app/data
-    command: ["uvicorn", "src.app.agents.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["uvicorn", "src.app.agents.main_local:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
       - neo4j
-      - db
   openwebui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: openwebui-container
@@ -106,12 +91,8 @@ services:
       - "3000:8080"
     networks: 
       - my_network
-    volumes:
-      - ./shared_data:/shared_data
     depends_on:
       - neo4j
-volumes:
-  pgdata:  # Named volume for PostgreSQL data persistence
 
 networks:
   my_network:  # Custom network, allowing containers to resolve each other by name
