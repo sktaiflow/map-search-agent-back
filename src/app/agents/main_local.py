@@ -10,6 +10,8 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import sys
 from pathlib import Path
 from datetime import datetime
+from src.app.agents.search_agent import app as agent_workflow
+import asyncio
 
 app = FastAPI()
 
@@ -52,8 +54,8 @@ CYPHER_GENERATION_PROMPT = PromptTemplate(
 )
 
 
-# class Request(BaseModel):
-#     query: str
+class Request(BaseModel):
+    query: str
 
 @app.get("/v1")
 def read_root():
@@ -129,3 +131,23 @@ async def chat_completions(request: Request):
 
         traceback.print_exc()  # 서버 로그에 스택 트레이스 출력
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/v1/agent")
+async def agent_endpoint(request: Request):
+    # body = await request.json()
+    # user_input = body.get("input")
+    user_input = request.query
+    if not user_input:
+        raise HTTPException(status_code=400, detail="input field is required")
+    # 워크플로우 실행
+    inputs = {"input": user_input}
+    last_message = None
+    async for event in agent_workflow.astream(inputs):
+        # event는 dict, 마지막에 response가 들어있음
+        if "response" in event.get("replan", {}):
+            last_message = event["replan"]["response"]
+        elif "response" in event.get("agent", {}):
+            last_message = event["agent"]["response"]
+    if last_message is None:
+        raise HTTPException(status_code=500, detail="No response generated")
+    return {"message": last_message}

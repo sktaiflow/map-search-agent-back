@@ -11,7 +11,7 @@ from langchain_core.messages import (
     SystemMessage,
     FunctionMessage,
 )
-from tools import get_service_info, get_subscribed_products, tool_to_openai_function, prod_meta_search
+from .search_tools import get_service_info, get_subscribed_products, tool_to_openai_function, prod_meta_search
 import asyncio
 import operator
 from langchain_core.callbacks import StreamingStdOutCallbackHandler
@@ -185,6 +185,8 @@ def execute_step(state: PlanExecuteState):
             state["user_info"] = result
 
     # past_steps에 기록
+    if not result:
+        result = "조회 결과 없음"
     state["past_steps"].append((task, str(result)))
     # plan에서 현재 step 제거
     #state["plan"] = plan[1:]
