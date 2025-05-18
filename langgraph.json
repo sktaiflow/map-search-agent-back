@@ -1,7 +1,7 @@
 {
     "dockerfile_lines": [],
     "graphs": {
-      "search_agent": "search_agent:app"
+      "search_agent": "src.app.agents.search_agent:app"
     },
     "env": "./.env",
     "python_version": "3.12",

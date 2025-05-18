@@ -17,7 +17,7 @@ from langchain_core.messages import (
 )
 from langchain_core.callbacks import StreamingStdOutCallbackHandler
 from src.app.tools import get_service_info, get_subscribed_products, prod_meta_search
-from src.app.agents.utils import tool_to_openai_function
+from src.app.agents.utils import tool_to_openai_function, call_pe_tool_v2
 
 
 tools = [get_service_info, get_subscribed_products, prod_meta_search]
@@ -35,7 +35,7 @@ class PlanExecuteState(TypedDict):
     user_info: Optional[Dict[str, Any]]
     product_meta: Optional[Dict[str, Any]]
     messages: Annotated[list, add_messages]
-
+    cypher: Optional[str]
 
 # 플래너 모델
 class Plan(BaseModel):
@@ -46,94 +46,6 @@ class Plan(BaseModel):
 class Response(BaseModel):
     response: str
 
-
-def message_to_dict(message):
-    """Convert various message formats to a standardized dictionary format."""
-    if hasattr(message, "to_dict"):
-        return message.to_dict()
-    elif isinstance(message, dict):
-        result = message.copy()
-        if "content" not in result:
-            result["content"] = ""
-        return result
-    if message.type.title().lower() == "human":
-        role = "user"
-        return {"role": role, "content": message.content}
-    elif message.type.title().lower() == "ai":
-        role = "assistant"
-        return {"role": role, "content": message.content}
-    elif message.type.title().lower() == "system":
-        role = "system"
-        return {"role": role, "content": message.content}
-    elif message.type.title().lower() == "function" or message.type.title().lower() == "tool":
-        role = "assistant"
-        return {"role": role, "name": message.name, "content": message.content}
-    else:
-        print("message.type.title()>>>>", message.type.title())
-        raise ValueError("message.type.title()>>>>", message.type.title())
-
-
-def call_pe_tool_v2(
-    messages: list,
-    system_message: str,
-    tools: list = None,
-    model_idx: int = 124252,
-    seed=0,
-    tool_choice="auto",
-    response_format=None,
-):
-    """
-    Call the PE Tool V2 API for chat completions using LangChain's invoke method
-
-    Args:
-        messages: Conversation messages
-        tools: List of available tools
-        model_idx: Model identifier
-        seed: Random seed
-        tool_choice: Tool selection mode
-        response_format: Desired response format
-
-    Returns:
-        dict: API response
-
-    Raises:
-        ValueError: If API call fails or returns invalid response
-    """
-    # Process system message same way as in call_pe_tool_v2
-    if system_message:
-        if len(messages) > 0 and messages[0].type.title().lower() == "system":
-            messages[0].content = system_message
-        else:
-            messages.insert(0, SystemMessage(content=system_message))
-    # Serialize messages
-    serialized_messages = [message_to_dict(msg) for msg in messages]
-    # Prepare model kwargs and options for invoke
-    model_kwargs = {}
-    invoke_kwargs = {}
-    # Handle tools and tool_choice
-    if tools:
-        model_kwargs["tools"] = tools
-        invoke_kwargs["tool_choice"] = tool_choice
-    # Handle response_format
-    if response_format:
-        invoke_kwargs["response_format"] = response_format
-
-    try:
-        # Initialize LangChain OpenAI client
-        llm = ChatOpenAI(
-            base_url="https://aide.dev.apollo-lunar.com/pe-proxy/api/v1/compatible/openai/stream",
-            streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()],
-            temperature=0,
-            model=str(model_idx),
-            api_key="None",
-            **model_kwargs,
-        )
-        # Call API via LangChain with additional parameters
-        response = llm.invoke(serialized_messages, **invoke_kwargs)
-        return response
-    except Exception as e:
-        raise ValueError(f"API 오류: {str(e)}")
 
 
 gpt4o_llm = ChatOpenAI(
@@ -194,15 +106,18 @@ def execute_step(state: PlanExecuteState):
         tool_args = json.loads(tool_call["function"]["arguments"])
 
         if tool_name == "prod_meta_search":
-            result = prod_meta_search(tool_args["query"])
+            cypher, result = prod_meta_search(tool_args["query"])
             state["product_meta"] = result
+            state["cypher"] = cypher
         elif tool_name == "get_service_info":
             result = get_service_info(tool_args["svc_mgmt_num"])
             state["user_info"] = result
         elif tool_name == "get_subscribed_products":
             result = get_subscribed_products(tool_args["svc_mgmt_num"])
             state["user_info"] = result
-
+    else:
+        result = resp.content
+    print("result>>>>", result)
     # past_steps에 기록
     if not result:
         result = "조회 결과 없음"
