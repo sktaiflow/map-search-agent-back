@@ -1,3 +1,7 @@
+import asyncio
+import operator
+import json
+
 from typing import Annotated, List, Tuple, Optional, Dict, Any
 from typing_extensions import TypedDict
 from pydantic import BaseModel, Field
@@ -11,16 +15,18 @@ from langchain_core.messages import (
     SystemMessage,
     FunctionMessage,
 )
-from .search_tools import get_service_info, get_subscribed_products, tool_to_openai_function, prod_meta_search
-import asyncio
-import operator
 from langchain_core.callbacks import StreamingStdOutCallbackHandler
-import json
+from src.app.tools import get_service_info, get_subscribed_products, prod_meta_search
+from src.app.agents.utils import tool_to_openai_function
+
+
 tools = [get_service_info, get_subscribed_products, prod_meta_search]
 openai_tools = [tool_to_openai_function(t) for t in tools]
 openai_tools_json = json.dumps(openai_tools, ensure_ascii=False, indent=2)
- 
+
 print("openai_tools_json>>>>", openai_tools_json)
+
+
 class PlanExecuteState(TypedDict):
     input: str
     plan: List[str]
@@ -29,16 +35,16 @@ class PlanExecuteState(TypedDict):
     user_info: Optional[Dict[str, Any]]
     product_meta: Optional[Dict[str, Any]]
     messages: Annotated[list, add_messages]
+
+
 # 플래너 모델
 class Plan(BaseModel):
     steps: List[str] = Field(description="Plan steps")
 
+
 # 리플래너 모델
 class Response(BaseModel):
     response: str
-
-class Act(BaseModel):
-    action: Any = Field(description="Action to perform. If done, return Response. If more steps needed, return Plan.")
 
 
 def message_to_dict(message):
@@ -65,6 +71,7 @@ def message_to_dict(message):
     else:
         print("message.type.title()>>>>", message.type.title())
         raise ValueError("message.type.title()>>>>", message.type.title())
+
 
 def call_pe_tool_v2(
     messages: list,
@@ -130,23 +137,31 @@ def call_pe_tool_v2(
 
 
 gpt4o_llm = ChatOpenAI(
-    model="123974", # gpt-4o-0513 
+    model="123974",  # gpt-4o-0513
     openai_api_key="NONE",
     openai_api_base="https://aide.dev.apollo-lunar.com/pe-proxy/api/v1/compatible/openai",
     streaming=False,
 )
 
-planner_prompt = ChatPromptTemplate.from_messages([
-    ("system", "유저 쿼리를 여러 단계의 plan으로 분해하세요. 각 단계는 독립적으로 실행 가능해야 하며, 불필요한 단계는 추가하지 마세요."),
-    ("placeholder", "{messages}"),
-])
+planner_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "유저 쿼리를 여러 단계의 plan으로 분해하세요. 각 단계는 독립적으로 실행 가능해야 하며, 불필요한 단계는 추가하지 마세요.",
+        ),
+        ("placeholder", "{messages}"),
+    ]
+)
 
-replanner_prompt = ChatPromptTemplate.from_template("""
+replanner_prompt = ChatPromptTemplate.from_template(
+    """
 유저 쿼리: {input}
 기존 플랜: {plan}
 수행한 단계: {past_steps}
 남은 단계가 있으면 plan을, 모두 끝났으면 response를 반환하세요.
-""")
+"""
+)
+
 
 def execute_step(state: PlanExecuteState):
     plan = state["plan"]
@@ -163,7 +178,11 @@ def execute_step(state: PlanExecuteState):
     # 툴 호출
     resp = call_pe_tool_v2(
         system_message=system_message,
-        messages=[HumanMessage(content="현재 수행할 단계에 맞게 유저의 요청사항에 맞는 tool을 선택해 주세요.")],
+        messages=[
+            HumanMessage(
+                content="현재 수행할 단계에 맞게 유저의 요청사항에 맞는 tool을 선택해 주세요."
+            )
+        ],
         tools=openai_tools,
         model_idx=124252,
     )
@@ -189,18 +208,18 @@ def execute_step(state: PlanExecuteState):
         result = "조회 결과 없음"
     state["past_steps"].append((task, str(result)))
     # plan에서 현재 step 제거
-    #state["plan"] = plan[1:]
+    # state["plan"] = plan[1:]
     return state
- 
 
 
 def plan_step(state: PlanExecuteState):
     messages = state["messages"]
     system_message = f"""유저 쿼리를 여러 단계의 plan으로 분해하세요. 각 단계는 독립적으로 실행 가능해야 하며, 불필요한 단계는 추가하지 마세요.
+    요금제의 경우, 나이 제약 사항이 있을 수 있습니다. 0청년 요금제는 만 34세 이하 고객만 가입 가능합니다. 시니어 요금제는 만 65세 이상 고객만 가입 가능합니다.
 
     예시:
     "5만원 이하 넷플릭스 할인 요금제 알려줘" -> {{"plan": ["5만원 이하 요금제 찾기", "조회한 요금제 중 넷플릭스 할인 요금제 찾기"]}}
-
+    "내가 가입 가능한 넷플릭스 요금제 알려줘" -> {{"plan": ["고객의 기본 신상정보 조회", "넷플릭스 요금제 조회", "조회된 요금제 중 내가 가입 가능한 요금제 찾기"]}}
     
     json 형식으로 플랜만을 반환해주세요.
     
@@ -211,8 +230,8 @@ def plan_step(state: PlanExecuteState):
         messages=[HumanMessage(content=state["input"])],
         tools=[],
         model_idx=124252,
-        response_format={"type": "json_object"}
-    )           
+        response_format={"type": "json_object"},
+    )
 
     try:
         parsed = json.loads(llm_response.content)
@@ -223,8 +242,8 @@ def plan_step(state: PlanExecuteState):
     state["past_steps"] = []
     return state
 
+
 def replan_step(state: PlanExecuteState):
-    
 
     system_message = f"""
     유저 쿼리: {state["input"]}
@@ -243,7 +262,7 @@ def replan_step(state: PlanExecuteState):
         messages=[],
         tools=[],
         model_idx=124252,
-        response_format={"type": "json_object"}
+        response_format={"type": "json_object"},
     )
     # LLM 응답에서 action 파싱
     try:
@@ -257,8 +276,10 @@ def replan_step(state: PlanExecuteState):
         state["response"] = llm_response.content
     return state
 
+
 def should_end(state: PlanExecuteState):
     return END if state.get("response") else "agent"
+
 
 workflow = StateGraph(PlanExecuteState)
 workflow.add_node("planner", plan_step)
@@ -274,9 +295,11 @@ app = workflow.compile()
 
 inputs = {"input": "5만원 이하 넷플릭스 할인 요금제 알려줘"}
 
+
 async def main():
     async for event in app.astream(inputs):
         print(event)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

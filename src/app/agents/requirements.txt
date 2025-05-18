@@ -5,3 +5,4 @@ langchain-openai
 requests
 pydantic 
 typing_extensions
+langgraph-cli[inmem]
