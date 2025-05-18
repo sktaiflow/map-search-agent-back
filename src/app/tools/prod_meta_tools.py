@@ -9,6 +9,12 @@ import json
 CYPHER_GENERATION_TEMPLATE = """
 You are a Cypher expert. Given a question and a schema, create a syntactically correct Cypher query that answers the question.
 Do not include any explanation, markdown, or text—just the Cypher query itself.
+Limit the number of results to 5.
+
+Domain mapping and other rules:
+- "무제한"과 관련있는 값은 전부 999999로 치환하였음
+- 나이 제약 사항이 있는 요금제 -> 나이 비교 검색 필요
+- 저렴한 요금제 알려줘 -> 가장 낮은 가격 순으로 소팅
 
 Schema:
 {schema}
@@ -23,6 +29,7 @@ def prod_meta_search(query: str):
     """
     SKT 에서 제공하는 요금제, 부가서비스, 로밍, 혜택 상품에 대한 상세 검색 결과를 제공합니다.
     유저의 질의를 받아 Cypher 쿼리를 생성하고, 그래프에서 검색 결과(텍스트)를 반환합니다.
+    최대 5개의 결과만을 반환합니다.
 
     Args:
         query (str): 유저의 질의
@@ -31,7 +38,7 @@ def prod_meta_search(query: str):
         dict: Cypher 쿼리와 텍스트 검색 결과
     """
     graph = Neo4jGraph(
-            url="bolt://neo4j-gds-apoc-n10s:7687",
+            url="bolt://neo4j-gds-apoc-n10s:7687",  #"bolt://localhost:7687",
             username="neo4j",
             password="neo4jpassword",
             # enhanced_schema=True,

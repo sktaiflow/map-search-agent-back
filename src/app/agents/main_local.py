@@ -13,6 +13,7 @@ from datetime import datetime
 from src.app.agents.search_agent import app as agent_workflow
 import asyncio
 import json
+import re
 
 app = FastAPI()
 
@@ -38,9 +39,12 @@ Use only the provided relationship types and properties in the schema.
 Do not use any other relationship types or properties that are not provided.
 Schema:
 {schema}
-Domain mapping and other rules::
-- '무제한' -> value of includedData -> 999999
-- Questions about age should perform a comparative search for MinAge, MaxAge
+
+Domain mapping and other rules:
+- "무제한"과 관련있는 값은 전부 999999로 치환하였음
+- 나이 제약 사항이 있는 요금제 -> 나이 비교 검색 필요
+- 저렴한 요금제 알려줘 -> 가장 낮은 가격 순으로 소팅
+
 Example:
 - "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:Plan)-[:HAS_maxAge]->(maxAge:MaxAge) WHERE maxAge.value < 18 RETURN p"
 Note: Do not include any explanations or apologies in your responses.
@@ -147,4 +151,38 @@ async def agent_stream_endpoint(request: Request):
                 yield f"data: {json.dumps({'node': node_name, 'result': node_result}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+def safe_json_pretty(obj):
+    # 문자열이면 파싱해서 dict/list로 변환
+    if isinstance(obj, str):
+        try:
+            obj = json.loads(obj)
+        except Exception:
+            pass
+    return json.dumps(obj, ensure_ascii=False, indent=2)
+
+def deep_json_parse(obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, str):
+                try:
+                    obj[k] = json.loads(v)
+                except Exception:
+                    pass
+            elif isinstance(v, (dict, list)):
+                obj[k] = deep_json_parse(v)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            if isinstance(v, str):
+                try:
+                    obj[i] = json.loads(v)
+                except Exception:
+                    pass
+            elif isinstance(v, (dict, list)):
+                obj[i] = deep_json_parse(v)
+    return obj
+
+def strip_codeblock(text):
+    # 모든 마크다운 코드블록(```...```)을 제거하고 내부 텍스트만 남김
+    return re.sub(r"```[a-zA-Z]*\n([\s\S]*?)\n```", lambda m: m.group(1), text, flags=re.MULTILINE)
 

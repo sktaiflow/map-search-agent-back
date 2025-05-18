@@ -18,13 +18,22 @@ from langchain_core.messages import (
 from langchain_core.callbacks import StreamingStdOutCallbackHandler
 from src.app.tools import get_service_info, get_subscribed_products, prod_meta_search
 from src.app.agents.utils import tool_to_openai_function, call_pe_tool_v2
-
+from langchain_neo4j import Neo4jGraph
 
 tools = [get_service_info, get_subscribed_products, prod_meta_search]
 openai_tools = [tool_to_openai_function(t) for t in tools]
 openai_tools_json = json.dumps(openai_tools, ensure_ascii=False, indent=2)
 
-print("openai_tools_json>>>>", openai_tools_json)
+user_search_tools = [get_service_info, get_subscribed_products]
+user_search_tools_json = [tool_to_openai_function(t) for t in user_search_tools]
+
+graph = Neo4jGraph(
+        url="bolt://neo4j-gds-apoc-n10s:7687",  #"bolt://localhost:7687",
+        username="neo4j",
+        password="neo4jpassword",
+        # enhanced_schema=True,
+        sanitize=True,  # 연결 검증
+    )
 
 
 class PlanExecuteState(TypedDict):
@@ -130,16 +139,24 @@ def execute_step(state: PlanExecuteState):
 def plan_step(state: PlanExecuteState):
     messages = state["messages"]
     system_message = f"""유저 쿼리를 여러 단계의 plan으로 분해하세요. 각 단계는 독립적으로 실행 가능해야 하며, 불필요한 단계는 추가하지 마세요.
-    요금제의 경우, 나이 제약 사항이 있을 수 있습니다. 0청년 요금제는 만 34세 이하 고객만 가입 가능합니다. 시니어 요금제는 만 65세 이상 고객만 가입 가능합니다.
+    
+    Domain mapping and other rules::
+    - "무제한"과 관련있는 값은 전부 999999로 치환하였음
+    - 나이 제약 사항이 있는 요금제 -> 나이 비교 검색 필요
+    
+    상품 검색 시에 활용가능한 graph schema는 아래와 같습니다.
+    {graph.schema}
 
+    유저 정보에 대한 조회는 다음 방법으로 할 수 있어
+    {user_search_tools_json}
+    
     예시:
-    "5만원 이하 넷플릭스 할인 요금제 알려줘" -> {{"plan": ["5만원 이하 요금제 찾기", "조회한 요금제 중 넷플릭스 할인 요금제 찾기"]}}
-    "내가 가입 가능한 넷플릭스 요금제 알려줘" -> {{"plan": ["고객의 기본 신상정보 조회", "넷플릭스 요금제 조회", "조회된 요금제 중 내가 가입 가능한 요금제 찾기"]}}
+    "5만원 이하 넷플릭스 할인 요금제 알려줘" -> {{"plan": ["계획 1", "계획 2"]}}
     
     json 형식으로 플랜만을 반환해주세요.
     
     """
-
+    print("system_message>>>>", system_message)
     llm_response = call_pe_tool_v2(
         system_message=system_message,
         messages=[HumanMessage(content=state["input"])],
@@ -166,7 +183,7 @@ def replan_step(state: PlanExecuteState):
     수행한 단계: {state["past_steps"]}
     
     남은 단계가 있으면 스텝들을 배열로 반환해주세요. -> {{"action": {{"steps": ["남은 단계"]}}}}
-    모두 끝났으면 최종 답변을 생성 후 반환해주세요. -> {{"action": {{"response": "최종 답변"}}}}
+    모두 끝났으면 최종 답변을 생성 후 반환해주세요. 유저는 중간 답변을 보지 않고 최종 답변만 보게 됩니다. -> {{"action": {{"response": "최종 답변"}}}}
 
     json 형식으로 반환해주세요.
     """
@@ -179,6 +196,7 @@ def replan_step(state: PlanExecuteState):
         model_idx=124252,
         response_format={"type": "json_object"},
     )
+
     # LLM 응답에서 action 파싱
     try:
         parsed = json.loads(llm_response.content)

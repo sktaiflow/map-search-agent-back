@@ -77,7 +77,7 @@ async def chat_completions(request: Request):
         query = body["messages"][-1]["content"]
         # Neo4j 연결 테스트
         graph = Neo4jGraph(
-            url="bolt://graph-db:7687",
+            url="bolt://neo4j-gds-apoc-n10s:7687",
             username="neo4j",
             password="neo4jpassword",
             # enhanced_schema=True,
