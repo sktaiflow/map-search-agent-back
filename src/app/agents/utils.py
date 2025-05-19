@@ -1,7 +1,7 @@
-
 from langchain_openai import ChatOpenAI
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.schema import SystemMessage
+from langchain_neo4j import Neo4jGraph
 
 
 def message_to_dict(message):
@@ -28,6 +28,7 @@ def message_to_dict(message):
     else:
         print("message.type.title()>>>>", message.type.title())
         raise ValueError("message.type.title()>>>>", message.type.title())
+
 
 def call_pe_tool_v2(
     messages: list,
@@ -92,6 +93,12 @@ def call_pe_tool_v2(
     except Exception as e:
         raise ValueError(f"API 오류: {str(e)}")
 
+
+def call_smartbee():
+    """미구현"""
+    pass
+
+
 def tool_to_openai_function(tool_obj):
     args = tool_obj.args
     properties = {}
@@ -117,3 +124,14 @@ def tool_to_openai_function(tool_obj):
         },
         "strict": True,
     }
+
+
+def neo4j_connect(env: str = "openwebui", enhanced_schema: bool = False):
+    url = "bolt://neo4j-gds-apoc-n10s:7687" if env == "openwebui" else "bolt://localhost:7687"
+    return Neo4jGraph(
+        url=url,
+        username="neo4j",
+        password="neo4jpassword",
+        enhanced_schema=enhanced_schema,
+        sanitize=True,  # 연결 검증
+    )
