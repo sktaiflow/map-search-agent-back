@@ -16,9 +16,11 @@ from langchain_core.messages import (
     FunctionMessage,
 )
 from langchain_core.callbacks import StreamingStdOutCallbackHandler
+
 from src.app.tools import get_service_info, get_subscribed_products, prod_meta_search
 from src.app.agents.utils import tool_to_openai_function, call_pe_tool_v2
-from langchain_neo4j import Neo4jGraph
+from src.app.agents.utils import neo4j_connect
+
 
 tools = [get_service_info, get_subscribed_products, prod_meta_search]
 openai_tools = [tool_to_openai_function(t) for t in tools]
@@ -27,13 +29,7 @@ openai_tools_json = json.dumps(openai_tools, ensure_ascii=False, indent=2)
 user_search_tools = [get_service_info, get_subscribed_products]
 user_search_tools_json = [tool_to_openai_function(t) for t in user_search_tools]
 
-graph = Neo4jGraph(
-        url="bolt://neo4j-gds-apoc-n10s:7687",  #"bolt://localhost:7687",
-        username="neo4j",
-        password="neo4jpassword",
-        # enhanced_schema=True,
-        sanitize=True,  # 연결 검증
-    )
+graph = neo4j_connect(env="openwebui", enhanced_schema=False)
 
 
 class PlanExecuteState(TypedDict):
@@ -46,6 +42,7 @@ class PlanExecuteState(TypedDict):
     messages: Annotated[list, add_messages]
     cypher: Optional[str]
 
+
 # 플래너 모델
 class Plan(BaseModel):
     steps: List[str] = Field(description="Plan steps")
@@ -56,13 +53,12 @@ class Response(BaseModel):
     response: str
 
 
-
-gpt4o_llm = ChatOpenAI(
-    model="123974",  # gpt-4o-0513
-    openai_api_key="NONE",
-    openai_api_base="https://aide.dev.apollo-lunar.com/pe-proxy/api/v1/compatible/openai",
-    streaming=False,
-)
+# gpt4o_llm = ChatOpenAI(
+#     model="123974",  # gpt-4o-0513
+#     openai_api_key="NONE",
+#     openai_api_base="https://aide.dev.apollo-lunar.com/pe-proxy/api/v1/compatible/openai",
+#     streaming=False,
+# )
 
 planner_prompt = ChatPromptTemplate.from_messages(
     [

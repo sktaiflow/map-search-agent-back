@@ -128,10 +128,11 @@ def tool_to_openai_function(tool_obj):
 
 def neo4j_connect(env: str = "openwebui", enhanced_schema: bool = False):
     url = "bolt://neo4j-gds-apoc-n10s:7687" if env == "openwebui" else "bolt://localhost:7687"
-    return Neo4jGraph(
+    graph = Neo4jGraph(
         url=url,
         username="neo4j",
         password="neo4jpassword",
         enhanced_schema=enhanced_schema,
         sanitize=True,  # 연결 검증
     )
+    return graph
