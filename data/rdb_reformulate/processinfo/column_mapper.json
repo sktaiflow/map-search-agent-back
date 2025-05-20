@@ -1,0 +1,16 @@
+{
+    "processinfo|onboardingchannel|channelconfigtype": "channelconfigtype",
+    "processinfo|onboardingchannel|channelmajorcategory": "channelmajorcategory",
+    "processinfo|onboardingchannel|channelmiddlecategory": "channelmiddlecategory",
+    "processinfo|onboardingchannel|channeltype": "channeltype",
+    "processinfo|onboardingchannel|partnercode": "partnercode",
+    "processinfo|onboardingdevice|devicetype|valuelist": "devicetype",
+    "processinfo|onboardingdevice|modelgroupname": "modelgroupname",
+    "processinfo|onboardingdevice|modelname": "modelname",
+    "processinfo|onboardingdevice|purchaserequireddevice": "purchaserequireddevice",
+    "processinfo|onboardingdevice|ruletypes": "ruletypes",
+    "processinfo|onboardingservicecode|valuelist": "onboardingservicecode",
+    "processinfo|processmobileonboardingtype|onboardingtypeeligibilityreason": "onboardingtypeeligibilityreason",
+    "processinfo|processmobileonboardingtype|onboardingtypeeligibility|onboardingsubtype": "onboardingsubtype",
+    "processinfo|processmobileonboardingtype|onboardingtypeeligibility|onboardingtype": "onboardingtype"
+}

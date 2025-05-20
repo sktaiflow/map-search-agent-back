@@ -1,0 +1,18 @@
+{
+    "benefitperiodto": {
+        "label": "혜택 제공 기간 종료일",
+        "description": "요금제에서 혜택을 제공하는 기간을 의미함"
+    },
+    "benefitperiodfrom": {
+        "label": "혜택 제공 기간 시작일",
+        "description": "요금제에서 혜택을 제공하는 기간을 의미함"
+    },
+    "isbenefitautoenrollment": {
+        "label": "가능 / 불가능 ",
+        "description": "혜택을 모두 제공하는 경우에 혜택을 시스템적으로 자동가입 처리할지 여부를 설정하는 항목이며, 가능으로 설정할 경우 혜택은 설정하는 시점에 일자 조건을 기준으로 자동 가입 처리됨"
+    },
+    "isbenefitautocancellation": {
+        "label": "자동해지 가능여부",
+        "description": "혜택을 모두 제공하는 경우에 혜택을 시스템적으로 자동해지 처리할지 여부를 설정하는 항목이며, 가능으로 설정할 경우 혜택은 설정하는 시점에 일자 조건을 기준으로 자동 해지 처리됨"
+    }
+}

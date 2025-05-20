@@ -1,0 +1,8 @@
+{
+    "customerinfo|onboardingcustomerwelfaretype|welfarediscounttypeavailability": "welfarediscounttypeavailability",
+    "customerinfo|onboardingcustomer|agerule|value": "agerule",
+    "customerinfo|onboardingcustomer|businesscustomersubtyperule|valuelist": "businesscustomersubtyperule",
+    "customerinfo|onboardingcustomer|customertyperule|valuelist": "customertyperule",
+    "customerinfo|onboardingcustomer|individualcustomersubtyperule|valuelist": "individualcustomersubtyperule",
+    "customerinfo|onboardingcustomer|organizationcustomersubtyperule": "organizationcustomersubtyperule"
+}

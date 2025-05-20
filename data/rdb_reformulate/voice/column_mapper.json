@@ -1,0 +1,9 @@
+{
+    "voice|includedvideoorvalueaddedcall|value": "includedvideoorvalueaddedcall",
+    "voice|includedvoicecalltospecifiednumbers|voicecallrange|numberofservice|value": "numberofservice",
+    "voice|includedvoicecalltospecifiednumbers|voicecallrange|providingamount|value": "providingamount",
+    "voice|includedvoicecalltospecifiednumbers|voicecallrange|range|valuelist": "voicecallrange|range",
+    "voice|includedvoicecallvideoorvalueaddedcallseparatesetting|voicecallrange|providingamount|value": "voicecallrange|providingamount",
+    "voice|includedvoicecallvideoorvalueaddedcallseparatesetting|voicecallrange|range|valuelist": "includedvoicecallvideoorvalueaddedcallseparatesetting|voicecallrange|range",
+    "voice|includedvoicecall|value": "includedvoicecall"
+}
