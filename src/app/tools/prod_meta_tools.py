@@ -38,18 +38,15 @@ def prod_meta_search(query: str):
         dict: Cypher 쿼리와 텍스트 검색 결과
     """
     graph = Neo4jGraph(
-            url="bolt://neo4j-gds-apoc-n10s:7687",  #"bolt://localhost:7687",
-            username="neo4j",
-            password="neo4jpassword",
-            # enhanced_schema=True,
-            sanitize=True,  # 연결 검증
-        )
+        url="bolt://neo4j-gds-apoc-n10s:7687",  # "bolt://localhost:7687",
+        username="neo4j",
+        password="neo4jpassword",
+        # enhanced_schema=True,
+        sanitize=True,  # 연결 검증
+    )
     prompt_str = CYPHER_GENERATION_TEMPLATE.format(schema=graph.schema, question=query)
     cypher_response = call_pe_tool_v2(
-        system_message=prompt_str,
-        messages=[],
-        tools=[],
-        model_idx=124252
+        system_message=prompt_str, messages=[], tools=[], model_idx=124252
     )
     print("cypher_response>>>>", cypher_response)
     cypher = cypher_response.content
