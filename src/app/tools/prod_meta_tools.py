@@ -9,12 +9,21 @@ import json
 CYPHER_GENERATION_TEMPLATE = """
 You are a Cypher expert. Given a question and a schema, create a syntactically correct Cypher query that answers the question.
 Do not include any explanation, markdown, or text—just the Cypher query itself.
-Limit the number of results to 5.
+Limit the number of results to 10.
 
 Domain mapping and other rules:
 - "무제한"과 관련있는 값은 전부 999999로 치환하였음
 - 나이 제약 사항이 있는 요금제 -> 나이 비교 검색 필요
 - 저렴한 요금제 알려줘 -> 가장 낮은 가격 순으로 소팅
+- 리스트 타입 검색 시: ANY(item IN node.list_property WHERE item CONTAINS "키워드") 형식 사용
+- 검색 키워드는 가능한 띄어쓰기 없는 단일 명사 사용 (예: "웨이브 할인" 보다 "웨이브" 권장)
+- 가입 가능한 요금제에 대해 문의시, 유저의 가입 가능한지 여부(productsubscriptioncondition)도 함께 조회
+
+배열(리스트) 검색 관련 문법:
+- 배열 내 요소를 검색할 때는 CONTAINS 연산자를 직접 사용하지 말고 다음 방법 중 하나를 사용하세요:
+  1. 배열에 특정 값이 정확히 포함되는지 확인: "값" IN node.array_property
+  2. 배열 내 일부 요소가 조건을 만족하는지 확인: ANY(item IN node.array_property WHERE item CONTAINS "값")
+  3. 배열 내 모든 요소가 조건을 만족하는지 확인: ALL(item IN node.array_property WHERE item CONTAINS "값")
 
 Schema:
 {schema}
@@ -27,9 +36,8 @@ Question:
 @tool(parse_docstring=True)
 def prod_meta_search(query: str):
     """
-    SKT 에서 제공하는 요금제, 부가서비스, 로밍, 혜택 상품에 대한 상세 검색 결과를 제공합니다.
+    SKT 에서 제공하는 요금제, 요금제 가입조건, 부가서비스, 로밍, 혜택 상품에 대한 상세 검색 결과를 제공합니다.
     유저의 질의를 받아 Cypher 쿼리를 생성하고, 그래프에서 검색 결과(텍스트)를 반환합니다.
-    최대 5개의 결과만을 반환합니다.
 
     Args:
         query (str): 유저의 질의
@@ -39,15 +47,14 @@ def prod_meta_search(query: str):
     """
     graph = Neo4jGraph(
         url="bolt://neo4j-gds-apoc-n10s:7687",  # "bolt://localhost:7687",
+        # url="bolt://localhost:7687",
         username="neo4j",
         password="neo4jpassword",
         # enhanced_schema=True,
         sanitize=True,  # 연결 검증
     )
     prompt_str = CYPHER_GENERATION_TEMPLATE.format(schema=graph.schema, question=query)
-    cypher_response = call_pe_tool_v2(
-        system_message=prompt_str, messages=[], tools=[], model_idx=124252
-    )
+    cypher_response = call_pe_tool_v2(system_message=prompt_str, messages=[], tools=[])
     print("cypher_response>>>>", cypher_response)
     cypher = cypher_response.content
     # Cypher 쿼리만 추출 (설명, 마크다운, 기타 텍스트 제거)

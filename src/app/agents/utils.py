@@ -34,10 +34,10 @@ def call_pe_tool_v2(
     messages: list,
     system_message: str,
     tools: list = None,
-    model_idx: int = 124252,
-    seed=0,
-    tool_choice="auto",
-    response_format=None,
+    model_idx: int = 124252,  # 124730(4.1)
+    seed: int = 0,
+    tool_choice: str = "auto",
+    response_format: str = None,
 ):
     """
     Call the PE Tool V2 API for chat completions using LangChain's invoke method
@@ -85,6 +85,7 @@ def call_pe_tool_v2(
             temperature=0,
             model=str(model_idx),
             api_key="None",
+            seed=seed,
             **model_kwargs,
         )
         # Call API via LangChain with additional parameters
