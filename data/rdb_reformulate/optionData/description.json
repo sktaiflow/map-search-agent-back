@@ -1,0 +1,22 @@
+{
+    "optiondataname": {
+        "label": "데이터 옵션명",
+        "description": "기본 제공 데이터 외 추가로 제공하는 모바일 데이터의 포괄적 명칭"
+    },
+    "selectionmethod": {
+        "label": "데이터 옵션 선택방식 (모두 제공/선택 제공)",
+        "description": "데이터 옵션을 고객에게 제공하는 방식을 의미하며, 모두 제공은 선택 가능한 옵션 모두를 제공하는 것이며 선택 제공은 선택 가능한 옵션 중 고객이 선택하는 특정 옵션만 제공하는 것을 의미함"
+    },
+    "totalnumofoptions": {
+        "label": "제공되는 총 옵션 데이터 수",
+        "description": "제공되는 데이터 옵션의 총 개수를 의미함"
+    },
+    "minnumofoptionselectable": {
+        "label": "선택 가능한 옵션 데이터 수(최소)",
+        "description": "선택 가능한 데이터 옵션 최소개수를 의미함"
+    },
+    "maxnumofoptionselectable": {
+        "label": "선택 가능한 옵션 데이터 수(최대)",
+        "description": "선택 가능한 데이터 옵션 최대개수를 의미함"
+    }
+}

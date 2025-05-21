@@ -1,0 +1,7 @@
+{
+    "commonrule|dataexhaustiontimeorder": "dataexhaustiontimeorder",
+    "commonrule|linesuspensioncondition|value": "linesuspensioncondition",
+    "commonrule|planchangecondition|dailyplanchangelimit|value": "dailyplanchangelimit",
+    "commonrule|planchangecondition|monthlyplanchangelimit|value": "monthlyplanchangelimit",
+    "commonrule|smssendinglimitthreshold": "smssendinglimitthreshold"
+}

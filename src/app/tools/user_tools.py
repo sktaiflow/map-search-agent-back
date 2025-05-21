@@ -1,10 +1,11 @@
 from langchain.tools import tool
+from src.app.agents.utils import call_pe_tool_v2
 
 
 @tool(parse_docstring=True)
 def get_service_info(svc_mgmt_num: str):
     """
-    가입된 고객의 기본 신상정보(svcNum - 휴대폰 번호, svcScrbDtm - 가입날짜, ssnBirthDt - 생년월일, ssnSexCd - 성별 정보(2: 여자, 1: 남자)) 및 가입상품 정보(feeProdId - 상품ID, feeProdNm - 상품명, feeProdChgDt - 상품변경일자, EqpMdlNm - 단말기 모델명)를 조회합니다.
+    가입된 고객의 기본 신상정보(svcNum - 휴대폰 번호, svcScrbDtm - 가입날짜, ssnBirthDt - 생년월일, ssnSexCd - 성별 정보(2: 여자, 1: 남자)) 및 가입상품 정보(feeProdId - 상품ID, feeProdNm - 상품명, feeProdChgDt - 상품변경일자, EqpMdlNm - 단말기 모델명)를 조회합니다. 나이 정보는 생년월일을 통해 계산합니다.
 
     Args:
         svc_mgmt_num (str): 조회할 서비스관리번호(예: '7022044239')
@@ -37,9 +38,9 @@ def get_service_info(svc_mgmt_num: str):
         "eqpMktgDt": "20220210",
         "nwMthdCd": "13",
         "custNum": "9252302408",
-        "custNm": "이재환",
+        "custNm": "익명1",
         "ctzCorpBizNum": "8209292000000",
-        "ssnBirthDt": "820929",
+        "ssnBirthDt": "950929",
         "ssnSexCd": "2",
         "custTypCd": "01",
         "custDtlTypCd": "N0",
@@ -87,3 +88,27 @@ def get_subscribed_products(svc_mgmt_num: str = None):
             ],
         }
     ]
+
+
+@tool(parse_docstring=True)
+def thinking_tool(query: str, current_step: str, past_steps: list):
+    """
+    지금까지 수집한 정보 기반으로 유저의 질의에 대한 생각을 정리합니다.
+
+    Args:
+        query (str): 유저의 질의
+        current_step (str): 현재 수행할 단계
+        past_steps (list): 지금까지 수행한 단계
+
+    Returns:
+        str: 현재 단계에 대한 생각
+    """
+    prompt_str = f"""
+    유저 질의: {query}
+    지금까지 수행한 단계: {past_steps}
+    현재 수행할 단계: {current_step}
+
+    현재 단계에 대한 생각을 정리해주세요.
+    """
+    response = call_pe_tool_v2(system_message=prompt_str, tools=[])
+    return response.content

@@ -1,0 +1,6 @@
+{
+    "productBenefitConditions|optionalOfferBenefits|optionalOfferBenefitDetailList|benefitPeriodFrom|value": "benefitperiodfrom",
+    "productBenefitConditions|optionalOfferBenefits|optionalOfferBenefitDetailList|benefitPeriodTo|value": "benefitperiodto",
+    "productBenefitConditions|optionalOfferBenefits|optionalOfferBenefitDetailList|benefitChangeReferenceDate|value": "benefitchangereferencedate",
+    "productBenefitConditions|optionalOfferBenefits|optionalOfferBenefitDetailList|benefitChangeAvailableDate|value": "benefitchangeavailabledate"
+}

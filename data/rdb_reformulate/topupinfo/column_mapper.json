@@ -1,0 +1,14 @@
+{
+    "topupinfo|chargeamount|maximumchargeamount|value": "maximumchargeamount",
+    "topupinfo|chargeamount|minimumchargeamount|value": "minimumchargeamount",
+    "topupinfo|datasubtractionrate": "datasubtractionrate",
+    "topupinfo|lmssubtractionrate": "lmssubtractionrate",
+    "topupinfo|mmssubtractionrate": "mmssubtractionrate",
+    "topupinfo|rechargeavailability|availability|value": "availability",
+    "topupinfo|smssubtractionrate": "smssubtractionrate",
+    "topupinfo|voicecallsubtractionrate|landlinecall": "landlinecall",
+    "topupinfo|voicecallsubtractionrate|offnetcall": "offnetcall",
+    "topupinfo|voicecallsubtractionrate|onnetcall": "onnetcall",
+    "topupinfo|voicecallsubtractionrate|valueaddedcall": "valueaddedcall",
+    "topupinfo|voicecallsubtractionrate|videocall": "videocall"
+}

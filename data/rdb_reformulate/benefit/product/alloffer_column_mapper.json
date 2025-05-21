@@ -1,0 +1,6 @@
+{
+    "productbenefitconditions|allofferbenefits|benefitperiodto|value": "benefitperiodto",
+    "productbenefitconditions|allofferbenefits|benefitperiodfrom|value": "benefitperiodfrom",
+    "productbenefitconditions|allofferbenefits|benefitAutoEnrollment|isBenefitAutoEnrollment|value": "isbenefitautoenrollment",
+    "productbenefitconditions|allofferbenefits|benefitAutoCancellation|isBenefitAutoCancellation|value": "isbenefitautocancellation"
+}

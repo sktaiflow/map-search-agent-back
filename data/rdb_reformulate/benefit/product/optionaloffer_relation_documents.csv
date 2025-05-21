@@ -1,0 +1,505 @@
+﻿relationship,description
+PA00000010|optionalOfferBenefitDetailList|BA00000038,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000010|optionalOfferBenefitDetailList|BA00000041,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000010|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000010|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000012|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000012|optionalOfferBenefitDetailList|BA00000042,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000012|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000012|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000015|optionalOfferBenefitDetailList|BA00000037,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000015|optionalOfferBenefitDetailList|BA00001870,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000016|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000016|optionalOfferBenefitDetailList|BA00000042,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000016|optionalOfferBenefitDetailList|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000016|optionalOfferBenefitDetailList|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000036|optionalOfferBenefitDetailList|BA00000056,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (30일 후)"
+PA00000036|optionalOfferBenefitDetailList|BA00000076,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (30일 후)"
+PA00000036|optionalOfferBenefitDetailList|BA00000077,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (30일 후)"
+PA00000039|optionalOfferBenefitDetailList|BA00000037,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000039|optionalOfferBenefitDetailList|BA00001870,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000040|optionalOfferBenefitDetailList|BA00000037,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2019.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2019.06.30)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000041|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000041|optionalOfferBenefitDetailList|BA00000042,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000041|optionalOfferBenefitDetailList|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000041|optionalOfferBenefitDetailList|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000042|optionalOfferBenefitDetailList|BA00000038,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2022.08.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000042|optionalOfferBenefitDetailList|BA00000046,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2022.08.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000042|optionalOfferBenefitDetailList|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2022.08.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000042|optionalOfferBenefitDetailList|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2022.08.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000047|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000047|optionalOfferBenefitDetailList|BA00000042,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000047|optionalOfferBenefitDetailList|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000047|optionalOfferBenefitDetailList|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000048|optionalOfferBenefitDetailList|BA00000038,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000048|optionalOfferBenefitDetailList|BA00000046,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000048|optionalOfferBenefitDetailList|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000048|optionalOfferBenefitDetailList|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2020.01.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000053|optionalOfferBenefitDetailList|BA00000037,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000053|optionalOfferBenefitDetailList|BA00001870,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2021.05.01)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2022.08.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000060|optionalOfferBenefitDetailList|BA00000038,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000060|optionalOfferBenefitDetailList|BA00000041,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000060|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000060|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000061|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000061|optionalOfferBenefitDetailList|BA00000042,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000061|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000061|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000065|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000065|optionalOfferBenefitDetailList|BA00000042,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000065|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000065|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000067|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000067|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000067|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000069|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000069|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000069|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000073|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000073|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000073|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000075|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000075|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000075|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000076|optionalOfferBenefitDetailList|BA00000048,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2025.01.22)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000077|optionalOfferBenefitDetailList|BA00000048,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2025.01.22)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000080|optionalOfferBenefitDetailList|BA00000038,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000080|optionalOfferBenefitDetailList|BA00000041,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000080|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000080|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000083|optionalOfferBenefitDetailList|BA00000048,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (2025.01.22)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000090|optionalOfferBenefitDetailList|BA00000038,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000090|optionalOfferBenefitDetailList|BA00000041,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000090|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000090|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000091|optionalOfferBenefitDetailList|BA00000039,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000091|optionalOfferBenefitDetailList|BA00000042,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000091|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000091|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000106|optionalOfferBenefitDetailList|BA00000038,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000106|optionalOfferBenefitDetailList|BA00000041,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (즉시)"
+PA00000106|optionalOfferBenefitDetailList|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000106|optionalOfferBenefitDetailList|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (9999.12.31)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (직전 혜택 변경일)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (32일 후)"
+PA00000010|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000010|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000012|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000012|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000016|mutuallyExclusiveBenefits|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000016|mutuallyExclusiveBenefits|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000041|mutuallyExclusiveBenefits|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000041|mutuallyExclusiveBenefits|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000042|mutuallyExclusiveBenefits|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000042|mutuallyExclusiveBenefits|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000047|mutuallyExclusiveBenefits|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000047|mutuallyExclusiveBenefits|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000048|mutuallyExclusiveBenefits|BA00001872,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000048|mutuallyExclusiveBenefits|BA00001874,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000060|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000060|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000061|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000061|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000065|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000065|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000067|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000067|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000069|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000069|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000073|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000073|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000075|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000075|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000076|mutuallyExclusiveBenefits|BA00000048,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000076|mutuallyExclusiveBenefits|BA00001858,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000077|mutuallyExclusiveBenefits|BA00000048,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000077|mutuallyExclusiveBenefits|BA00001858,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000080|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000080|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000083|mutuallyExclusiveBenefits|BA00000048,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000083|mutuallyExclusiveBenefits|BA00001858,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000090|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000090|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000091|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000091|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000106|mutuallyExclusiveBenefits|BA00001857,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000106|mutuallyExclusiveBenefits|BA00001871,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000015|autoSelectedBenefit|BA00000037,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000039|autoSelectedBenefit|BA00000037,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"
+PA00000053|autoSelectedBenefit|BA00000037,"label: 혜택 제공 기간 시작일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 혜택 제공 기간 종료일,	description: (요금제에서 혜택을 제공하는 기간을 의미함),	value: (정보없음)
+label: 변경 가능 시점,	description: (선택제공 혜택 중 현재 상품 가입 고객이 이용중인 혜택을 언제 변경 가능한지 시점을 나타내는 것을 의미함),	value: (정보없음)
+label: 변경 가능일,	description: (선택 가능한 혜택 범위 중 첫번째 혜택을 요금제에서 얼마 기간 동안 제공하는지를 의미함),	value: (정보없음)"

@@ -1,0 +1,74 @@
+{
+    "approvalinfo": {
+        "label": "승인정보(담당자/일자정보)",
+        "description": "상품 운영을 담당하는 SK텔레콤 담당팀 및 담당자(관리용)"
+    },
+    "classifiedgroup": {
+        "label": "분류그룹",
+        "description": "상품/혜택의 속성에 따라 나누어진 분류그룹 중 해당 상품/혜택이 소속된 그룹을 의미함(분류 그룹에는 휴대폰 요금제, 요금제 대상 혜택 등이 있음)"
+    },
+    "generation": {
+        "label": "세대",
+        "description": "상품가입 시 이용 가능한 네트워크"
+    },
+    "lineup": {
+        "label": "상품라인업",
+        "description": "Product meta 시스템에서 상품의 속성(마케팅, 기술측면 등)이 유사한 것을 하나의 그룹으로 만들어 관리할 수 있으며, 이 때 상품이 속한 상품 그룹의 명칭을 의미함"
+    },
+    "marketingkeyword": {
+        "label": "마케팅 키워드",
+        "description": "상품을 설명하는 핵심 키워드"
+    },
+    "productdescription": {
+        "label": "상품 설명",
+        "description": "상품을 주요 속성 등을 서술"
+    },
+    "productid": {
+        "label": "상품 ID",
+        "description": "Product meta 시스템에서 상품/혜택을 구분, 식별하는 고유한 관리 체계(문자+숫자 조합)"
+    },
+    "productnameinenglish": {
+        "label": "상품명(영문명)",
+        "description": "Product meta 시스템에서 해당 상품의 일컫는 영문 명칭"
+    },
+    "productoperationperiod": {
+        "label": "상품 운영 기간",
+        "description": "상품 운영 상태가 '운영'으로 전환된 시작일부터 상품 운영 상태가 '가입중단' 으로 전환되기 전일까지를 의미함"
+    },
+    "productrequirednotice": {
+        "label": "필수 안내 사항",
+        "description": "상품 가입 전후 반드시 고객에게 안내해야 하는 유의사항을 의미함"
+    },
+    "productsubscriptioncondition": {
+        "label": "상품 가입 조건",
+        "description": "상품을 가입하기 위하여 갖추어야 할 항목(조건)을 의미함"
+    },
+    "productsubscriptionmethod": {
+        "label": "관리 정보",
+        "description": ""
+    },
+    "statusofoperation": {
+        "label": "운영상태",
+        "description": "상품의 관리 단계를 나타내는 정보 항목으로 기획-개발-검증-출시-운영-가입중단-퇴출예정-퇴출으로 구분되어 있으며, 운영인 상태에서만 고객 가입이 가능함"
+    },
+    "versioninfo": {
+        "label": "버전 정보",
+        "description": "상품의 속성 및 조건이 변경될 경우, 버전이 변동되어 관리되며 해당 버전 정보에 따라 적용된 속성 및 관리 정보를 확인할 수 있음"
+    },
+    "billingmethod": {
+        "label": "청구방식 (선불/후불)",
+        "description": "월정액 납부 방식을 의미하며, 선불은 서비스 이용 전 미리 요금을 납부하는 것이며 후불은 서비스 이용 후 요금을 납부하는 것을 의미함 "
+    },
+    "monthlypricewithoutvat": {
+        "label": "월정액(VAT 제외)",
+        "description": "월 단위로 납부하는 고정 요금, 부가가치세(VAT) 제외"
+    },
+    "monthlypricewithselectableinstallment": {
+        "label": "월정액(VAT 포함 선택약정 반영 금액)",
+        "description": "월 단위로 납부하는 고정 요금으로 부가가치세(VAT) 포함하며, 선택약정혜택으로 인한 요금할인을 반영한 금액"
+    },
+    "monthlyprice": {
+        "label": "월정액(VAT 포함)",
+        "description": "월 단위로 납부하는 고정 요금, 부가가치세(VAT) 포함"
+    }
+}

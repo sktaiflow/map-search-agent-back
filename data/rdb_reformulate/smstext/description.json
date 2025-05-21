@@ -1,0 +1,10 @@
+{
+    "textrange": {
+        "label": "(선택2)기본 제공 문자_별도 설정",
+        "description": ""
+    },
+    "includedtext": {
+        "label": "(선택1)기본 제공 문자",
+        "description": "월정액에 포함되어 제공되는 문자(SMS/LMS/MMS 해당, 월 단위) 한도를 의미하며, 기본 제공일 경우 무제한으로 제공됨."
+    }
+}

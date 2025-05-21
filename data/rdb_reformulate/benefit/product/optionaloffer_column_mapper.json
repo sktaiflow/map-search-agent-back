@@ -1,0 +1,6 @@
+{
+    "productbenefitConditions|optionalofferbenefits|selectablebenefitcount|value": "selectablebenefitcount",
+    "productbenefitConditions|optionalofferbenefits|selectablebenefitcountperiodfrom|value": "selectablebenefitcountperiodfrom",
+    "productbenefitConditions|optionalofferbenefits|selectablebenefitcountperiodto|value": "selectablebenefitcountperiodto",
+    "productbenefitConditions|optionalofferbenefits|isautoenrollmentbenefitonsignup|value": "isautoenrollmentbenefitonsignup"
+}

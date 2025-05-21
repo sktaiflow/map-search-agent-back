@@ -1,0 +1,22 @@
+{
+    "dataexhaustiontimeorder": {
+        "label": "기본 제공 데이터 소진순서",
+        "description": "휴대폰 요금제에 포함된 상품 전체에 공통으로 적용되는 조건으로 고객이 가입중인 상품에서 데이터를 제공할 경우, 해당 데이터가 사용되는 순서를 정의함을 의미함"
+    },
+    "linesuspensioncondition": {
+        "label": "회선 정지 조건",
+        "description": "휴대폰 요금제에 포함된 상품 전체에 공통으로 적용되는 조건으로 이용정지, 일시정지 등 고객이 이용중인 이동전화번호의 정지상태에 따라 요금제 변경이 불가처리 하는 것을 의미함"
+    },
+    "dailyplanchangelimit": {
+        "label": "당일 요금제 변경 가능 횟수",
+        "description": "해당사항없음"
+    },
+    "monthlyplanchangelimit": {
+        "label": "당월 요금제 변경 가능 횟수",
+        "description": "해당사항없음"
+    },
+    "smssendinglimitthreshold": {
+        "label": "요금제 공통 rule",
+        "description": "일 500건 SMS 발송량 제한(불법스팸차단)은 불법스팸 대량 전송 방지를 위해 모든 이동통신사의 고객 대상으로 SMS(MMS 포함)를 일 500건 이상 발송할 수 없도록 제한하는 것으로 요금제와 상관없으며, 음성/문자 무제한 요금제 사용관리와 별개로 운영함"
+    }
+}

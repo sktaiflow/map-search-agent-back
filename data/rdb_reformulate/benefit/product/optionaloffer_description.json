@@ -1,0 +1,18 @@
+{
+    "selectablebenefitcount": {
+        "label": "선택 가능한 혜택 수",
+        "description": "선택제공으로 선택한 경우, 선택 가능한 혜택 범위 내에서 고객이 선택 가능한 최대 혜택 개수를 의미함"
+    },
+    "selectablebenefitcountperiodfrom": {
+        "label": " 선택 가능한 혜택 수 적용기간 시작일",
+        "description": "혜택 선택제공하는 기간을 의미함"
+    },
+    "selectablebenefitcountperiodto": {
+        "label": "선택 가능한 혜택 수 적용기간 종료일",
+        "description": "혜택 선택제공하는 기간을 의미함"
+    },
+    "isautoenrollmentbenefitonsignup": {
+        "label": "최초 가입 시, 자동 가입 혜택 설정 여부",
+        "description": "상품 최초 가입 시, 선택제공 하위로 설정된 혜택 중 1개 자동 가입 여부"
+    }
+}

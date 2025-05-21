@@ -1,0 +1,20 @@
+{
+    "managementinfo|approvalinfo|value": "approvalinfo",
+    "managementinfo|classifiedgroup|value": "classifiedgroup",
+    "managementinfo|generation|valuelist": "generation",
+    "managementinfo|lineup|value": "lineup",
+    "managementinfo|marketingkeyword|valuelist": "marketingkeyword",
+    "managementinfo|productdescription|value": "productdescription",
+    "managementinfo|productid|value": "productid",
+    "managementinfo|productnameinenglish|value": "productnameinenglish",
+    "managementinfo|productoperationperiod|value": "productoperationperiod",
+    "managementinfo|productrequirednotice|value": "productrequirednotice",
+    "managementinfo|productsubscriptioncondition|value": "productsubscriptioncondition",
+    "managementinfo|productsubscriptionmethod|value": "productsubscriptionmethod",
+    "managementinfo|statusofoperation|value": "statusofoperation",
+    "managementinfo|versioninfo|value": "versioninfo",
+    "monthlyprice|billingmethod|value": "billingmethod",
+    "monthlyprice|monthlypricewithoutvat|value": "monthlypricewithoutvat",
+    "monthlyprice|monthlypricewithselectableinstallment|value": "monthlypricewithselectableinstallment",
+    "monthlyprice|monthlyprice|value": "monthlyprice"
+}

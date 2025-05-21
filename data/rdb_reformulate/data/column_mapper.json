@@ -1,0 +1,9 @@
+{
+    "additionaldatausage|includeddataforsharingandtethering|value": "includeddataforsharingandtethering",
+    "additionaldatausage|includeddataseparatesetting|datarange": "includeddataseparatesetting",
+    "additionaldatausage|includedmvoip|value": "includedmvoip",
+    "dataqos|appliedspeed|value": "appliedspeed",
+    "generaldataexceedlimit|availabletoapply|value": "generaldataexceedlimit|availabletoapply",
+    "includeddata|value": "includeddata",
+    "seniordataexceedlimit|availabletoapply|value": "seniordataexceedlimit|availabletoapply"
+}

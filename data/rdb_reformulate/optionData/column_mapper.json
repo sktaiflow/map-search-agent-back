@@ -1,0 +1,7 @@
+{
+    "optionData|optionDataName|value": "optiondataname",
+    "optionData|selectionMethod|value": "selectionmethod",
+    "optionData|totalNumOfOptions|value": "totalnumofoptions",
+    "optionData|minNumOfOptionSelectable|value": "minnumofoptionselectable",
+    "optionData|maxNumOfOptionSelectable|value": "maxnumofoptionselectable"
+}
