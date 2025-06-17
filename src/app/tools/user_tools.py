@@ -5,13 +5,15 @@ from src.app.agents.utils import call_pe_tool_v2
 @tool(parse_docstring=True)
 def get_service_info(svc_mgmt_num: str):
     """
-    가입된 고객의 기본 신상정보(svcNum - 휴대폰 번호, svcScrbDtm - 가입날짜, ssnBirthDt - 생년월일, ssnSexCd - 성별 정보(2: 여자, 1: 남자)) 및 가입상품 정보(feeProdId - 상품ID, feeProdNm - 상품명, feeProdChgDt - 상품변경일자, EqpMdlNm - 단말기 모델명)를 조회합니다. 나이 정보는 생년월일을 통해 계산합니다.
+    Retrieves the customer's basic information, including mobile number (svcNum), subscription date (svcScrbDtm), birth date (ssnBirthDt), gender (ssnSexCd, where 1 = male, 2 = female), and subscribing product details such as product ID (feeProdId), product name (feeProdNm), subscription change date (feeProdChgDt), and device model (EqpMdlNm). 
+    Detailed information about the customer's subscribed products is not included so it is necessary to call the 'prod_meta_search' tool to get the product details by the 'feeProdNm'.
+    The customer's age is calculated from the birth date.
 
     Args:
-        svc_mgmt_num (str): 조회할 서비스관리번호(예: '7022044239')
+        svc_mgmt_num (str): Customer's ID number(ex: '7022044239')
 
     Returns:
-        dict: 요청한 정보 유형에 따른 서비스/청구/고객 정보
+        dict: Retrived customer information
     """
     # 실제 API 호출 대신 데모 데이터를 반환
     # 실제 구현에서는 API를 호출하여 데이터를 가져와야 함
@@ -53,13 +55,13 @@ def get_service_info(svc_mgmt_num: str):
 @tool(parse_docstring=True)
 def get_subscribed_products(svc_mgmt_num: str = None):
     """
-    고객이 가입되어 모든 상품 목록을 조회합니다. 상품에는 요금제, 결합상품, 부가서비스 등이 포함됩니다.
+    Retrieves the full list of products the customer is subscribed to, including mobile plans, bundled products, and additional services.
 
     Args:
-        svc_mgmt_num (str): 조회할 서비스관리번호(예: '7022044239')
+        svc_mgmt_num (str): Customer's ID number(ex: '7022044239')
 
     Returns:
-        list: 고객의 가입상품 목록 및 상세 정보
+        list: Customer's subscribed products list and details.
     """
     # 실제 API 호출 대신 데모 데이터를 반환
     # 실제 구현에서는 API를 호출하여 데이터를 가져와야 함
