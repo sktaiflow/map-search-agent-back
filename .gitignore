@@ -173,3 +173,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+plugins/apoc.jar
+plugins/graph-data-science.jar
+
+.DS_Store
+.vscode
