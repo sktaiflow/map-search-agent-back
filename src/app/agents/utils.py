@@ -145,7 +145,7 @@ def call_pe_tool_v2(
         llm = ChatOpenAI(
             base_url="https://aide.dev.apollo-lunar.com/pe-proxy/api/v1/compatible/openai/stream",
             streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()],
+            # callbacks=[StreamingStdOutCallbackHandler()],
             temperature=0,
             model=str(model_idx),
             api_key="None",

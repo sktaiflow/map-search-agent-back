@@ -7,6 +7,10 @@ from src.app.agents.utils import call_pe_tool_v2
 from fastapi import HTTPException
 import re
 import json
+import logging
+from src.app.agents.logging_config import setup_logging
+
+logger = logging.getLogger(__name__)
 
 CYPHER_GENERATION_TEMPLATE_VANILA = """
 You are a Cypher expert. Given a question and a schema, create a syntactically correct Cypher query that answers the question.
@@ -14,7 +18,7 @@ Do not include any explanation, markdown, or text—just the Cypher query itself
 Limit the number of results to 10.
 
 Domain mapping and other rules:
-- "무제한"과 관련있는 값은 전부 999999로 치환하였음
+- "무제한"과 관련있는 값은 전부 99999로 치환하였음
 - 나이 제약 사항이 있는 요금제 -> 나이 비교 검색 필요
 - 저렴한 요금제 알려줘 -> 가장 낮은 가격 순으로 소팅
 - 리스트 타입 검색 시: ANY(item IN node.list_property WHERE item CONTAINS "키워드") 형식 사용
@@ -34,6 +38,8 @@ Question:
 {question}
 """
 
+# 제외한 룰 (나중에 쓸지도 몰라서 남겨둠)
+# - Do not try to matching 마케팅키워드 (marketing keywords) from the label itself. Must use the properties of the nodes to match keywords. Not "k = 'keyword'". Do "k.`값` CONTAINS 'keyword'.
 CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph database.
 Instructions:
 Use only the provided relationship types and properties in the schema.
@@ -45,15 +51,14 @@ Schema:
 {schema}
 
 Domain mapping and other rules:
-- For 기본제공데이터용량 (data limit), 문자기본제공량 (sms limit), 기본음성제공통화량 (voice limit) and similar numeric fields, treat the term 무제한 (unlimited) as the value 999999. Do not apply this rule to price fields.
-- For age-related queries, check whether the given age is within the range defined by 최소나이 (minimum age) and 최대나이 (maximum age).
-- For questions about cheap or expensive plans, sort by the value of VAT포함월정액 (VAT included monthly price).
-- For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) nodes and 상품설명 (product description) fields.
+- For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
+- For age-related queries, check whether the given age is within the range defined by 가입가능최소나이 (minimum age) and 가입가능최대나이 (maximum age).
+- For questions about cheap or expensive plans, sort by the value of 월정액 (monthly price).
+- For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) properties and 상품설명 (product description) fields.
 - To handle list type properties, use following style cypher: ANY(item IN node.list_property WHERE item CONTAINS "keyword")
 - For search keywords, prefer single nouns without spaces. For example, use "넷플릭스" instead of "넷플릭스 할인".
 - For questions about available plans, also retrieve whether the user is eligible to subscribe by checking the 상품가입조건 (productsubscriptioncondition).
 - For comparing products, generate a Cypher query that retrieves all products to be compared, and then compare the results.
-- Do not try to matching 마케팅키워드 (marketing keywords) from the label itself. Must use the properties of the nodes to match keywords. Not "k = 'keyword'". Do "k.`값` CONTAINS 'keyword'.
 
 For querying list properties, do not use the CONTAINS operator directly on the array itself.
 Instead, use one of the following methods depending on the query intent:
@@ -65,9 +70,9 @@ Results should be grouped by 요금제 (mobile plan) and collect other related n
 - MATCH (p:`요금제`)-[:`가입해지조건`]->(benefit:`혜택`) WITH p, COLLECT(benefit) AS benefits RETURN p, benefits LIMIT 10
 
 Example:
-- "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:`요금제`)-[:`최대가입가능나이`]->(maxAge:`최대나이`) WHERE maxAge.`값` < 18 RETURN p, maxAge"
-- "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`VAT포함월정액` AS reference_price MATCH (other:`요금제`) WHERE ABS(other.`VAT포함월정액` - reference_price) <= reference_price * 0.2 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`VAT포함월정액` - reference_price)"
-- "데이터 무제한 요금제 하나만 알려줘" -> "MATCH (p:`요금제`)-[:`기본제공데이터용량`]->(data:`기본제공데이터용량`) WHERE data.`값` = 999999 RETURN p, data LIMIT 1"
+- "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:`요금제`)-[:`보유`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c"
+- "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) MATCH (p)-[:`요금정보`]->(price) WITH p, price.`월정액` AS reference_price  MATCH (other:`요금제`) MATCH (other)-[:`요금정보`]->(other_price) WHERE ABS(other_price.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
+- "데이터 무제한 요금제 하나만 알려줘" -> "MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p, d LIMIT 1"
 
 Note: Do not include any explanations or apologies in your responses.
 Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
@@ -95,7 +100,7 @@ Schema:
 {schema}
 
 Domain mapping and other rules:
-- For 기본제공데이터용량 (data limit), 문자기본제공량 (sms limit), 기본음성제공통화량 (voice limit) and similar numeric fields, treat the term 무제한 (unlimited) as the value 999999. Do not apply this rule to price fields.
+- For 기본제공데이터용량 (data limit), 문자기본제공량 (sms limit), 기본음성제공통화량 (voice limit) and similar numeric fields, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
 - For age-related queries, check whether the given age is within the range defined by 최소나이 (minimum age) and 최대나이 (maximum age).
 - For questions about cheap or expensive plans, sort by the value of VAT포함월정액 (VAT included monthly price).
 - For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) nodes and 상품설명 (product description) fields.
@@ -117,7 +122,7 @@ Results should be grouped by 요금제 (mobile plan) and collect other related n
 Example:
 - "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:`요금제`)-[:`최대가입가능나이`]->(maxAge:`최대나이`) WHERE maxAge.`값` < 18 RETURN p, maxAge"
 - "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`VAT포함월정액` AS reference_price MATCH (other:`요금제`) WHERE ABS(other.`VAT포함월정액` - reference_price) <= reference_price * 0.2 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`VAT포함월정액` - reference_price)"
-- "데이터 무제한 요금제 하나만 알려줘" -> "MATCH (p:`요금제`)-[:`기본제공데이터용량`]->(data:`기본제공데이터용량`) WHERE data.`값` = 999999 RETURN p, data LIMIT 1"
+- "데이터 무제한 요금제 하나만 알려줘" -> "MATCH (p:`요금제`)-[:`기본제공데이터용량`]->(data:`기본제공데이터용량`) WHERE data.`값` = 99999 RETURN p, data LIMIT 1"
 
 Note: Do not include any explanations or apologies in your responses.
 Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
@@ -132,7 +137,8 @@ The question is:
 """
 
 CYPHER_CORRECTION_PROMPT = PromptTemplate(
-    input_variables=["schema", "question", "previous_cypher"], template=CYPHER_CORRECTION_TEMPLATE
+    input_variables=["schema", "question", "previous_cypher"],
+    template=CYPHER_CORRECTION_TEMPLATE,
 )
 
 CYPHER_QA_TEMPLATE = """You are a product specialist in SK Telecom helps to form nice and human understandable answers in Korean.
@@ -160,10 +166,11 @@ CYPHER_QA_PROMPT = PromptTemplate(
     input_variables=["context", "question"], template=CYPHER_QA_TEMPLATE
 )
 
+
 @tool(parse_docstring=True)
 def prod_meta_search(query: str):
     """
-    Provides detailed search results for SKTelecom's mobile plans, subscription conditions, additional services, roaming options, and benefitial offers. 
+    Provides detailed search results for SKTelecom's mobile plans, subscription conditions, additional services, roaming options, and benefitial offers.
     Takes a user query, generates a Cypher query, and returns the result from the graph database in text format.
 
     Args:
@@ -172,19 +179,17 @@ def prod_meta_search(query: str):
     Returns:
         dict: Cypher query and search results in text format
     """
-    import langchain
-    langchain.debug = True  # Enable debug mode for LangChain
+    # import langchain
+    # langchain.debug = True  # Enable debug mode for LangChain
 
     try:
         graph = Neo4jGraph(
-            url="bolt://neo4j-gds-apoc-n10s:7687",  #"bolt://localhost:7687",
+            url="bolt://neo4j-gds-apoc-n10s:7687",  # "bolt://localhost:7687",
             username="neo4j",
             password="neo4jpassword",
-            # enhanced_schema=True,
+            enhanced_schema=True,
             sanitize=True,  # 연결 검증
         )
-
-        # print(graph.structured_schema["relationships"])
 
         # LangChain 초기화
         chain = GraphCypherQAChain.from_llm(
@@ -194,7 +199,7 @@ def prod_meta_search(query: str):
                 openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
                 streaming=True,
                 temperature=0,
-            ), 
+            ),
             # ChatOllama(
             #     base_url="http://host.docker.internal:11434",
             #     model="tomasonjo/llama3-text2cypher-demo:latest",
@@ -203,78 +208,74 @@ def prod_meta_search(query: str):
             # ),
             cypher_prompt=CYPHER_GENERATION_PROMPT,
             qa_prompt=CYPHER_QA_PROMPT,
-            graph=graph, 
-            verbose=True,
+            graph=graph,
+            verbose=False,
             allow_dangerous_requests=True,
-            exclude_types=["DB타입", "카테고리"],
+            # exclude_types=[],
             return_intermediate_steps=True,
             return_direct=True,
-            validate_cypher=True, 
+            validate_cypher=True,
         )
-
-        # # 질문 출력
-        # print("\n\n#############################################################################")
-        # print("Query:", query, flush=True)
 
         # 쿼리 실행
         chain_result = chain.invoke({"query": query})
-        # print(f"Intermediate steps: {result['intermediate_steps']}")
-        # print(f"Final answer: {chain_result['result']}")
+        logger.info(f"Chain result: {chain_result}")
 
         # Cypher 쿼리와 결과 추출
         cypher = chain_result["intermediate_steps"][0]["query"]
         result_json = json.dumps(chain_result["result"], ensure_ascii=False, indent=2)
 
-        # 간이 corrector
-        if result_json == "[]":
-            print("No results found, trying to generate Cypher query again.", flush=True)
+        # # 간이 corrector
+        # if result_json == "[]":
+        #     print(
+        #         "No results found, trying to generate Cypher query again.", flush=True
+        #     )
 
-            chain = GraphCypherQAChain.from_llm(
-                ChatOpenAI(
-                    model="gpt-4o-mini",
-                    openai_api_key="e97ee307-a791-4e06-ade1-df4b9d032eed",
-                    openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
-                    streaming=True,
-                    temperature=0,
-                ), 
-                # ChatOllama(
-                #     base_url="http://host.docker.internal:11434",
-                #     model="tomasonjo/llama3-text2cypher-demo:latest",
-                #     streaming=True,
-                #     temperature=0
-                # ),
-                cypher_prompt=CYPHER_CORRECTION_PROMPT,
-                qa_prompt=CYPHER_QA_PROMPT,
-                graph=graph, 
-                verbose=True,
-                allow_dangerous_requests=True,
-                exclude_types=["DB타입", "카테고리"],
-                return_intermediate_steps=True,
-                return_direct=True,
-                validate_cypher=True, 
-            )
-            
+        #     chain = GraphCypherQAChain.from_llm(
+        #         ChatOpenAI(
+        #             model="gpt-4o-mini",
+        #             openai_api_key="e97ee307-a791-4e06-ade1-df4b9d032eed",
+        #             openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
+        #             streaming=True,
+        #             temperature=0,
+        #         ),
+        #         # ChatOllama(
+        #         #     base_url="http://host.docker.internal:11434",
+        #         #     model="tomasonjo/llama3-text2cypher-demo:latest",
+        #         #     streaming=True,
+        #         #     temperature=0
+        #         # ),
+        #         cypher_prompt=CYPHER_CORRECTION_PROMPT,
+        #         qa_prompt=CYPHER_QA_PROMPT,
+        #         graph=graph,
+        #         verbose=False,
+        #         allow_dangerous_requests=True,
+        #         exclude_types=["DB타입", "카테고리"],
+        #         return_intermediate_steps=True,
+        #         return_direct=True,
+        #         validate_cypher=True,
+        #     )
 
-            chain_result = chain.invoke({"query": query, "previous_cypher": cypher})
-            cypher = chain_result["intermediate_steps"][0]["query"]
-            result_json = json.dumps(chain_result["result"], ensure_ascii=False, indent=2)
-            # print("\n\nresult_json:", result_json, flush=True)
+        #     chain_result = chain.invoke({"query": query, "previous_cypher": cypher})
+        #     cypher = chain_result["intermediate_steps"][0]["query"]
+        #     result_json = json.dumps(
+        #         chain_result["result"], ensure_ascii=False, indent=2
+        #     )
+        #     # print("\n\nresult_json:", result_json, flush=True)
 
         return cypher, result_json
 
-        
     except Exception as e:
         import traceback
+
         traceback.print_exc()  # 서버 로그에 스택 트레이스 출력
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 
 @tool(parse_docstring=True)
 def prod_meta_search_vanila(query: str):
     """
-    Provides detailed search results for SKTelecom's mobile plans, subscription conditions, additional services, roaming options, and benefitial offers. 
+    Provides detailed search results for SKTelecom's mobile plans, subscription conditions, additional services, roaming options, and benefitial offers.
     Takes a user query, generates a Cypher query, and returns the result from the graph database in text format.
 
     Args:
@@ -291,9 +292,11 @@ def prod_meta_search_vanila(query: str):
         # enhanced_schema=True,
         sanitize=True,  # 연결 검증
     )
-    prompt_str = CYPHER_GENERATION_TEMPLATE_VANILA.format(schema=graph.schema, question=query)
+    prompt_str = CYPHER_GENERATION_TEMPLATE_VANILA.format(
+        schema=graph.schema, question=query
+    )
     cypher_response = call_pe_tool_v2(system_message=prompt_str, messages=[], tools=[])
-    print("cypher_response>>>>", cypher_response)
+    # print("cypher_response>>>>", cypher_response)
     cypher = cypher_response.content
     # Cypher 쿼리만 추출 (설명, 마크다운, 기타 텍스트 제거)
     # # 1. ```cypher ... ``` 블록이 있으면 그 안만 추출
@@ -313,7 +316,7 @@ def prod_meta_search_vanila(query: str):
     #     if not cypher_query:
     #         # fallback: 전체 응답 사용
     #         cypher_query = cypher
-    print("cypher_query:", cypher)
+    # print("cypher_query:", cypher)
     # 3. 그래프에서 검색 결과(텍스트)를 반환
     result = graph.query(cypher)
     result_json = json.dumps(result, ensure_ascii=False, indent=2)
