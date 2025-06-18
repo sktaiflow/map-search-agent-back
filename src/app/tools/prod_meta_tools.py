@@ -40,6 +40,7 @@ Question:
 
 # 제외한 룰 (나중에 쓸지도 몰라서 남겨둠)
 # - Do not try to matching 마케팅키워드 (marketing keywords) from the label itself. Must use the properties of the nodes to match keywords. Not "k = 'keyword'". Do "k.`값` CONTAINS 'keyword'.
+# - "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) MATCH (p)-[:`요금정보`]->(price) WITH p, price.`월정액` AS reference_price  MATCH (other:`요금제`) MATCH (other)-[:`요금정보`]->(other_price) WHERE ABS(other_price.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
 CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph database.
 Instructions:
 Use only the provided relationship types and properties in the schema.
@@ -71,7 +72,7 @@ Results should be grouped by 요금제 (mobile plan) and collect other related n
 
 Example:
 - "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:`요금제`)-[:`보유`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c"
-- "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) MATCH (p)-[:`요금정보`]->(price) WITH p, price.`월정액` AS reference_price  MATCH (other:`요금제`) MATCH (other)-[:`요금정보`]->(other_price) WHERE ABS(other_price.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
+- "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
 - "데이터 무제한 요금제 하나만 알려줘" -> "MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p, d LIMIT 1"
 
 Note: Do not include any explanations or apologies in your responses.
