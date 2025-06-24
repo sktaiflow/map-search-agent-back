@@ -39,8 +39,11 @@ Question:
 """
 
 # 제외한 룰 (나중에 쓸지도 몰라서 남겨둠)
+# Results should be grouped by 요금제 (mobile plan) and collect other related nodes as a list.
+# - MATCH (p:`요금제`)-[:`가입해지조건`]->(benefit:`혜택`) WITH p, COLLECT(benefit) AS benefits RETURN p, benefits LIMIT 10
 # - Do not try to matching 마케팅키워드 (marketing keywords) from the label itself. Must use the properties of the nodes to match keywords. Not "k = 'keyword'". Do "k.`값` CONTAINS 'keyword'.
 # - "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) MATCH (p)-[:`요금정보`]->(price) WITH p, price.`월정액` AS reference_price  MATCH (other:`요금제`) MATCH (other)-[:`요금정보`]->(other_price) WHERE ABS(other_price.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
+# - "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:`요금제`)-[:`보유`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c"
 CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph database.
 Instructions:
 Use only the provided relationship types and properties in the schema.
@@ -53,7 +56,6 @@ Schema:
 
 Domain mapping and other rules:
 - For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
-- For age-related queries, check whether the given age is within the range defined by 가입가능최소나이 (minimum age) and 가입가능최대나이 (maximum age).
 - For questions about cheap or expensive plans, sort by the value of 월정액 (monthly price).
 - For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) properties and 상품설명 (product description) fields.
 - To handle list type properties, use following style cypher: ANY(item IN node.list_property WHERE item CONTAINS "keyword")
@@ -61,19 +63,23 @@ Domain mapping and other rules:
 - For questions about available plans, also retrieve whether the user is eligible to subscribe by checking the 상품가입조건 (productsubscriptioncondition).
 - For comparing products, generate a Cypher query that retrieves all products to be compared, and then compare the results.
 
+For age-related queries, generate WHERE clause based on the following examples:
+- Plans only for 18 years old -> 가입가능최대나이 = 18 AND 가입가능최소나이 = 18
+- Plans for 18 years old -> 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
+- Plans only for 18 years old and above -> 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
+- Plans only for 18 years old and below -> 가입가능최대나이 <= 18 AND 가입가능최소나이 <= 18
+- Plans only for younger than 13 years old -> 가입가능최대나이 < 13 AND 가입가능최소나이 < 13
+
 For querying list properties, do not use the CONTAINS operator directly on the array itself.
 Instead, use one of the following methods depending on the query intent:
 - To check for exact inclusion of a value: "value" IN node.array_property
 - To check if any element partially matches a condition (e.g., substring): ANY(item IN node.array_property WHERE item CONTAINS "value")
 - To check if all elements satisfy a condition: ALL(item IN node.array_property WHERE item CONTAINS "value")
 
-Results should be grouped by 요금제 (mobile plan) and collect other related nodes as a list.
-- MATCH (p:`요금제`)-[:`가입해지조건`]->(benefit:`혜택`) WITH p, COLLECT(benefit) AS benefits RETURN p, benefits LIMIT 10
-
 Example:
-- "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:`요금제`)-[:`보유`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c"
-- "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
-- "데이터 무제한 요금제 하나만 알려줘" -> "MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p, d LIMIT 1"
+- "Find plans that are only available for under 18" -> "MATCH (p:`요금제`) WHERE p.`가입가능최대나이` < 18 AND p.`가입가능최소나이` < 18 RETURN p"
+- "Compare 5GX 프리미엄 plan with other plans that have similar price" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
+- "Find one unlimited data plan" -> "MATCH (p:`요금제`) WHERE p.`기본제공데이터용량` = 99999 RETURN p LIMIT 1"
 
 Note: Do not include any explanations or apologies in your responses.
 Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
