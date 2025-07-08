@@ -39,7 +39,9 @@ Question:
 """
 
 # 제외한 룰 (나중에 쓸지도 몰라서 남겨둠)
+# Limit the number of results to 10.
 # Results should be grouped by 요금제 (mobile plan) and collect other related nodes as a list.
+# - For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) properties and 상품설명 (product description) fields.
 # - MATCH (p:`요금제`)-[:`가입해지조건`]->(benefit:`혜택`) WITH p, COLLECT(benefit) AS benefits RETURN p, benefits LIMIT 10
 # - Do not try to matching 마케팅키워드 (marketing keywords) from the label itself. Must use the properties of the nodes to match keywords. Not "k = 'keyword'". Do "k.`값` CONTAINS 'keyword'.
 # - "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) MATCH (p)-[:`요금정보`]->(price) WITH p, price.`월정액` AS reference_price  MATCH (other:`요금제`) MATCH (other)-[:`요금정보`]->(other_price) WHERE ABS(other_price.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
@@ -49,7 +51,6 @@ Instructions:
 Use only the provided relationship types and properties in the schema.
 Do not use any other relationship types or properties that are not provided in the schema.
 Korean terms should be surrounded by backticks (``).
-Limit the number of results to 10.
 
 Schema:
 {schema}
@@ -57,7 +58,7 @@ Schema:
 Domain mapping and other rules:
 - For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
 - For questions about cheap or expensive plans, sort by the value of 월정액 (monthly price).
-- For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) properties and 상품설명 (product description) fields.
+- For finding benefits or offers, focus primarily on the 혜택 (benefit) nodes.
 - To handle list type properties, use following style cypher: ANY(item IN node.list_property WHERE item CONTAINS "keyword")
 - For search keywords, prefer single nouns without spaces. For example, use "넷플릭스" instead of "넷플릭스 할인".
 - For questions about available plans, also retrieve whether the user is eligible to subscribe by checking the 상품가입조건 (productsubscriptioncondition).
@@ -201,7 +202,7 @@ def prod_meta_search(query: str):
         # LangChain 초기화
         chain = GraphCypherQAChain.from_llm(
             ChatOpenAI(
-                model="gpt-4o-mini",
+                model="gpt-4o-2024-11-20",
                 openai_api_key="e97ee307-a791-4e06-ade1-df4b9d032eed",
                 openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
                 streaming=True,
@@ -216,7 +217,7 @@ def prod_meta_search(query: str):
             cypher_prompt=CYPHER_GENERATION_PROMPT,
             qa_prompt=CYPHER_QA_PROMPT,
             graph=graph,
-            verbose=False,
+            verbose=True,
             allow_dangerous_requests=True,
             # exclude_types=[],
             return_intermediate_steps=True,

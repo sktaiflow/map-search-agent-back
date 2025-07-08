@@ -52,6 +52,7 @@ Additional rules:
 - '초과' means 'greater than', and '미만' means 'less than'.
 - If there is a number in the query and there are not '이상', '이하', '초과', or '미만' in the query, you can assume that the user is looking for an exact match.
 - '무제한' means 'unlimited', and it should be replaced with 99999.
+- If a question has the word '할인' (discount) in it, assume that the user actually wants to know about '무료' (complimentary) benefits too
 - Use get_service_info tool only if the query contains the first person pronoun and the user's information is needed generate the cypher.
 - Determine whether to send the query directly to prod_meta_search or add additional information to the original query, and decide the order of the steps and the tools to be used. 
 For example, if the user query requires comparison with the user's current plan, you should first use get_service_info to retrieve the name of user's current plan, and then use prod_meta_search to find it and other plans to be compared.
@@ -124,6 +125,10 @@ Task of current step: {task}"""
     # logger.info(f"LLM response: {resp.model_dump_json()}")
 
     tool_calls = resp.additional_kwargs.get("tool_calls", [])
+        
+    print("### tool", flush=True)
+    print(tool_calls)
+    
     # 툴 호출
     if tool_calls:
         tool_call = tool_calls[0]
@@ -190,6 +195,8 @@ def replan_step(state: PlanExecuteState):
     # logger.info(state["input"])
     # logger.info(state["plan"])
     # logger.info(state["past_steps"])
+    # 임시로 제거한 프롬프트
+    # When generating the final response, if there is a markdown table, use its style.
     system_message = f"""You are responsible for the Re-plan stage of LangGraph.
 Based on the following state, you need to update the plan or generate a final response.
 
@@ -201,7 +208,8 @@ Results from previous steps: {state["past_steps"]}
 
 If there are remaining steps, return them as an array. -> {{"plan": [{{"step": 1, "tool": ..., "reason": ...}}, ...]}}
 If there are no remaining steps, based on the intial query and the results from previous steps, generate a final response in Korean and return it. -> {{"response": 최종 답변}}
-When generating the final response, if there is a markdown table, use its style.
+If there are more than one entity in the results, use a markdown table to make it easy to compare between entities.
+When generating the final response, think back to the intent of the original question and consider which parts of the results from the previous steps you need to use to generate the response that meets the intent of the original question.
 
 If you re-plan the steps, please return the new plan based on following information.
 
