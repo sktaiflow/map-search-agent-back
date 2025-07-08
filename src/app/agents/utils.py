@@ -1,4 +1,5 @@
 from langchain_openai import ChatOpenAI
+from langchain_ollama.chat_models import ChatOllama
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.schema import SystemMessage
 from langchain_neo4j import Neo4jGraph
@@ -29,6 +30,69 @@ def message_to_dict(message):
         print("message.type.title()>>>>", message.type.title())
         raise ValueError("message.type.title()>>>>", message.type.title())
 
+
+def call_ollama(
+    messages: list,
+    system_message: str,
+    tools: list = None,
+    seed: int = 0,
+    tool_choice: str = "auto",
+    format: str = None,
+):
+    """
+    Call the Llama API for chat completions using LangChain's invoke method
+
+    Args:
+        messages: Conversation messages
+        system_message: System message
+        tools: List of available tools
+        model_idx: Model identifier
+        seed: Random seed
+        tool_choice: Tool selection mode
+        response_format: Desired response format
+
+    Returns:
+        dict: API response
+
+    Raises:
+        ValueError: If API call fails or returns invalid response
+    """
+    # Process system message same way as in call_pe_tool_v2
+    if system_message:
+        if len(messages) > 0 and messages[0].type.title().lower() == "system":
+            messages[0].content = system_message
+        else:
+            messages.insert(0, SystemMessage(content=system_message))
+    # Serialize messages
+    serialized_messages = [message_to_dict(msg) for msg in messages]
+    # Prepare model kwargs and options for invoke
+    model_kwargs = {}
+    invoke_kwargs = {}
+    # Handle tools and tool_choice
+    if tools:
+        model_kwargs["tools"] = tools
+        invoke_kwargs["tool_choice"] = tool_choice
+    # # Handle response_format
+    # if response_format:
+    #     invoke_kwargs["response_format"] = response_format
+
+    try:
+        # Initialize LangChain OpenAI client
+        llm = ChatOllama(
+            base_url="http://host.docker.internal:11434",
+            streaming=True,
+            callbacks=[StreamingStdOutCallbackHandler()],
+            temperature=0,
+            model="llama3.1:8b",
+            format="json",
+            **model_kwargs
+        )
+        
+        # Call API via LangChain with additional parameters
+        response = llm.invoke(messages)
+        return response
+    except Exception as e:
+        raise ValueError(f"API 오류: {str(e)}")
 
 def call_pe_tool_v2(
     messages: list,
@@ -76,20 +140,26 @@ def call_pe_tool_v2(
         invoke_kwargs["response_format"] = response_format
 
     try:
-        print("serialized_messages>>>>", serialized_messages)
+        # print("serialized_messages>>>>", serialized_messages, flush=True)
         # Initialize LangChain OpenAI client
         llm = ChatOpenAI(
             base_url="https://aide.dev.apollo-lunar.com/pe-proxy/api/v1/compatible/openai/stream",
             streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()],
+            # callbacks=[StreamingStdOutCallbackHandler()],
             temperature=0,
             model=str(model_idx),
             api_key="None",
             seed=seed,
-            **model_kwargs,
+            # **model_kwargs,
         )
         # Call API via LangChain with additional parameters
-        response = llm.invoke(serialized_messages, **invoke_kwargs)
+        if tools:
+            llm_with_tools = llm.bind_tools(tools)
+            response = llm_with_tools.invoke(serialized_messages, **invoke_kwargs)
+            # print("response_with_tools>>>>", response, flush=True)
+        else:
+            response = llm.invoke(serialized_messages, **invoke_kwargs)
+            # print("response>>>>", response, flush=True)
         return response
     except Exception as e:
         raise ValueError(f"API 오류: {str(e)}")
