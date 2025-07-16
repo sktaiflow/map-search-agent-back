@@ -58,13 +58,18 @@ Additional rules:
 For example, if the user query requires comparison with the user's current plan, you should first use get_service_info to retrieve the name of user's current plan, and then use prod_meta_search to find it and other plans to be compared.
 
 Examples
-- {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the unlimited plan"}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "To get the basic information of the user"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To fine the Netflix discount plan under the 100000 won and available for the user. It requries basic information from previous steps"}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "To get the monthly price of the user's current plan"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the unlimited plan cheaper than the user's current plan. Information about user's current plan could be gotten from this step"}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the cheapest plan with Wavve discount for the 24 years old"}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "무제한 요금제에 대한 정보가 필요함"}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "가입 조건을 확인하기 위해 고객의 개인 정보가 필요함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객 정보를 기반으로 해당 고객이 가입할 수 있는 10만원 이하의 요금제 중 넷플릭스 할인 혜택을 포함하는 요금제를 찾아야 함."}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "고객이 현재 가입되어 있는 요금제가 무엇인지 알아내야함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객의 현재 요금제 정보를 기반으로 고객의 현재 요금제보다 월정액이 저렴한 무제한 요금제를 찾아야함."}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "24세의 고객이 가입할 수 있는 wavve 할인 혜택이 있는 가장 싼 요금제를 찾아야 함"}}]}}
 
 Adhere strictly to this format and output only the JSON array without any additional styling or emphasis.
 """
+# - {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the unlimited plan"}}]}}
+# - {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "To get the basic information of the user"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the Netflix discount plan under the 100000 won and available for the user. It requries basic information from previous steps"}}]}}
+# - {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "To get the monthly price of the user's current plan"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the unlimited plan cheaper than the user's current plan. Information about user's current plan could be gotten from this step"}}]}}
+# - {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the cheapest plan with Wavve discount for the 24 years old"}}]}}
+
 
 
 # class PlanExecuteState(TypedDict):
@@ -100,6 +105,7 @@ Plan: {plan}
 Results from past steps: {state["past_steps"] if state["past_steps"] else "None, it's the first step."}
 Task of current step: {task}"""
     
+    # print(f"System message: {system_message}", flush=True)
     # 툴 선택
     resp = call_pe_tool_v2(
         system_message=system_message,
@@ -110,6 +116,7 @@ Task of current step: {task}"""
         ],
         tools=tools,
     )
+    # print(f"LLM response: {resp.model_dump_json()}", flush=True)
 
     # Ollama를 사용할 경우
     # resp = call_ollama(
@@ -125,10 +132,7 @@ Task of current step: {task}"""
     # logger.info(f"LLM response: {resp.model_dump_json()}")
 
     tool_calls = resp.additional_kwargs.get("tool_calls", [])
-        
-    print("### tool", flush=True)
-    print(tool_calls)
-    
+            
     # 툴 호출
     if tool_calls:
         tool_call = tool_calls[0]
@@ -208,6 +212,7 @@ Results from previous steps: {state["past_steps"]}
 
 If there are remaining steps, return them as an array. -> {{"plan": [{{"step": 1, "tool": ..., "reason": ...}}, ...]}}
 If there are no remaining steps, based on the intial query and the results from previous steps, generate a final response in Korean and return it. -> {{"response": 최종 답변}}
+When generating the final response, never ignore single entity from the results of previous steps.
 If there are more than one entity in the results, use a markdown table to make it easy to compare between entities.
 When generating the final response, think back to the intent of the original question and consider which parts of the results from the previous steps you need to use to generate the response that meets the intent of the original question.
 
