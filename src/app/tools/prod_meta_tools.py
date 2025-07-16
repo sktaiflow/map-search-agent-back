@@ -9,6 +9,9 @@ import re
 import json
 import logging
 from src.app.agents.logging_config import setup_logging
+from neo4j import GraphDatabase
+from langchain.globals import set_debug
+# set_debug(True)
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +42,14 @@ Question:
 """
 
 # 제외한 룰 (나중에 쓸지도 몰라서 남겨둠)
+# Use the concept keywords and their relationships if there are concept keywords related to the question.
+# Useful concept keywords for Cypher queries:
+# {{hint_block}}
 # Limit the number of results to 10.
 # Results should be grouped by 요금제 (mobile plan) and collect other related nodes as a list.
+# - For finding benefits or offers for additional services, focus primarily on the 혜택 (benefit) nodes.
+# - For questions about available plans, also retrieve whether the user is eligible to subscribe by checking the 상품가입조건 (productsubscriptioncondition).
+# - To handle list type properties, use following style cypher: ANY(item IN node.list_property WHERE item CONTAINS 'keyword')
 # - For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) properties and 상품설명 (product description) fields.
 # - MATCH (p:`요금제`)-[:`가입해지조건`]->(benefit:`혜택`) WITH p, COLLECT(benefit) AS benefits RETURN p, benefits LIMIT 10
 # - Do not try to matching 마케팅키워드 (marketing keywords) from the label itself. Must use the properties of the nodes to match keywords. Not "k = 'keyword'". Do "k.`값` CONTAINS 'keyword'.
@@ -56,12 +65,9 @@ Schema:
 {schema}
 
 Domain mapping and other rules:
-- For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
+- For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields about capacity, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
 - For questions about cheap or expensive plans, sort by the value of 월정액 (monthly price).
-- For finding benefits or offers, focus primarily on the 혜택 (benefit) nodes.
-- To handle list type properties, use following style cypher: ANY(item IN node.list_property WHERE item CONTAINS "keyword")
-- For search keywords, prefer single nouns without spaces. For example, use "넷플릭스" instead of "넷플릭스 할인".
-- For questions about available plans, also retrieve whether the user is eligible to subscribe by checking the 상품가입조건 (productsubscriptioncondition).
+- For search keywords, prefer a single noun split by a space. For example, use "넷플릭스" instead of "넷플릭스 할인".
 - For comparing products, generate a Cypher query that retrieves all products to be compared, and then compare the results.
 
 For age-related queries, generate WHERE clause based on the following examples:
@@ -73,19 +79,20 @@ For age-related queries, generate WHERE clause based on the following examples:
 
 For querying list properties, do not use the CONTAINS operator directly on the array itself.
 Instead, use one of the following methods depending on the query intent:
-- To check for exact inclusion of a value: "value" IN node.array_property
-- To check if any element partially matches a condition (e.g., substring): ANY(item IN node.array_property WHERE item CONTAINS "value")
-- To check if all elements satisfy a condition: ALL(item IN node.array_property WHERE item CONTAINS "value")
+- To check for exact inclusion of a value: 'value' IN node.array_property
+- To check if any element partially matches a condition (e.g., substring): ANY(item IN node.array_property WHERE item CONTAINS 'value')
+- To check if all elements satisfy a condition: ALL(item IN node.array_property WHERE item CONTAINS 'value')
 
 Example:
 - "Find plans that are only available for under 18" -> "MATCH (p:`요금제`) WHERE p.`가입가능최대나이` < 18 AND p.`가입가능최소나이` < 18 RETURN p"
 - "Compare 5GX 프리미엄 plan with other plans that have similar price" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
 - "Find one unlimited data plan" -> "MATCH (p:`요금제`) WHERE p.`기본제공데이터용량` = 99999 RETURN p LIMIT 1"
+- "Find discount benefits for 65 and above" -> "MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 RETURN p, c"
 
 Note: Do not include any explanations or apologies in your responses.
 Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
 Do not include any text except the generated Cypher statement.
-If there are keywords used in the cypher, include the nodes related to those keywords in the result.
+Include the nodes and properties related to the question in the result.
 
 The question is:
 {question}"""
@@ -182,7 +189,7 @@ def prod_meta_search(query: str):
     Takes a user query, generates a Cypher query, and returns the result from the graph database in text format.
 
     Args:
-        query (str): User's query
+        query (str): User's query in Korean
 
     Returns:
         dict: Cypher query and search results in text format
@@ -198,11 +205,49 @@ def prod_meta_search(query: str):
             enhanced_schema=True,
             sanitize=True,  # 연결 검증
         )
+        
+        # # 개념 힌트 추가
+        # driver = GraphDatabase.driver("bolt://neo4j-gds-apoc-n10s:7687", auth=("neo4j", "neo4jpassword"))
+        
+        # concept_query = """
+        # MATCH (c:개념)
+        # OPTIONAL MATCH (c)-[:연관]->(p:요금제)
+        # WITH c, collect(p.상품명) AS plans
+        # RETURN c.키워드 AS keyword,
+        #     c.설명 AS description,
+        #     coalesce(c.CYPHER_TEMPLATE, '') AS CYPHER_TEMPLATE,
+        #     plans
+        # """
+        
+        # with driver.session() as session:
+        #     result = session.run(concept_query)
+        #     concepts_data = [record for record in result]
+        
+        # driver.close()
+        
+        # lines = []
+        # for rec in concepts_data:
+        #     keyword = rec["keyword"]
+        #     description = rec["description"]
+        #     CYPHER_TEMPLATE = rec["CYPHER_TEMPLATE"]
+        #     plans = rec["plans"]
+
+        #     lines.append(f"- concept keyword: {keyword}")
+        #     lines.append(f"  - description: {description}")
+        #     if CYPHER_TEMPLATE:
+        #         lines.append(f"  - cypher example: {CYPHER_TEMPLATE}")
+        #     # if plans:
+        #     #     lines.append(f"  - related plans: {', '.join(plans)}")
+        # hint_block = "\n".join(lines)
+        
+        # global CYPHER_GENERATION_TEMPLATE
+        # CYPHER_GENERATION_TEMPLATE = CYPHER_GENERATION_TEMPLATE.replace("{{hint_block}}", hint_block)
+        # print(CYPHER_GENERATION_TEMPLATE, flush=True)
 
         # LangChain 초기화
         chain = GraphCypherQAChain.from_llm(
             ChatOpenAI(
-                model="gpt-4o-2024-11-20",
+                model="gpt-4o-mini",
                 openai_api_key="e97ee307-a791-4e06-ade1-df4b9d032eed",
                 openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
                 streaming=True,
@@ -215,7 +260,7 @@ def prod_meta_search(query: str):
             #     temperature=0
             # ),
             cypher_prompt=CYPHER_GENERATION_PROMPT,
-            qa_prompt=CYPHER_QA_PROMPT,
+            # qa_prompt=CYPHER_QA_PROMPT,
             graph=graph,
             verbose=True,
             allow_dangerous_requests=True,
@@ -223,12 +268,13 @@ def prod_meta_search(query: str):
             return_intermediate_steps=True,
             return_direct=True,
             validate_cypher=True,
+            # disabled_params={"parallel_tool_calls": None}
         )
 
         # 쿼리 실행
         chain_result = chain.invoke({"query": query})
         logger.info(f"Chain result: {chain_result}")
-
+        
         # Cypher 쿼리와 결과 추출
         cypher = chain_result["intermediate_steps"][0]["query"]
         result_json = json.dumps(chain_result["result"], ensure_ascii=False, indent=2)
