@@ -1,0 +1,13 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- 프로젝트 전용 스키마 생성
+CREATE SCHEMA IF NOT EXISTS vector;
+CREATE SCHEMA IF NOT EXISTS product;
+CREATE SCHEMA IF NOT EXISTS users;
+
+CREATE TABLE vector.nodes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    nodes_data JSONB,
+    embedding VECTOR(1536)
+);
