@@ -6,8 +6,7 @@ from langchain.prompts import PromptTemplate
 from langchain.tools import tool
 from langchain_neo4j import GraphCypherQAChain, Neo4jGraph
 from langchain_openai import ChatOpenAI
-
-from src.app.agents.utils import call_smartbee
+from utils import call_smartbee
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph 
     Example:
     - "Find plans that are only available for under 18" -> "MATCH (p:`요금제`) WHERE p.`가입가능최대나이` < 18 AND p.`가입가능최소나이` < 18 RETURN p"
     - "Compare 5GX 프리미엄 plan with other plans that have similar price" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
-    - "Find one unlimited data plan" -> "MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p LIMIT 1"
+    - "Find one unlimited data plan" -> "MATCH (p:`요금제`) WHERE p.`기본제공데이터용량` = 99999 RETURN p LIMIT 1"
     - "Find discount benefits for 65 and above" -> "MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 RETURN p, c"
 
     Note: Do not include any explanations or apologies in your responses.
@@ -84,7 +83,6 @@ def prod_meta_search(query: str):
         chain = GraphCypherQAChain.from_llm(
             ChatOpenAI(
                 model="gpt-4o-mini",
-                openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
                 streaming=True,
                 temperature=0,
             ),

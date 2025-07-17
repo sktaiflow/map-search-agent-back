@@ -1,0 +1,14 @@
+# 제외한 룰 (나중에 쓸지도 몰라서 남겨둠)
+# Use the concept keywords and their relationships if there are concept keywords related to the question.
+# Useful concept keywords for Cypher queries:
+# {{hint_block}}
+# Limit the number of results to 10.
+# Results should be grouped by 요금제 (mobile plan) and collect other related nodes as a list.
+# - For finding benefits or offers for additional services, focus primarily on the 혜택 (benefit) nodes.
+# - For questions about available plans, also retrieve whether the user is eligible to subscribe by checking the 상품가입조건 (productsubscriptioncondition).
+# - To handle list type properties, use following style cypher: ANY(item IN node.list_property WHERE item CONTAINS 'keyword')
+# - For finding benefits or offers, focus primarily on the 마케팅키워드 (marketing keywords) properties and 상품설명 (product description) fields.
+# - MATCH (p:`요금제`)-[:`가입해지조건`]->(benefit:`혜택`) WITH p, COLLECT(benefit) AS benefits RETURN p, benefits LIMIT 10
+# - Do not try to matching 마케팅키워드 (marketing keywords) from the label itself. Must use the properties of the nodes to match keywords. Not "k = 'keyword'". Do "k.`값` CONTAINS 'keyword'.
+# - "5GX 프리미엄 요금제와 가격이 비슷한 요금제 비교해줘" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) MATCH (p)-[:`요금정보`]->(price) WITH p, price.`월정액` AS reference_price  MATCH (other:`요금제`) MATCH (other)-[:`요금정보`]->(other_price) WHERE ABS(other_price.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
+# - "18세 미만만 가입할 수 있는 요금제 알려줘" -> "MATCH (p:`요금제`)-[:`보유`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c"

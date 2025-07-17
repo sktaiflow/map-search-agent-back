@@ -1,274 +1,127 @@
-import asyncio
-import operator
+
 import json
-
-from typing import Annotated, List, Tuple, Optional, Dict, Any
-from typing_extensions import TypedDict
-from pydantic import BaseModel, Field
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
-from langgraph.graph import END, StateGraph, START
-from langgraph.graph.message import add_messages
-from langchain_core.messages import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-    FunctionMessage,
-)
-from langchain_core.callbacks import StreamingStdOutCallbackHandler
-
-from src.app.tools import get_service_info, get_subscribed_products, prod_meta_search, thinking_tool
-from src.app.agents.utils import tool_to_openai_function, call_pe_tool_v2, call_ollama
-from src.app.agents.utils import neo4j_connect
-from src.app.agents.schema import PlanExecuteState, Plan, Response
-
 import logging
-from src.app.agents.logging_config import setup_logging
+from typing import Any, Dict
 
-logger = logging.getLogger(__name__)
+from langchain_core.messages import HumanMessage
+from langgraph.graph import END, START, StateGraph
 
-# tools = [get_service_info, get_subscribed_products, prod_meta_search]
+from src.app.agents.utils import call_smartbee
+from src.app.tools import get_service_info, get_subscribed_products, prod_meta_search
+
+logging.basicConfig(level=logging.INFO)
+
 tools = [get_service_info, prod_meta_search]
-openai_tools = [tool_to_openai_function(t) for t in tools]
-openai_tools_json = json.dumps(openai_tools, ensure_ascii=False, indent=2)
-user_search_tools = [get_service_info, get_subscribed_products]
-user_search_tools_json = [tool_to_openai_function(t) for t in user_search_tools]
-
-# graph = neo4j_connect(env="openwebui", enhanced_schema=True)
 
 PLANNING_SYS_PROMPT = f"""You are responsible for the Plan stage of LangGraph. 
-Given inputs userQuery and userId, return an array of execution steps combining the available tools.
-Each element in the output array must include:
+    Given inputs userQuery and userId, return an array of execution steps combining the available tools.
 
-- step: execution order number
-- tool: name of the tool to call
-- reason: the reason why this tool is needed for the current step
+    Available tools:
+    {json.dumps([{"name": t.name} for t in tools], indent=2, ensure_ascii=False)}
 
-Available tools:
-{openai_tools_json}
-
-Additional rules:
-- '이상' means 'greater than or equal to', and '이하' means 'less than or equal to'. 
-- '초과' means 'greater than', and '미만' means 'less than'.
-- If there is a number in the query and there are not '이상', '이하', '초과', or '미만' in the query, you can assume that the user is looking for an exact match.
-- '무제한' means 'unlimited', and it should be replaced with 99999.
-- If a question has the word '할인' (discount) in it, assume that the user actually wants to know about '무료' (complimentary) benefits too
-- Use get_service_info tool only if the query contains the first person pronoun and the user's information is needed generate the cypher.
-- Determine whether to send the query directly to prod_meta_search or add additional information to the original query, and decide the order of the steps and the tools to be used. 
-For example, if the user query requires comparison with the user's current plan, you should first use get_service_info to retrieve the name of user's current plan, and then use prod_meta_search to find it and other plans to be compared.
-
-Examples
-- {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "무제한 요금제에 대한 정보가 필요함"}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "가입 조건을 확인하기 위해 고객의 개인 정보가 필요함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객 정보를 기반으로 해당 고객이 가입할 수 있는 10만원 이하의 요금제 중 넷플릭스 할인 혜택을 포함하는 요금제를 찾아야 함."}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "고객이 현재 가입되어 있는 요금제가 무엇인지 알아내야함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객의 현재 요금제 정보를 기반으로 고객의 현재 요금제보다 월정액이 저렴한 무제한 요금제를 찾아야함."}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "24세의 고객이 가입할 수 있는 wavve 할인 혜택이 있는 가장 싼 요금제를 찾아야 함"}}]}}
-
-Adhere strictly to this format and output only the JSON array without any additional styling or emphasis.
+    Follow this format strictly:
+    {{"plan": [{{"step": 1, "tool": "tool_name", "reason": "reason for use"}}, ...]}}
 """
-# - {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the unlimited plan"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "To get the basic information of the user"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the Netflix discount plan under the 100000 won and available for the user. It requries basic information from previous steps"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "To get the monthly price of the user's current plan"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the unlimited plan cheaper than the user's current plan. Information about user's current plan could be gotten from this step"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the cheapest plan with Wavve discount for the 24 years old"}}]}}
 
-
-
-# class PlanExecuteState(TypedDict):
-#     input: str
-#     plan: List[str]
-#     past_steps: Optional[List[Tuple]]
-#     response: Optional[str]
-#     user_info: Optional[Dict[str, Any]]
-#     product_meta: Optional[Dict[str, Any]]
-#     messages: Annotated[list, add_messages]
-#     cypher: Optional[str]
-
-
-# # 플래너 모델
-# class Plan(BaseModel):
-#     steps: List[str] = Field(description="Plan steps")
-
-
-# # 리플래너 모델
-# class Response(BaseModel):
-#     response: str
-
-
-def execute_step(state: PlanExecuteState):
-    plan = state["plan"]
-    task = plan[0]["reason"]
-    # logger.info(state)
-
-    # 실제로는 아래에서 task에 따라 분기하여 실행
-    system_message = f"""User ID: "123123123312"
-User query: {state["input"]}
-Plan: {plan}
-Results from past steps: {state["past_steps"] if state["past_steps"] else "None, it's the first step."}
-Task of current step: {task}"""
-    
-    # print(f"System message: {system_message}", flush=True)
-    # 툴 선택
-    resp = call_pe_tool_v2(
-        system_message=system_message,
-        messages=[
-            HumanMessage(
-                content="""Select the most appropriate tool for the user's query at the current stage."""
-            )
-        ],
-        tools=tools,
-    )
-    # print(f"LLM response: {resp.model_dump_json()}", flush=True)
-
-    # Ollama를 사용할 경우
-    # resp = call_ollama(
-    #     system_message=system_message,
-    #     messages=[
-    #         HumanMessage(
-    #             content="Select the most appropriate tool for the user's query at the current stage."
-    #         )
-    #     ],
-    #     tools=openai_tools,
-    # )
-
-    # logger.info(f"LLM response: {resp.model_dump_json()}")
-
-    tool_calls = resp.additional_kwargs.get("tool_calls", [])
-            
-    # 툴 호출
-    if tool_calls:
-        tool_call = tool_calls[0]
-        tool_name = tool_call["function"]["name"]
-        tool_args = json.loads(tool_call["function"]["arguments"])
-
-        if tool_name == "prod_meta_search":
-            cypher, result = prod_meta_search(tool_args["query"])
-            state["product_meta"] = result
-            state["cypher"] = cypher
-        elif tool_name == "get_service_info":
-            result = get_service_info(tool_args["svc_mgmt_num"])
-            state["user_info"] = result
-        # 현재 버전에서는 위의 두 가지만 사용하도록 되어 있음 (2025-06-18 기준)
-        elif tool_name == "get_subscribed_products":
-            result = get_subscribed_products(tool_args["svc_mgmt_num"])
-            state["user_info"] = result
-        elif tool_name == "thinking_tool":
-            result = thinking_tool(tool_args["query"], state["past_steps"])
-    else:
-        result = resp.content
-    # past_steps에 기록
-    if not result:
-        result = "No results found."
-    state["past_steps"].append((task, str(result)))
-    # plan에서 현재 step 제거
-    # state["plan"] = plan[1:]
-
-    return state
-
-
-def plan_step(state: PlanExecuteState):
-    messages = state["messages"]
-    system_message = PLANNING_SYS_PROMPT
-
-    llm_response = call_pe_tool_v2(
-        system_message=system_message,
+def plan_step(state: Dict[str, Any]) -> Dict[str, Any]:
+    response = call_smartbee(
         messages=[HumanMessage(content=state["input"])],
+        system_message=PLANNING_SYS_PROMPT,
         tools=[],
         response_format={"type": "json_object"},
-        model_idx=124252,
+        expect_json=True,
     )
-    
-    # Ollama를 사용할 경우
-    # llm_response = call_ollama(
-    #     system_message=system_message,
-    #     messages=[HumanMessage(content=state["input"])],
-    #     tools=[],
-    #     format="json",
-    # )
-
     try:
-        parsed = json.loads(llm_response.content)
-        state["plan"] = parsed["plan"]
+        state["plan"] = response["plan"]
     except Exception:
-        # 혹시 JSON이 아니면, 간단 파싱
-        state["plan"] = [llm_response.content]
-    
+        state["plan"] = [response.content]
     state["past_steps"] = []
     return state
 
+def execute_step(state: Dict[str, Any]) -> Dict[str, Any]:
+    plan = state["plan"]
+    task = plan[0]["reason"]
 
-def replan_step(state: PlanExecuteState):
-    # logger.info(state["input"])
-    # logger.info(state["plan"])
-    # logger.info(state["past_steps"])
-    # 임시로 제거한 프롬프트
-    # When generating the final response, if there is a markdown table, use its style.
-    system_message = f"""You are responsible for the Re-plan stage of LangGraph.
-Based on the following state, you need to update the plan or generate a final response.
+    system_message = f"""You are an AI assistant that selects the best function for a given task.
+        Respond ONLY with a tool_call in valid JSON format like below:
+        {{
+        "tool_calls": [
+            {{
+            "function": {{
+                "name": "prod_meta_search",
+                "arguments": "{{\\"query\\": \\"무제한 요금제\\"}}"
+            }}
+            }}
+        ]
+        }}
 
-Initial query from user: {state["input"]}
+        User query: {state["input"]}
+        Plan: {plan}
+        Previous results: {state.get("past_steps", "None")}
+        Current task: {task}
+    """
 
-Original plan: {state["plan"]}
-
-Results from previous steps: {state["past_steps"]}
-
-If there are remaining steps, return them as an array. -> {{"plan": [{{"step": 1, "tool": ..., "reason": ...}}, ...]}}
-If there are no remaining steps, based on the intial query and the results from previous steps, generate a final response in Korean and return it. -> {{"response": 최종 답변}}
-When generating the final response, never ignore single entity from the results of previous steps.
-If there are more than one entity in the results, use a markdown table to make it easy to compare between entities.
-When generating the final response, think back to the intent of the original question and consider which parts of the results from the previous steps you need to use to generate the response that meets the intent of the original question.
-
-If you re-plan the steps, please return the new plan based on following information.
-
-{PLANNING_SYS_PROMPT}"""
-
-    llm_response = call_pe_tool_v2(
-        system_message=system_message,
-        messages=[],
-        tools=[],
-        model_idx=124252,
-        response_format={"type": "json_object"},
-    )
-
-    # LLM 응답에서 action 파싱
+    logging.info(f"[execute_step]{system_message}")
     try:
-        parsed = json.loads(llm_response.content)
+        response = call_smartbee(
+            messages=[],  
+            system_message=system_message,
+            tools=tools,
+            expect_json=True,
+        )
+    except Exception as e:
+        logging.exception("🔥 call_smartbee 실패")
+        raise
+
+    tool_calls = response.get("tool_calls", [])
+    logging.info(f"[tool_calls]{tool_calls}")
+    if tool_calls:
+        tool = tool_calls[0]["function"]["name"]
+        args = json.loads(tool_calls[0]["function"]["arguments"])
+        if tool == "prod_meta_search":
+            _, result = prod_meta_search(args["query"])
+            state["product_meta"] = result
+        elif tool == "get_service_info":
+            state["user_info"] = get_service_info(args["svc_mgmt_num"])
+        elif tool == "get_subscribed_products":
+            state["user_info"] = get_subscribed_products(args["svc_mgmt_num"])
+        state["past_steps"].append((task, str(result)))
+    return state
+
+def replan_step(state: Dict[str, Any]) -> Dict[str, Any]:
+    system_message = f"""You are responsible for the Re-plan stage of LangGraph.
+        Query: {state["input"]}
+        Plan: {state["plan"]}
+        Results: {state["past_steps"]}
+        Return updated plan or final response.
+        If replan needed -> {{"plan": [...]}}, else -> {{"response": "..."}}
+    """
+    response = call_smartbee(
+        messages=[],
+        system_message=system_message,
+        tools=[],
+        response_format={"type": "json_object"},
+        expect_json=True,
+    )
+    try:
+        parsed = json.loads(response.content)
         if "plan" in parsed:
             state["plan"] = parsed["plan"]
         elif "response" in parsed:
             state["response"] = parsed["response"]
-        # if "response" in parsed.get("action", {}):
-        #     state["response"] = parsed["action"]["response"]
-        # else:
-        #     state["plan"] = parsed["action"]["steps"]
     except Exception:
-        # 예외 처리
-        state["response"] = llm_response.content
+        state["response"] = response.content
     return state
 
-
-def should_end(state: PlanExecuteState):
-    # logger.info(f"Checking if should end: {state.get('response')}")
+def should_end(state: Dict[str, Any]) -> str:
     return END if state.get("response") else "agent"
 
-
-workflow = StateGraph(PlanExecuteState)
+workflow = StateGraph(dict)
 workflow.add_node("planner", plan_step)
 workflow.add_node("agent", execute_step)
 workflow.add_node("replan", replan_step)
-
 workflow.add_edge(START, "planner")
 workflow.add_edge("planner", "agent")
 workflow.add_edge("agent", "replan")
-# workflow.add_conditional_edges("replan", should_end, ["agent", END])
 workflow.add_conditional_edges("replan", should_end)
 app = workflow.compile()
-
-# inputs = {"input": "5만원 이하 넷플릭스 할인 요금제 알려줘"}
-
-
-# async def main():
-#     async for event in app.astream(inputs):
-#         print(event)
-
-
-# if __name__ == "__main__":
-#     asyncio.run(main())

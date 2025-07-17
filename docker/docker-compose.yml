@@ -53,9 +53,7 @@ services:
     networks:
       - my_network
     volumes:
-      - ../src:/app/src
-      - ../data:/app/data
-      - ../notebooks:/app/notebooks
+      - ..:/app
     depends_on:
       - neo4j
   backendapi:
@@ -83,8 +81,7 @@ services:
     networks:
       - my_network
     volumes:
-      - ../data:/app/data
-      - ../src:/app/src
+      - ..:/app
     command: [ "uvicorn", "src.app.agents.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
     depends_on:
       - neo4j

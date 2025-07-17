@@ -1,6 +1,5 @@
 from langchain.tools import tool
-
-from src.app.agents.utils import call_smartbee
+from utils import call_smartbee
 
 
 @tool(parse_docstring=True)

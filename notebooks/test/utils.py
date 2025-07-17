@@ -63,7 +63,7 @@ def call_llm_with_retries(
     for attempt in range(1, max_retries + 1):
         try:
             response = llm.invoke(messages)
-            logging.info(f"[attempt]{attempt} : {response}")
+            print(f"[attempt]{attempt} : {response}")
             if isinstance(response, str):
                 raw_content = response.strip()
             elif isinstance(response, dict):
@@ -86,13 +86,12 @@ def call_llm_with_retries(
 
             if expect_json:
                 cleaned = raw_content
-                logging.info(f"[raw_content]]{cleaned}")
+                print(f"[cleaned]{cleaned}")
                 if cleaned.startswith("```"):
                     cleaned = "\n".join(
                         line for line in cleaned.splitlines()
                         if not line.strip().startswith("```")
                     )
-                    logging.info(f"[cleaned]]{json.loads(cleaned)}")
                 return json.loads(cleaned)
             else:
                 return raw_content
