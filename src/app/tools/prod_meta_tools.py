@@ -68,6 +68,7 @@ def prod_meta_search(query: str):
         sanitize=True,
     )
 
+    ### 이걸 다시 짜서 
     chain = GraphCypherQAChain.from_llm(
         ChatOpenAI(
             model="gpt-4o",
