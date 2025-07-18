@@ -11,45 +11,6 @@ from langchain_openai import ChatOpenAI
 logging.basicConfig(level=logging.INFO)
 
 
-def call_ollama(
-    messages: list,
-    system_message: str,
-    tools: list = None,
-    seed: int = 0,
-    tool_choice: str = "auto",
-    format: str = None,
-):
-    if system_message:
-        if len(messages) > 0 and messages[0].type.title().lower() == "system":
-            messages[0].content = system_message
-        else:
-            messages.insert(0, SystemMessage(content=system_message))
-
-    serialized_messages = [message_to_dict(msg) for msg in messages]
-
-    model_kwargs = {}
-    invoke_kwargs = {}
-    if tools:
-        model_kwargs["tools"] = tools
-        invoke_kwargs["tool_choice"] = tool_choice
-
-    try:
-        llm = ChatOllama(
-            base_url="http://host.docker.internal:11434",
-            streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()],
-            temperature=0,
-            model="llama3.1:8b",
-            format="json",
-            **model_kwargs
-        )
-
-        response = llm.invoke(messages)
-        return response
-    except Exception as e:
-        raise ValueError(f"API 오류: {str(e)}")
-
-
 def call_llm_with_retries(
     llm,
     messages,
@@ -63,7 +24,7 @@ def call_llm_with_retries(
     for attempt in range(1, max_retries + 1):
         try:
             response = llm.invoke(messages)
-            print(f"[attempt]{attempt} : {response}")
+            logging.info(f"[attempt]{attempt} : {response}")
             if isinstance(response, str):
                 raw_content = response.strip()
             elif isinstance(response, dict):
@@ -86,12 +47,13 @@ def call_llm_with_retries(
 
             if expect_json:
                 cleaned = raw_content
-                print(f"[cleaned]{cleaned}")
+                logging.info(f"[raw_content]]{cleaned}")
                 if cleaned.startswith("```"):
                     cleaned = "\n".join(
                         line for line in cleaned.splitlines()
                         if not line.strip().startswith("```")
                     )
+                    logging.info(f"[cleaned]]{json.loads(cleaned)}")
                 return json.loads(cleaned)
             else:
                 return raw_content
@@ -105,40 +67,105 @@ def call_llm_with_retries(
     raise ValueError(f"❌ LLM이 유효한 응답을 {max_retries}회 시도했으나 받지 못했습니다. 마지막 에러: {last_exception}")
 
 
+# def call_smartbee(
+#     messages: list,
+#     system_message: str,
+#     tools: list = None,
+#     tool_choice: str = "auto",
+#     response_format: dict = None,
+#     llm=None,
+#     expect_json=True
+# ):
+#     llm_default = ChatOpenAI(
+#         model="gpt-4o",
+#         openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
+#         temperature=0,
+#     )
+#     if system_message:
+#         if len(messages) > 0 and messages[0].type.title().lower() == "system":
+#             messages[0].content = system_message
+#         else:
+#             messages.insert(0, SystemMessage(content=system_message))
+
+#     llm = llm or llm_default
+
+#     if tools:
+#         llm = llm.bind_tools(tools)
+#         if tool_choice:
+#             llm = llm.with_config({"tool_choice": tool_choice})
+#     if response_format:
+#         llm = llm.with_config({"response_format": response_format})
+
+#     return call_llm_with_retries(
+#         llm,
+#         messages,
+#         expect_json=expect_json,
+#     )
+
+# 재택근무용 ollama 호출 버전
 def call_smartbee(
     messages: list,
     system_message: str,
     tools: list = None,
     tool_choice: str = "auto",
-    response_format: dict = None,
-    llm=None,
-    expect_json=True
+    response_format: dict = None,  # Ollama는 무시됨
+    llm=None,                      # 무시됨
+    expect_json=True              # 처리 방식은 동일하게 유지
 ):
-    llm_default = ChatOpenAI(
-        model="gpt-4o",
-        openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
-        temperature=0,
+
+    # 🛠️ 한글 응답 지시 추가
+    system_message = (
+        f"{system_message.strip()} "
+        "모든 답변은 반드시 **한국어로** 작성하세요. 영어로 답하지 마세요."
     )
+
+    if system_message:
+        if len(messages) > 0 and messages[0].type.title().lower() == "system":
+            messages[0].content = system_message
+        else:
+            messages.insert(0, SystemMessage(content=system_message))
     if system_message:
         if len(messages) > 0 and messages[0].type.title().lower() == "system":
             messages[0].content = system_message
         else:
             messages.insert(0, SystemMessage(content=system_message))
 
-    llm = llm or llm_default
+    model_kwargs = {}
+    invoke_kwargs = {}
 
     if tools:
-        llm = llm.bind_tools(tools)
-        if tool_choice:
-            llm = llm.with_config({"tool_choice": tool_choice})
-    if response_format:
-        llm = llm.with_config({"response_format": response_format})
+        model_kwargs["tools"] = tools
+        invoke_kwargs["tool_choice"] = tool_choice
 
-    return call_llm_with_retries(
-        llm,
-        messages,
-        expect_json=expect_json,
-    )
+    try:
+        llm = ChatOllama(
+            base_url="http://host.docker.internal:11434",
+            streaming=True,
+            callbacks=[StreamingStdOutCallbackHandler()],
+            temperature=0,
+            model="llama3:8b",
+            format="json" if expect_json else None,
+            **model_kwargs
+        )
+
+        response = llm.invoke(messages, **invoke_kwargs)
+        raw_content = response
+        if expect_json:
+            cleaned = raw_content
+            logging.info(f"[raw_content]]{cleaned}")
+            if cleaned.startswith("```"):
+                cleaned = "\n".join(
+                    line for line in cleaned.splitlines()
+                    if not line.strip().startswith("```")
+                )
+                logging.info(f"[cleaned]]{json.loads(cleaned)}")
+            return json.loads(cleaned)
+        else:
+            return raw_content
+
+    except Exception as e:
+        raise ValueError(f"API 오류: {str(e)}")
+
 
 
 def tool_to_openai_function(tool_obj):

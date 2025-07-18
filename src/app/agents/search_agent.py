@@ -74,28 +74,59 @@ def execute_step(state: Dict[str, Any]) -> Dict[str, Any]:
         raise
 
     tool_calls = response.get("tool_calls", [])
-    logging.info(f"[tool_calls]{tool_calls}")
+    # logging.info(f"[tool_calls]{tool_calls}")
     if tool_calls:
         tool = tool_calls[0]["function"]["name"]
         args = json.loads(tool_calls[0]["function"]["arguments"])
+        result = None
+        result_metadata = {}
+
         if tool == "prod_meta_search":
-            _, result = prod_meta_search(args["query"])
+            result_dict = prod_meta_search(args["query"])
+            result = result_dict.get("result")
+            result_metadata = result_dict.get("result_metadata", {})
             state["product_meta"] = result
         elif tool == "get_service_info":
             state["user_info"] = get_service_info(args["svc_mgmt_num"])
         elif tool == "get_subscribed_products":
             state["user_info"] = get_subscribed_products(args["svc_mgmt_num"])
-        state["past_steps"].append((task, str(result)))
+
+        state["past_steps"].append({
+            "task": task,
+            "tool": tool,
+            "query": args,
+            "result": result,
+            "result_metadata": result_metadata
+        })
     return state
 
 def replan_step(state: Dict[str, Any]) -> Dict[str, Any]:
-    system_message = f"""You are responsible for the Re-plan stage of LangGraph.
-        Query: {state["input"]}
-        Plan: {state["plan"]}
-        Results: {state["past_steps"]}
-        Return updated plan or final response.
-        If replan needed -> {{"plan": [...]}}, else -> {{"response": "..."}}
+    # 1. 실패한 step 모으기
+    failed_steps = []
+    for step in state.get("past_steps", []):
+        metadata = step.get("result_metadata", {})
+        if not metadata.get("validated", False):
+            failed_steps.append({
+                "task": step.get("task"),
+                "tool": step.get("tool"),
+                "llm_feedback": metadata.get("llm_response", "N/A"),
+                "notes": metadata.get("notes", "")
+            })
+
+    # 2. System prompt 구성
+    system_message = f"""
+        당신은 LangGraph의 검증자 역할입니다.
+
+        - 아래의 tool 실행 결과 중 문제가 있는 항목이 있다면 plan을 다시 작성해야 합니다.
+        - 문제가 없다면 최종 응답을 작성하세요.
+
+        Input: {state["input"]}
+        Plan: {json.dumps(state["plan"], ensure_ascii=False, indent=2)}
+        Results: {json.dumps(state["past_steps"], ensure_ascii=False, indent=2)}
+        Errors: {json.dumps(failed_steps, ensure_ascii=False, indent=2)}
     """
+
+    # 3. LLM 호출
     response = call_smartbee(
         messages=[],
         system_message=system_message,
@@ -103,6 +134,8 @@ def replan_step(state: Dict[str, Any]) -> Dict[str, Any]:
         response_format={"type": "json_object"},
         expect_json=True,
     )
+
+    # 4. 결과 해석
     try:
         parsed = json.loads(response.content)
         if "plan" in parsed:
@@ -111,6 +144,7 @@ def replan_step(state: Dict[str, Any]) -> Dict[str, Any]:
             state["response"] = parsed["response"]
     except Exception:
         state["response"] = response.content
+
     return state
 
 def should_end(state: Dict[str, Any]) -> str:

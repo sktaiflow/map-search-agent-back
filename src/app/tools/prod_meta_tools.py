@@ -60,54 +60,99 @@ CYPHER_GENERATION_PROMPT = PromptTemplate(
 
 @tool(parse_docstring=True)
 def prod_meta_search(query: str):
-    """
-    Provides detailed search results for SKTelecom's mobile plans, subscription conditions, additional services, roaming options, and benefitial offers.
-    Takes a user query, generates a Cypher query, and returns the result from the graph database in text format.
+    graph = Neo4jGraph(
+        url="bolt://neo4j-gds-apoc-n10s:7687",
+        username="neo4j",
+        password="neo4jpassword",
+        enhanced_schema=True,
+        sanitize=True,
+    )
 
-    Args:
-        query (str): User's query in Korean
-
-    Returns:
-        dict: Cypher query and search results in text format
-    """
+    chain = GraphCypherQAChain.from_llm(
+        ChatOpenAI(
+            model="gpt-4o",
+            openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
+            temperature=0,
+            streaming=True,
+        ),
+        cypher_prompt=CYPHER_GENERATION_PROMPT,
+        graph=graph,
+        return_intermediate_steps=True,
+        validate_cypher=True,
+    )
 
     try:
-        graph = Neo4jGraph(
-            url="bolt://neo4j-gds-apoc-n10s:7687",
-            username="neo4j",
-            password="neo4jpassword",
-            enhanced_schema=True,
-            sanitize=True,
-        )
+        result = chain.run(query)
+        generated_cypher = chain.intermediate_steps.get("generated_cypher", "")
 
-        # LangChain 초기화
-        chain = GraphCypherQAChain.from_llm(
-            ChatOpenAI(
-                model="gpt-4o-mini",
-                openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
-                streaming=True,
-                temperature=0,
-            ),
-            cypher_prompt=CYPHER_GENERATION_PROMPT,
-            graph=graph,
-            verbose=True,
-            allow_dangerous_requests=True,
-            return_intermediate_steps=True,
-            return_direct=True,
-            validate_cypher=True,
-        )
+        # Validation prompt: is the result valid and relevant?
+        validation_prompt = f"""
+            다음은 사용자의 질문에 대해 생성된 Cypher 쿼리와 결과입니다.
+            이 쿼리와 결과가 적절한지 판단하고, 문제 있다면 개선된 Cypher를 제안하세요.
 
-        # 쿼리 실행
-        chain_result = chain.invoke({"query": query})
-        logger.info(f"Chain result: {chain_result}")
-        
-        # Cypher 쿼리와 결과 추출
-        cypher = chain_result["intermediate_steps"][0]["query"]
-        result_json = json.dumps(chain_result["result"], ensure_ascii=False, indent=2)
+            - 타당하다면: "정상" 이라고만 답변하세요.
+            - 타당하지 않다면: 개선된 쿼리를 다음 형식으로 반환하세요:
+            {{"cypher": "MATCH ..."}}
 
-        return cypher, result_json
+            질문: {query}
+
+            생성된 쿼리:
+            {generated_cypher}
+
+            결과:
+            {result}
+        """
+
+        validation_response = call_smartbee(
+            messages=[HumanMessage(content=validation_prompt)],
+            system_message="당신은 Cypher 쿼리 품질 검토자입니다.",
+            tools=None,
+            expect_json=False
+        ).content.strip("```").strip()
+
+        if validation_response == "정상":
+            return {
+                "cypher": generated_cypher,
+                "result": result,
+                "result_metadata": {"validated": True, "repaired": False}
+            }
+
+        # LLM이 개선 쿼리를 반환한 경우
+        try:
+            parsed = json.loads(validation_response)
+            if "cypher" in parsed:
+                repaired_cypher = parsed["cypher"]
+                repaired_result = graph.query(repaired_cypher)
+                return {
+                    "cypher": repaired_cypher,
+                    "result": str(repaired_result),
+                    "result_metadata": {
+                        "validated": True,
+                        "repaired": True,
+                        "original_cypher": generated_cypher
+                    }
+                }
+        except Exception as e:
+            return {
+                "cypher": generated_cypher,
+                "result": result,
+                "result_metadata": {
+                    "validated": False,
+                    "repaired": False,
+                    "error": f"LLM 응답 파싱 실패: {str(e)}"
+                }
+            }
+
+        # validation_response가 JSON도 아니고 "정상"도 아닌 경우
+        return {
+            "cypher": generated_cypher,
+            "result": result,
+            "result_metadata": {
+                "validated": False,
+                "repaired": False,
+                "llm_response": validation_response
+            }
+        }
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()  # 서버 로그에 스택 트레이스 출력
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        return {"error": str(e)}
