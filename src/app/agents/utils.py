@@ -8,7 +8,20 @@ from langchain_neo4j import Neo4jGraph
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai import ChatOpenAI
 
+from src.app.tools.tool_registry import tool_registry
+
 logging.basicConfig(level=logging.INFO)
+
+def resolve_tool(tool_name: str, args: dict) -> dict:
+    if tool_name not in tool_registry:
+        raise ValueError(f"Unknown tool: {tool_name}")
+    
+    tool_def = tool_registry[tool_name]
+    fn = tool_def["func"]
+    input_keys = tool_def.get("args", [])
+    filtered_args = {k: args[k] for k in input_keys if k in args}
+
+    return fn(**filtered_args)
 
 
 def call_llm_with_retries(
