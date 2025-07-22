@@ -1,7 +1,5 @@
 from langchain.tools import tool
 
-from src.app.agents.utils import call_smartbee
-
 
 @tool(parse_docstring=True)
 def get_service_info(svc_mgmt_num: str):
@@ -116,5 +114,6 @@ def thinking_tool(query: str, current_step: str, past_steps: list):
 
     현재 단계에 대한 생각을 정리해주세요.
     """
+    from src.app.agents.llm_caller import call_smartbee
     response = call_smartbee(system_message=prompt_str, tools=[])
     return response.content
