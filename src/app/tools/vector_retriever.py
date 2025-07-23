@@ -1,0 +1,105 @@
+import asyncio
+import logging
+import os
+from typing import Dict, List, Optional
+
+import asyncpg
+import numpy as np
+from openai import OpenAI
+
+logger = logging.getLogger(__name__)
+
+class FewShotRetriever:
+    def __init__(self):
+        self.openai_client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_API_BASE", "https://aihub-api.sktelecom.com/aihub/v2/sandbox")
+        )
+        self.db_config = {
+            'host': os.getenv("PGVECTOR_HOST", "localhost"),
+            'port': int(os.getenv("PGVECTOR_PORT", 5432)),
+            'database': os.getenv("PGVECTOR_DBNAME", "vectordb"),
+            'user': os.getenv("PGVECTOR_USER", "postgres"),
+            'password': os.getenv("PGVECTOR_PASSWORD")
+        }
+    
+    async def get_embedding(self, text: str) -> List[float]:
+        """텍스트의 임베딩 벡터 생성"""
+        try:
+            response = self.openai_client.embeddings.create(
+                model="text-embedding-3-small",
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            logger.error(f"임베딩 생성 실패: {e}")
+            return None
+    
+    async def find_similar_examples(
+        self, 
+        query: str, 
+        top_k: int = 3,
+        min_similarity: float = 0.5
+    ) -> List[Dict]:
+        """유사한 Few-shot 예시 검색"""
+        
+        # 1. 쿼리 임베딩 생성
+        query_embedding = await self.get_embedding(query)
+        if not query_embedding:
+            return []
+        
+        # 2. 벡터 유사도 검색
+        conn = await asyncpg.connect(**self.db_config)
+        try:
+            # PostgreSQL vector 형식으로 변환
+            vector_str = '[' + ','.join(map(str, query_embedding)) + ']'
+            
+            sql = """
+                SELECT 
+                    natural_language,
+                    cypher_query,
+                    quality_score,
+                    domain_tags,
+                    1 - (nl_embedding <=> $1::vector) AS similarity
+                FROM few_shot_examples 
+                ORDER BY nl_embedding <=> $1::vector
+                LIMIT $2
+            """
+            
+            rows = await conn.fetch(sql, vector_str, top_k)
+            
+            # 3. 유사도 필터링 및 결과 처리
+            examples = []
+            for row in rows:
+                if row['similarity'] >= min_similarity:
+                    examples.append({
+                        'natural_language': row['natural_language'],
+                        'cypher_query': row['cypher_query'],
+                        'similarity': float(row['similarity']),
+                        'quality_score': float(row['quality_score']),
+                        'domain_tags': row['domain_tags']
+                    })
+            
+            # 4. 사용 통계 업데이트 (비동기)
+            if examples:
+                await self._update_usage_stats(conn, [ex['natural_language'] for ex in examples])
+            
+            return examples
+            
+        finally:
+            await conn.close()
+    
+    async def _update_usage_stats(self, conn, used_examples: List[str]):
+        """사용 통계 업데이트"""
+        try:
+            await conn.execute("""
+                UPDATE few_shot_examples 
+                SET usage_count = usage_count + 1,
+                    last_used_at = CURRENT_TIMESTAMP
+                WHERE natural_language = ANY($1::text[])
+            """, used_examples)
+        except Exception as e:
+            logger.warning(f"사용 통계 업데이트 실패: {e}")
+
+# 전역 인스턴스
+few_shot_retriever = FewShotRetriever()
