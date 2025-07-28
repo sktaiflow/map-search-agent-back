@@ -1,6 +1,8 @@
-from typing import Dict, List, Set, Tuple, Callable, Optional, Any
-from langchain_neo4j import Neo4jGraph
 import re
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+
+from langchain_neo4j import Neo4jGraph
+
 
 class CustomNeo4jGraph(Neo4jGraph):
     def __init__(

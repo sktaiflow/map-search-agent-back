@@ -1,5 +1,5 @@
 from src.app.agents.schema import GraphState
-from src.app.agents.utils import call_pe_tool_v2
+from src.app.agents.utils import call_smartbee
 
 
 def get_planning_prompt(schema: str, **kwargs):
@@ -43,24 +43,24 @@ def optimize_prompt(state: GraphState) -> GraphState:
     iterations = state["iterations"]
 
     SYSTEM_PROMPT = """You are a coding assistant specialized in Python programming and problem solving tasks with coding.
-   Structure your answer in the following format:
-   ---
-   prompt: <Optimized code code generation user prompt to answer user question>
-   reason: <Justification on optimization of coding logic in python to solve user question>
-   ---
+        Structure your answer in the following format:
+        ---
+        prompt: <Optimized code code generation user prompt to answer user question>
+        reason: <Justification on optimization of coding logic in python to solve user question>
+        ---
    """
     ## extract question
     if len(messages) == 1:
         question = messages[0]["content"]
     ## creater user prompt
     USER_PROMPT = f"""Optimize following user prompt for generation of clean python coding logic to solve user question.\n
-   If you need to use any external libraries, include a comment at the top of the code listing the required pip installations\n
-   Provide justification why your response can solve the user question with step by step coding logic .\n\n
-  
-   USER QUESTION:\n {question}\n\n
-  
-   Respond only with one best user problem optimized prompt and reason for coding logic.\n
-   Ensure generate code include main function to run the code.\n
+        If you need to use any external libraries, include a comment at the top of the code listing the required pip installations\n
+        Provide justification why your response can solve the user question with step by step coding logic .\n\n
+        
+        USER QUESTION:\n {question}\n\n
+        
+        Respond only with one best user problem optimized prompt and reason for coding logic.\n
+        Ensure generate code include main function to run the code.\n
    """
 
     print("### STEP 1.1: User Question:", question)
@@ -71,11 +71,10 @@ def optimize_prompt(state: GraphState) -> GraphState:
     ]
 
     try:
-        llm_response = call_pe_tool_v2(
-            system_message=system_message,
-            messages=[],
+        llm_response = call_smartbee(
+            system_message=SYSTEM_PROMPT,
+            messages=user_messages,
             tools=[],
-            model_idx=124252,
             response_format={"type": "json_object"},
         )
         code_response = llm_response.choices[0].message
@@ -94,18 +93,18 @@ def optimize_prompt(state: GraphState) -> GraphState:
 
     ## code generation prompts
     CODEGEN_SYSTEM_PROMPT = """You are a coding assistant specialized in Python code generator. Respond only with complete executable Python code, no explanations or comments except for required pip installations at the top.\n
-   If you need to use any external libraries, include a comment at the top of the code listing the required pip installations.\n
-   Structure your answer in the following format:
-   ---
-   Task: <description of the solution>
-   Imports: <required import statements>
-   Code: <executable code block>
-   ---
+        If you need to use any external libraries, include a comment at the top of the code listing the required pip installations.\n
+        Structure your answer in the following format:
+        ---
+        Task: <description of the solution>
+        Imports: <required import statements>
+        Code: <executable code block>
+        ---
    """
     OPTIMIZED_USER_PROMPT = f"""
-   {code_response.parsed.prompt}\n\n
-   Reason: {code_response.parsed.reason}\n\n
-   """
+        {code_response.parsed.prompt}\n\n
+        Reason: {code_response.parsed.reason}\n\n
+    """
     user_messages = [
         {"role": "system", "content": CODEGEN_SYSTEM_PROMPT},
         {"role": "user", "content": OPTIMIZED_USER_PROMPT},

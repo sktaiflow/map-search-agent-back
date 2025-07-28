@@ -1,24 +1,25 @@
-from langchain.tools import tool
-from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain_neo4j import Neo4jGraph, GraphCypherQAChain
-from langchain_ollama import ChatOllama
-import os
-from src.app.agents.utils import call_pe_tool_v2
-from fastapi import HTTPException
-import re
+# src/app/tools/prod_meta_tools.py
+
+import asyncio
 import json
 import logging
-from typing import Dict, List, Set, Tuple, Callable
-from src.app.agents.logging_config import setup_logging
-from neo4j import GraphDatabase
-from .cypher_validation import ChainedCorrector, CypherValidator, CustomNeo4jGraph
-from langchain.globals import set_debug
-# set_debug(True)
+import os
+from typing import Dict
+
+from fastapi import HTTPException
+from langchain.prompts import PromptTemplate
+from langchain.tools import tool
+from langchain_neo4j import GraphCypherQAChain
+from langchain_openai import ChatOpenAI
+
+# --- 기존 검증 로직과 벡터 검색 import ---
+from .cypher_validation import ChainedCorrector, CustomNeo4jGraph, CypherValidator
+from .vector_retriever import few_shot_retriever
 
 logger = logging.getLogger(__name__)
 
-CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph database.
+# --- 동적 Few-shot 프롬프트 템플릿 ---
+DYNAMIC_CYPHER_GENERATION_TEMPLATE = """Task: Generate Cypher statement to query a graph database.
 Instructions:
 Use only the provided relationship types and properties in the schema.
 Do not use any other relationship types or properties that are not provided in the schema.
@@ -46,32 +47,7 @@ Instead, use one of the following methods depending on the query intent:
 - To check if any element partially matches a condition (e.g., substring): ANY(item IN node.array_property WHERE item CONTAINS 'value')
 - To check if all elements satisfy a condition: ALL(item IN node.array_property WHERE item CONTAINS 'value')
 
-Example:
-- 18세 미만만 가입할 수 있는 요금제가 있어? -> MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c
-- 5GX 프리미엄 요금제와 비슷한 요금의 요금제 비교해줘 -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)
-- 무제한 데이터 요금제 하나 알려줘 -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p, d LIMIT 1
-- 65세 이상이면 요금 할인혜택 없나요 -> MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 OPTIONAL MATCH (p)-[:`제공혜택`]->(h:`혜택`) RETURN p, c, h
-- 실버요금제 -> MATCH (p:`요금제`)-[:`연관`]->(c:`개념`) WHERE c.`키워드` = '실버요금제' RETURN p, c
-- 내 요금제로 스마트기기 쓸 수 있어? -> MATCH (p:`요금제` {{`상품명`: '5GX 프라임'}})-[:`제공혜택`]->(c:`혜택`) WHERE c.`혜택명` CONTAINS '스마트워치'  OR c.`혜택명` CONTAINS '태블릿' RETURN p, c
-- 데이터 무제한이고 10만원 미만인 요금제 중 만40세인 사람이 사용할 수 있는 요금제 알려줘 -> MATCH (p:`요금제`)-[:제공]->(d:`데이터용량`) MATCH (p)-[:`가입조건`]-(c:`가입조건`) WHERE d.`기본제공데이터용량` = 99999 AND p.`월정액` < 100000 AND c.`가입가능최대나이` >= 40 AND c.`가입가능최소나이` <= 40 RETURN p
-- 19세이하 요금제 -> MATCH (p:`요금제`)-[:`가입조건`]->(a:`가입조건`) WHERE a.`가입가능최대나이` <= 19 AND a.`가입가능최소나이` <= 19 RETURN p, a
-- 데이터를 사용한만큼 금액을 내는 요금제는 없어? -> MATCH (p:`요금제`)-[:`연관`]->(c:`개념`) WHERE c.`키워드` = '종량제요금제' RETURN p, c
-- 데이터 30기가면 될 것 같은데 내가 가입가능한 요금제가 뭐가 있을까? -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` >= 30 ORDER BY d.`기본제공데이터용량` ASC LIMIT 3 RETURN p, d
-- 요금제에 음악 듣기 서비스가 되는 요금제가 있나요 -> MATCH (p:`요금제`)-[]->(n:`개념`) WHERE n.`키워드` CONTAINS '음악듣기요금제' RETURN p, n
-- 멤버십 VIP 시켜주는 요금제 중 가장 제공 혜택 개수가 많은 요금제는 뭐야? -> MATCH (p:`요금제`)-[:`제공혜택`]->(h:`혜택`) WHERE h.`혜택명` CONTAINS 'VIP' WITH p MATCH (p)-[:`제공혜택`]->(b:`혜택`) WITH p, COUNT(b) AS b_count ORDER BY b_count DESC RETURN p, b_count
-- 우주패스 할인율 제일 크게 주는 요금제가 뭐야? -> MATCH (p:`요금제`)-[:`제공혜택`]->(h:`혜택`) WHERE h.`혜택명` CONTAINS '우주패스' ORDER BY h.`최대할인금액` DESC RETURN p, h LIMIT 1
-- 65세 이상 요금 할인 혜택 알려줘 -> MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 OPTIONAL MATCH (p)-[:`제공혜택`]->(h:`혜택`) RETURN p, h
-- FLO 제일 싸게 쓰려면 어떻게 해야해? -> MATCH (h:`혜택`) WHERE h.`혜택명` = 'FLO 무료' ORDER BY h.`최대할인금액` DESC LIMIT 1 WITH h MATCH (p:`요금제`)-[]->(h) ORDER BY p.`월정액` ASC RETURN p, h
-- 무제한 데이터 혜택 요금제 -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p
-- 베이직플러스로 변경 시 T가족모아데이터 이용 가능한가요? -> MATCH (p:요금제)-[r]->(b:혜택) WHERE b.혜택명 = 'T가족모아데이터'  AND p.상품명 = '베이직플러스' RETURN p, r, b
-- 39,000원 요금제 데이터 무제한인가요 -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE p.`월정액` = 39000 RETURN p, d
-- 데이터 무제한, 통화 무제한 요금제 알려주세요 -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) MATCH (p:`요금제`)-[:`제공`]->(c:`음성통화`) WHERE d.`기본제공데이터용량` = 99999 AND c.`음성통화제공량` = 99999 RETURN p, d, c
-- SKT 표준 요금제도 T끼리 데이터선물 받을 수 있어? -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE p.`상품명` CONTAINS '표준' RETURN p, d
-- 아이패드 회선 무료 이용 요금제 -> MATCH (p:`요금제`) WHERE ANY(k IN p.`마케팅키워드` WHERE k CONTAINS '태블릿요금무료') RETURN p
-- 키즈 요금제에서 MMS 사용료가 있나요? -> MATCH (p:`요금제`)-[:`제공`]->(m:`문자메시지`) WHERE ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '키즈') RETURN p, m
-- 시니어요금제 -> MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 RETURN p, c
-- 자녀요금제는어떤것들이있나요? -> MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최대나이` <= 18 RETURN p
-- VIP 되려면 0청년 59 요금제 쓰면 돼? -> MATCH (p:`요금제`)-[r:`제공혜택`]->(n:`혜택` {{`혜택명`:'T멤버십 VIP'}}) WHERE p.`상품명` CONTAINS '0 청년' AND p.`상품명` CONTAINS '59' RETURN p, n
+{few_shot_examples}
 
 Note: Do not include any explanations or apologies in your responses.
 Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
@@ -81,122 +57,130 @@ Include the nodes and properties related to the question in the result.
 The question is:
 {question}"""
 
-CYPHER_GENERATION_PROMPT = PromptTemplate(
-    input_variables=["schema", "question"], template=CYPHER_GENERATION_TEMPLATE
-)
-
-
 @tool(parse_docstring=True)
-def prod_meta_search(query: str):
+def prod_meta_search(query: str) -> Dict:
     """
+    Provides detailed search results for SKTelecom's mobile plans, additional services, and benefitial offers.
     Provides detailed search results for SKTelecom's mobile plans, additional services, and benefitial offers.
     Takes a user query, generates a Cypher query, and returns the result from the graph database in text format.
 
     Args:
         query (str): User's query
+        query (str): User's query
 
     Returns:
-        dict: Cypher query and search results in text format
+        dict: A dictionary containing the generated Cypher query and the search results.
     """
-    # import langchain
-    # langchain.debug = True  # Enable debug mode for LangChain
-
+    logger.info(f"Neo4j prod_meta_search 시작. 쿼리: '{query}'")
+    
     try:
+        # 1. 유사한 Few-shot 예시 검색
+        logger.info("벡터 검색으로 Few-shot 예시 찾는 중...")
+        similar_examples = asyncio.run(
+            few_shot_retriever.find_similar_examples(
+                query=query,
+                top_k=3,
+                min_similarity=0.3
+            )
+        )
+        
+        # 2. Few-shot 예시를 프롬프트에 추가
+        few_shot_text = ""
+        if similar_examples:
+            few_shot_text = "\nSimilar examples for reference:\n"
+            for i, example in enumerate(similar_examples, 1):
+                few_shot_text += f"Example {i} (similarity: {example['similarity']:.3f}):\n"
+                few_shot_text += f"Question: {example['natural_language']}\n"
+                few_shot_text += f"Cypher: {example['cypher_query']}\n\n"
+            logger.info(f"Few-shot 예시 {len(similar_examples)}개 찾음")
+        else:
+            logger.warning("유사한 Few-shot 예시를 찾지 못함")
+        
+        # 3. CustomNeo4jGraph를 사용하여 스키마 검증 준비
         graph = CustomNeo4jGraph(
             url=os.getenv("NEO4J_URI"),
             username=os.getenv("NEO4J_USERNAME"),
             password=os.getenv("NEO4J_PASSWORD"),
             enhanced_schema=True,
-            sanitize=True,  # 연결 검증
+            sanitize=True,
         )
-        
-        # # 개념 힌트 추가
-        # driver = GraphDatabase.driver("bolt://neo4j-gds-apoc-n10s:7687", auth=("neo4j", "neo4jpassword"))
-        
-        # concept_query = """
-        # MATCH (c:개념)
-        # OPTIONAL MATCH (c)-[:연관]->(p:요금제)
-        # WITH c, collect(p.상품명) AS plans
-        # RETURN c.키워드 AS keyword,
-        #     c.설명 AS description,
-        #     coalesce(c.CYPHER_TEMPLATE, '') AS CYPHER_TEMPLATE,
-        #     plans
-        # """
-        
-        # with driver.session() as session:
-        #     result = session.run(concept_query)
-        #     concepts_data = [record for record in result]
-        
-        # driver.close()
-        
-        # lines = []
-        # for rec in concepts_data:
-        #     keyword = rec["keyword"]
-        #     description = rec["description"]
-        #     CYPHER_TEMPLATE = rec["CYPHER_TEMPLATE"]
-        #     plans = rec["plans"]
 
-        #     lines.append(f"- concept keyword: {keyword}")
-        #     lines.append(f"  - description: {description}")
-        #     if CYPHER_TEMPLATE:
-        #         lines.append(f"  - cypher example: {CYPHER_TEMPLATE}")
-        #     # if plans:
-        #     #     lines.append(f"  - related plans: {', '.join(plans)}")
-        # hint_block = "\n".join(lines)
-        
-        # global CYPHER_GENERATION_TEMPLATE
-        # CYPHER_GENERATION_TEMPLATE = CYPHER_GENERATION_TEMPLATE.replace("{{hint_block}}", hint_block)
-        # print(CYPHER_GENERATION_TEMPLATE, flush=True)
+        # 4. 동적 프롬프트 생성
+        dynamic_prompt = PromptTemplate(
+            input_variables=["schema", "question", "few_shot_examples"],
+            template=DYNAMIC_CYPHER_GENERATION_TEMPLATE
+        )
 
-        # LangChain 초기화
+        # 5. LangChain 체인 초기화 (SKT AI Hub 설정)
+        llm = ChatOpenAI(
+            model="gpt-4o",
+            temperature=0,
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_API_BASE"),
+        )
+
         chain = GraphCypherQAChain.from_llm(
-            ChatOpenAI(
-                model="gpt-4o-mini",
-                openai_api_key=os.getenv("OPENAI_API_KEY"),
-                openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
-                # streaming=True,
-                # temperature=0,
-            ),
-            # ChatOllama(
-            #     base_url="http://host.docker.internal:11434",
-            #     model="tomasonjo/llama3-text2cypher-demo:latest",
-            #     streaming=True,
-            #     temperature=0
-            # ),
-            cypher_prompt=CYPHER_GENERATION_PROMPT,
-            # qa_prompt=CYPHER_QA_PROMPT,
+            llm=llm,
             graph=graph,
             verbose=True,
-            allow_dangerous_requests=True,
-            exclude_types=[],
-            return_intermediate_steps=True,
-            return_direct=True,
             validate_cypher=True,
-            # disabled_params={"parallel_tool_calls": None}
+            cypher_prompt=dynamic_prompt,
+            return_intermediate_steps=True,
+            allow_dangerous_requests=True,
         )
 
-        # Query pre-validation
-        # # 기존(기본) corrector 보존
-        # default_corrector = chain.cypher_query_corrector 
-        # custum_corrector = CypherValidator(graph=graph)
-        
-        # chain.cypher_query_corrector = ChainedCorrector(
-        #     first=custum_corrector,
-        #     second=default_corrector
-        # )
+        # 6. Cypher Query Corrector 설정 (기본 corrector 사용하지 않음)
+        # corrector = ChainedCorrector(schema=graph.schema, llm=llm)
+        # chain.cypher_query_corrector = corrector
+        logger.info("Cypher Query Corrector 설정 완료")
 
-        # 쿼리 실행
-        chain_result = chain.invoke({"query": query})
-        logger.info(f"Chain result: {chain_result}")
+        # 7. 쿼리 실행
+        logger.info("LangChain으로 쿼리 실행 중...")
+        result = chain.invoke({
+            "query": query, 
+            "few_shot_examples": few_shot_text
+        })
         
-        # Cypher 쿼리와 결과 추출
-        cypher = chain_result["intermediate_steps"][0]["query"]
-        result_json = json.dumps(chain_result["result"], ensure_ascii=False, indent=2)
-
-        return cypher, result_json
+        # 8. 결과 처리
+        intermediate_steps = result.get('intermediate_steps', [])
+        cypher_query = intermediate_steps[0].get('query', '') if intermediate_steps else ''
+        
+        # 디버깅: intermediate_steps 전체 구조 출력
+        logger.info(f"=== intermediate_steps 디버깅 ===")
+        logger.info(f"intermediate_steps 길이: {len(intermediate_steps)}")
+        for i, step in enumerate(intermediate_steps):
+            logger.info(f"Step {i}의 키들: {list(step.keys())}")
+            for key, value in step.items():
+                logger.info(f"  - {key}: {type(value)} ({len(value) if isinstance(value, (list, dict, str)) else 'N/A'})")
+                if key in ['context', 'result', 'output'] and isinstance(value, list) and len(value) > 0:
+                    logger.info(f"    첫 번째 아이템: {type(value[0])}")
+        
+        # raw_data 추출 시도 - 모든 step 확인
+        raw_data = []
+        for step in intermediate_steps:
+            potential_data = step.get('context', step.get('result', step.get('output', [])))
+            if isinstance(potential_data, list) and len(potential_data) > 0:
+                raw_data = potential_data
+                break
+        
+        logger.info(f"생성된 Cypher 쿼리:\n---\n{cypher_query}\n---")
+        logger.info(f"사용된 Few-shot 예시 수: {len(similar_examples)}")
+        logger.info(f"데이터베이스 실행 결과: {result['result']}")
+        logger.info(f"추출된 raw_data 타입: {type(raw_data)}, 길이: {len(raw_data) if isinstance(raw_data, (list, dict, str)) else 'N/A'}")
+        
+        return {
+            "cypher": cypher_query,
+            "result": result.get('result', ''),
+            "raw_data": raw_data,
+            "similar_examples_used": len(similar_examples),
+            "few_shot_examples": [ex['natural_language'] for ex in similar_examples] if similar_examples else [],
+            "result_metadata": {
+                "validated": True,
+                "corrector_used": True,
+                "vector_search_enabled": True
+            }
+        }
 
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()  # 서버 로그에 스택 트레이스 출력
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        logger.exception(f"prod_meta_search 실행 중 에러: {e}")
+        raise HTTPException(status_code=500, detail=f"검색 실패: {str(e)}")

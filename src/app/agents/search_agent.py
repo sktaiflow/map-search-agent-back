@@ -1,274 +1,227 @@
-import asyncio
-import operator
+# src/app/agents/search_agent.py
+
 import json
-
-from typing import Annotated, List, Tuple, Optional, Dict, Any
-from typing_extensions import TypedDict
-from pydantic import BaseModel, Field
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
-from langgraph.graph import END, StateGraph, START
-from langgraph.graph.message import add_messages
-from langchain_core.messages import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-    FunctionMessage,
-)
-from langchain_core.callbacks import StreamingStdOutCallbackHandler
-
-from src.app.tools import get_service_info, get_subscribed_products, prod_meta_search, thinking_tool
-from src.app.agents.utils import tool_to_openai_function, call_pe_tool_v2, call_ollama
-from src.app.agents.utils import neo4j_connect
-from src.app.agents.schema import PlanExecuteState, Plan, Response
-
 import logging
-from src.app.agents.logging_config import setup_logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List
 
+from langchain_core.messages import HumanMessage
+from langgraph.graph import END, START, StateGraph
+
+from src.app.agents.call_helpers import (
+    complete_args,
+    create_final_response,
+    store_result,
+    validate_steps,
+)
+from src.app.agents.llm_caller import call_smartbee
+from src.app.agents.prompts import PLANNING_SYS_PROMPT
+from src.app.agents.schema.schema import AgentState
+from src.app.tools.tool_registry import resolve_tool, tool_registry
+
+# 로거 설정
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# tools = [get_service_info, get_subscribed_products, prod_meta_search]
-tools = [get_service_info, prod_meta_search]
-openai_tools = [tool_to_openai_function(t) for t in tools]
-openai_tools_json = json.dumps(openai_tools, ensure_ascii=False, indent=2)
-user_search_tools = [get_service_info, get_subscribed_products]
-user_search_tools_json = [tool_to_openai_function(t) for t in user_search_tools]
 
-# graph = neo4j_connect(env="openwebui", enhanced_schema=True)
+# --- 노드 함수 정의: 그래프의 각 단계를 구성 ---
 
-PLANNING_SYS_PROMPT = f"""You are responsible for the Plan stage of LangGraph. 
-Given inputs userQuery and userId, return an array of execution steps combining the available tools.
-Each element in the output array must include:
+def plan_step(state: AgentState) -> AgentState:
+    """
+    사용자의 입력을 바탕으로 작업 계획(plan)을 수립합니다.
+    LLM을 호출하여 도구 사용 순서와 방법을 결정합니다.
+    """
+    logger.info("--- 🧠 계획 수립 단계 시작 ---")
 
-- step: execution order number
-- tool: name of the tool to call
-- reason: the reason why this tool is needed for the current step
-
-Available tools:
-{openai_tools_json}
-
-Additional rules:
-- '이상' means 'greater than or equal to', and '이하' means 'less than or equal to'. 
-- '초과' means 'greater than', and '미만' means 'less than'.
-- If there is a number in the query and there are not '이상', '이하', '초과', or '미만' in the query, you can assume that the user is looking for an exact match.
-- '무제한' means 'unlimited', and it should be replaced with 99999.
-- If a question has the word '할인' (discount) in it, assume that the user actually wants to know about '무료' (complimentary) benefits too
-- Use get_service_info tool only if the query contains the first person pronoun and the user's information is needed generate the cypher.
-- Determine whether to send the query directly to prod_meta_search or add additional information to the original query, and decide the order of the steps and the tools to be used. 
-For example, if the user query requires comparison with the user's current plan, you should first use get_service_info to retrieve the name of user's current plan, and then use prod_meta_search to find it and other plans to be compared.
-
-Examples
-- {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "무제한 요금제에 대한 정보가 필요함"}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "가입 조건을 확인하기 위해 고객의 개인 정보가 필요함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객 정보를 기반으로 해당 고객이 가입할 수 있는 10만원 이하의 요금제 중 넷플릭스 할인 혜택을 포함하는 요금제를 찾아야 함."}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "고객이 현재 가입되어 있는 요금제가 무엇인지 알아내야함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객의 현재 요금제 정보를 기반으로 고객의 현재 요금제보다 월정액이 저렴한 무제한 요금제를 찾아야함."}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "24세의 고객이 가입할 수 있는 wavve 할인 혜택이 있는 가장 싼 요금제를 찾아야 함"}}]}}
-
-Adhere strictly to this format and output only the JSON array without any additional styling or emphasis.
-"""
-# - {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the unlimited plan"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "To get the basic information of the user"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the Netflix discount plan under the 100000 won and available for the user. It requries basic information from previous steps"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "To get the monthly price of the user's current plan"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the unlimited plan cheaper than the user's current plan. Information about user's current plan could be gotten from this step"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the cheapest plan with Wavve discount for the 24 years old"}}]}}
-
-
-
-# class PlanExecuteState(TypedDict):
-#     input: str
-#     plan: List[str]
-#     past_steps: Optional[List[Tuple]]
-#     response: Optional[str]
-#     user_info: Optional[Dict[str, Any]]
-#     product_meta: Optional[Dict[str, Any]]
-#     messages: Annotated[list, add_messages]
-#     cypher: Optional[str]
-
-
-# # 플래너 모델
-# class Plan(BaseModel):
-#     steps: List[str] = Field(description="Plan steps")
-
-
-# # 리플래너 모델
-# class Response(BaseModel):
-#     response: str
-
-
-def execute_step(state: PlanExecuteState):
-    plan = state["plan"]
-    task = plan[0]["reason"]
-    # logger.info(state)
-
-    # 실제로는 아래에서 task에 따라 분기하여 실행
-    system_message = f"""User ID: "123123123312"
-User query: {state["input"]}
-Plan: {plan}
-Results from past steps: {state["past_steps"] if state["past_steps"] else "None, it's the first step."}
-Task of current step: {task}"""
-    
-    # print(f"System message: {system_message}", flush=True)
-    # 툴 선택
-    resp = call_pe_tool_v2(
-        system_message=system_message,
-        messages=[
-            HumanMessage(
-                content="""Select the most appropriate tool for the user's query at the current stage."""
-            )
-        ],
-        tools=tools,
-    )
-    # print(f"LLM response: {resp.model_dump_json()}", flush=True)
-
-    # Ollama를 사용할 경우
-    # resp = call_ollama(
-    #     system_message=system_message,
-    #     messages=[
-    #         HumanMessage(
-    #             content="Select the most appropriate tool for the user's query at the current stage."
-    #         )
-    #     ],
-    #     tools=openai_tools,
-    # )
-
-    # logger.info(f"LLM response: {resp.model_dump_json()}")
-
-    tool_calls = resp.additional_kwargs.get("tool_calls", [])
-            
-    # 툴 호출
-    if tool_calls:
-        tool_call = tool_calls[0]
-        tool_name = tool_call["function"]["name"]
-        tool_args = json.loads(tool_call["function"]["arguments"])
-
-        if tool_name == "prod_meta_search":
-            cypher, result = prod_meta_search(tool_args["query"])
-            state["product_meta"] = result
-            state["cypher"] = cypher
-        elif tool_name == "get_service_info":
-            result = get_service_info(tool_args["svc_mgmt_num"])
-            state["user_info"] = result
-        # 현재 버전에서는 위의 두 가지만 사용하도록 되어 있음 (2025-06-18 기준)
-        elif tool_name == "get_subscribed_products":
-            result = get_subscribed_products(tool_args["svc_mgmt_num"])
-            state["user_info"] = result
-        elif tool_name == "thinking_tool":
-            result = thinking_tool(tool_args["query"], state["past_steps"])
+    # ✅ 첫 계획일 때만 초기화
+    if state.get("retry_count") is None:
+        state["retry_count"] = 0
+        state["max_retries"] = 3
+        state["past_steps"] = []
+        logger.info("🔄 재시도 카운터 초기화")
     else:
-        result = resp.content
-    # past_steps에 기록
-    if not result:
-        result = "No results found."
-    state["past_steps"].append((task, str(result)))
-    # plan에서 현재 step 제거
-    # state["plan"] = plan[1:]
+        logger.info(f"🔄 재계획 시도 {state.get('retry_count', 0)}/{state.get('max_retries', 3)}")
 
-    return state
+    # 도구 목록을 JSON 형식으로 준비
+    tool_list_json = json.dumps(
+        [{"name": name} for name in tool_registry.keys()],
+        indent=2,
+        ensure_ascii=False
+    )
+    
+    # 프롬프트 포맷팅
+    formatted_prompt = PLANNING_SYS_PROMPT.format(tool_list_json=tool_list_json)
 
-
-def plan_step(state: PlanExecuteState):
-    messages = state["messages"]
-    system_message = PLANNING_SYS_PROMPT
-
-    llm_response = call_pe_tool_v2(
-        system_message=system_message,
+    response = call_smartbee(
         messages=[HumanMessage(content=state["input"])],
-        tools=[],
+        system_message=formatted_prompt,
         response_format={"type": "json_object"},
-        model_idx=124252,
+        expect_json=True,
     )
     
-    # Ollama를 사용할 경우
-    # llm_response = call_ollama(
-    #     system_message=system_message,
-    #     messages=[HumanMessage(content=state["input"])],
-    #     tools=[],
-    #     format="json",
-    # )
+    plan = response.get("plan", [])
+    logger.info(f"수립된 계획: {plan}")
+    
+    state["plan"] = plan
+    # ✅ 재계획 시에는 past_steps를 절대 초기화하지 않음
+    if "past_steps" not in state:
+        state["past_steps"] = []  # 첫 계획일 때만 초기화
+        logger.info("🔄 첫 계획: past_steps 초기화")
+    else:
+        logger.info(f"🔄 재계획: 기존 past_steps 유지 (현재 {len(state.get('past_steps', []))}개)")
+    return state
+
+def execute_single_step(state: AgentState, step: dict) -> None:
+    """
+    계획에 명시된 단일 작업을 실행합니다.
+    인자가 부족할 경우 LLM을 통해 보완을 시도합니다.
+    """
+    tool = step["tool"]
+    task = step["reason"]
+    args = step.get("args")
+
+    logger.info(f"  - 🔨 단일 작업 실행 시작: {tool} (이유: {task})")
+
+    if not args or not isinstance(args, dict):
+        logger.warning(f"    - 인자 누락! LLM으로 보완 시도: {tool}")
+        args = complete_args(tool, args, state)
+        if args is None:
+            logger.error(f"    - 인자 보완 실패. {tool} 실행 중단.")
+            # 실패 기록을 남기는 로직을 추가할 수 있습니다.
+            return
 
     try:
-        parsed = json.loads(llm_response.content)
-        state["plan"] = parsed["plan"]
-    except Exception:
-        # 혹시 JSON이 아니면, 간단 파싱
-        state["plan"] = [llm_response.content]
-    
-    state["past_steps"] = []
+        result = resolve_tool(tool, args)
+        store_result(state, tool, result, task, args)
+    except Exception as e:
+        logger.exception(f"  - 🔥 '{tool}' 실행 중 심각한 에러 발생!")
+        # 에러 발생 시에도 past_steps에 실패 기록을 남깁니다.
+        state["past_steps"].append({
+            "task": task,
+            "tool": tool,
+            "query": args,
+            "result": None,
+            "result_metadata": {
+                "validated": False,
+                "exception": True,
+                "error": str(e)
+            }
+        })
+
+
+def execute_steps(state: AgentState) -> AgentState:
+    """
+    수립된 계획(plan)에 따라 병렬 또는 순차적으로 작업을 실행합니다.
+    """
+    logger.info("--- 🚀 작업 실행 단계 시작 ---")
+    plan = state.get("plan", [])
+    if not plan:
+        logger.warning("실행할 계획이 없습니다.")
+        return state
+
+    # ✨ [리팩토링] 병렬/순차 실행 로직 명확화
+    # 계획의 모든 단계가 'parallel' 모드일 때만 병렬 실행
+    if all(step.get("mode") == "parallel" for step in plan):
+        logger.info("모든 작업을 병렬로 실행합니다.")
+        with ThreadPoolExecutor(max_workers=len(plan)) as executor:
+            # 각 스레드에 state의 복사본을 전달하여 동시성 문제를 방지할 수 있으나,
+            # 현재 store_result가 리스트에 append만 하므로 일단 그대로 둡니다.
+            futures = [executor.submit(execute_single_step, state, step) for step in plan]
+            for future in as_completed(futures):
+                future.result()  # 작업 중 발생한 예외를 확인하기 위해 .result() 호출
+    else:
+        logger.info("작업을 순차적으로 실행합니다.")
+        for step in plan:
+            execute_single_step(state, step)
+            
+    logger.info("--- ✅ 작업 실행 단계 완료 ---")
     return state
 
 
-def replan_step(state: PlanExecuteState):
-    # logger.info(state["input"])
-    # logger.info(state["plan"])
-    # logger.info(state["past_steps"])
-    # 임시로 제거한 프롬프트
-    # When generating the final response, if there is a markdown table, use its style.
-    system_message = f"""You are responsible for the Re-plan stage of LangGraph.
-Based on the following state, you need to update the plan or generate a final response.
+def replan_or_finish(state: AgentState) -> str:
+    """재계획 또는 종료 결정"""
+    logger.info("--- 🔄 replan_or_finish 함수 호출됨 ---")
+    
+    # 재시도 제한 로직
+    retry_count = state.get("retry_count", 0)
+    max_retries = state.get("max_retries", 3)
+    past_steps = state.get("past_steps", [])
+    
+    logger.info(f"🔄 현재 retry_count: {retry_count}/{max_retries}")
+    logger.info(f"🔄 past_steps 개수: {len(past_steps)}")
+    
+    # 실패 작업 확인
+    failed_steps = [step for step in past_steps 
+                   if not step.get("result_metadata", {}).get("validated", True)]
+    
+    logger.info(f"🔄 실패한 단계 개수: {len(failed_steps)}")
+    
+    if failed_steps:
+        logger.info(f"🔄 실패 단계 발견: {[step.get('task', 'Unknown') for step in failed_steps]}")
+        if retry_count >= max_retries:
+            # 포기
+            logger.info(f"🔄 최대 재시도 횟수 도달, 포기")
+            state["response"] = f"죄송합니다. {max_retries}번 시도했지만 처리할 수 없었습니다."
+            return "final_response"
+        else:
+            # 재시도 (무한 루프 방지)
+            past_steps_count = len(state.get("past_steps", []))
+            if past_steps_count > 20:
+                logger.warning(f"🔄 무한 루프 방지: past_steps가 {past_steps_count}개로 너무 많음, 강제 종료")
+                state["response"] = "처리 중 무한 루프가 감지되어 종료합니다."
+                return "final_response"
+            
+            new_retry_count = retry_count + 1
+            state["retry_count"] = new_retry_count
+            logger.info(f"🔄 재시도 결정: retry_count를 {retry_count} -> {new_retry_count}로 증가")
+            return "planner"
+    else:
+        # 성공
+        logger.info("🔄 모든 단계 성공, 최종 응답으로 이동")
+        return "final_response"
 
-Initial query from user: {state["input"]}
-
-Original plan: {state["plan"]}
-
-Results from previous steps: {state["past_steps"]}
-
-If there are remaining steps, return them as an array. -> {{"plan": [{{"step": 1, "tool": ..., "reason": ...}}, ...]}}
-If there are no remaining steps, based on the intial query and the results from previous steps, generate a final response in Korean and return it. -> {{"response": 최종 답변}}
-When generating the final response, never ignore single entity from the results of previous steps.
-If there are more than one entity in the results, use a markdown table to make it easy to compare between entities.
-When generating the final response, think back to the intent of the original question and consider which parts of the results from the previous steps you need to use to generate the response that meets the intent of the original question.
-
-If you re-plan the steps, please return the new plan based on following information.
-
-{PLANNING_SYS_PROMPT}"""
-
-    llm_response = call_pe_tool_v2(
-        system_message=system_message,
-        messages=[],
-        tools=[],
-        model_idx=124252,
-        response_format={"type": "json_object"},
-    )
-
-    # LLM 응답에서 action 파싱
-    try:
-        parsed = json.loads(llm_response.content)
-        if "plan" in parsed:
-            state["plan"] = parsed["plan"]
-        elif "response" in parsed:
-            state["response"] = parsed["response"]
-        # if "response" in parsed.get("action", {}):
-        #     state["response"] = parsed["action"]["response"]
-        # else:
-        #     state["plan"] = parsed["action"]["steps"]
-    except Exception:
-        # 예외 처리
-        state["response"] = llm_response.content
+def create_final_response_node(state: AgentState) -> AgentState:
+    """
+    최종 응답을 생성하는 노드 함수입니다.
+    """
+    logger.info("--- 🎯 최종 응답 생성 노드 시작 ---")
+    
+    failed_steps = validate_steps(state)
+    updated_state = create_final_response(state, failed_steps)
+    logger.info(f"🔧 create_final_response 반환 키들: {list(updated_state.keys())}")
+    state.update(updated_state)
+    
+    logger.info(f"✅ 최종 응답 생성 완료. state 키들: {list(state.keys())}")
+    logger.info(f"🔧 reasoning 확인: {'reasoning' in state}")
+    logger.info(f"🔧 raw_results 확인: {'raw_results' in state}")
     return state
 
 
-def should_end(state: PlanExecuteState):
-    # logger.info(f"Checking if should end: {state.get('response')}")
-    return END if state.get("response") else "agent"
+# --- LangGraph 워크플로우 정의 ---
 
+workflow = StateGraph(AgentState)
 
-workflow = StateGraph(PlanExecuteState)
+# 1. 노드 추가: 그래프의 각 상태(작업 단위)를 정의
 workflow.add_node("planner", plan_step)
-workflow.add_node("agent", execute_step)
-workflow.add_node("replan", replan_step)
+workflow.add_node("agent", execute_steps)
+workflow.add_node("final_response", create_final_response_node)  # ✅ 새 노드 추가
 
-workflow.add_edge(START, "planner")
+# 2. 엣지(연결선) 추가: 상태 간의 흐름을 정의
+workflow.set_entry_point("planner")
 workflow.add_edge("planner", "agent")
-workflow.add_edge("agent", "replan")
-# workflow.add_conditional_edges("replan", should_end, ["agent", END])
-workflow.add_conditional_edges("replan", should_end)
+workflow.add_edge("final_response", END)  # ✅ 최종 응답 노드에서 종료
+
+# 3. 조건부 엣지 추가: 특정 조건에 따라 다음 상태를 결정
+workflow.add_conditional_edges(
+    "agent",
+    replan_or_finish,  # 이 함수가 "final_response" 또는 "planner"를 반환
+    {
+        "final_response": "final_response",  # ✅ 최종 응답 노드로 이동
+        "planner": "planner"  # 재계획으로 이동
+    }
+)
+
+# 4. 그래프 컴파일
 app = workflow.compile()
 
-# inputs = {"input": "5만원 이하 넷플릭스 할인 요금제 알려줘"}
-
-
-# async def main():
-#     async for event in app.astream(inputs):
-#         print(event)
-
-
-# if __name__ == "__main__":
-#     asyncio.run(main())
+logger.info("LangGraph 워크플로우가 성공적으로 컴파일되었습니다.")

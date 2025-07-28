@@ -1,5 +1,4 @@
 from langchain.tools import tool
-from src.app.agents.utils import call_pe_tool_v2
 
 
 @tool(parse_docstring=True)
@@ -115,5 +114,6 @@ def thinking_tool(query: str, current_step: str, past_steps: list):
 
     현재 단계에 대한 생각을 정리해주세요.
     """
-    response = call_pe_tool_v2(system_message=prompt_str, tools=[])
+    from src.app.agents.llm_caller import call_smartbee
+    response = call_smartbee(system_message=prompt_str, tools=[])
     return response.content
