@@ -130,9 +130,15 @@ def prod_meta_search(query: str) -> Dict:
         )
 
         # 6. Cypher Query Corrector 설정 (기본 corrector 사용하지 않음)
-        # corrector = ChainedCorrector(schema=graph.schema, llm=llm)
-        # chain.cypher_query_corrector = corrector
-        logger.info("Cypher Query Corrector 설정 완료")
+        # Query pre-validation
+        # # 기존(기본) corrector 보존
+        # default_corrector = chain.cypher_query_corrector 
+        # custum_corrector = CypherValidator(graph=graph)
+        # chain.cypher_query_corrector = ChainedCorrector(
+        #     first=custum_corrector,
+        #     second=default_corrector
+        # )
+        # logger.info("Cypher Query Corrector 설정 완료")
 
         # 7. 쿼리 실행
         logger.info("LangChain으로 쿼리 실행 중...")
