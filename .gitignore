@@ -180,3 +180,4 @@ plugins/graph-data-science.jar
 .vscode
 
 .env
+CLAUDE.md

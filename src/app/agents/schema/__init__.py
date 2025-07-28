@@ -1,13 +1,5 @@
-"""Gmail tools for email assistant."""
-
-from src.app.agents.schema.schema import (
-    PlanExecuteState,
-    Plan,
-    Response,
-)
+from src.app.agents.schema.schema import AgentState
 
 __all__ = [
-    "PlanExecuteState",
-    "Plan",
-    "Response",
+    "AgentState",
 ]

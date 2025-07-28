@@ -1,0 +1,128 @@
+services:
+  neo4j:
+    image: neo4j:5.26.3
+    container_name: neo4j-gds-apoc-n10s
+    networks:
+      - my_network
+    ports:
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+      - "7473:7473" # HTTPS
+    environment:
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*,n10s.*,apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=gds.*,n10s.*,apoc.*
+      - NEO4J_dbms_unmanaged__extension__classes=n10s.endpoint=/rdf
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+      - NEO4J_server_memory_heap_initial__size=1G
+      - NEO4J_server_memory_heap_max__size=2G
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+    volumes:
+      - ../infra/neo4j:/plugins
+      - ../data/neo4j_data:/data
+      - ../import:/var/lib/neo4j/import
+      - ../logs/neo4j_logs:/logs
+    restart: unless-stopped
+
+  jupyter:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: jupyter-container
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=mytoken
+      - APP_ENV=${APP_ENV}
+      - DEBUG=${DEBUG}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - SECRETS_DIR=${SECRETS_DIR}
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USERNAME=${NEO4J_USERNAME}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - NEO4J_DATABASE=${NEO4J_DATABASE}
+      - PGVECTOR_HOST=${PGVECTOR_HOST}
+      - PGVECTOR_PORT=${PGVECTOR_PORT}
+      - PGVECTOR_DBNAME=${PGVECTOR_DBNAME}
+      - PGVECTOR_USER=${PGVECTOR_USER}
+      - PGVECTOR_PASSWORD=${PGVECTOR_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - my_network
+    volumes:
+      - ..:/app
+    depends_on:
+      - neo4j
+  backendapi:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: fastapi-container
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=${APP_ENV}
+      - DEBUG=${DEBUG}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - SECRETS_DIR=${SECRETS_DIR}
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USERNAME=${NEO4J_USERNAME}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - NEO4J_DATABASE=${NEO4J_DATABASE}
+      - PGVECTOR_HOST=${PGVECTOR_HOST}
+      - PGVECTOR_PORT=${PGVECTOR_PORT}
+      - PGVECTOR_DBNAME=${PGVECTOR_DBNAME}
+      - PGVECTOR_USER=${PGVECTOR_USER}
+      - PGVECTOR_PASSWORD=${PGVECTOR_PASSWORD}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
+    networks:
+      - my_network
+    volumes:
+      - ..:/app
+    command: [ "uvicorn", "src.app.agents.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
+    depends_on:
+      - neo4j
+      - pgvector
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui-container
+    ports:
+      - "3000:8080"
+    networks:
+      - my_network
+    environment:
+      - OPENAI_API_BASE=http://backendapi:8000/v1
+    depends_on:
+      - neo4j
+      - backendapi
+  pgvector:
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: pgvector-container
+    environment:
+      - POSTGRES_DB=${PGVECTOR_DBNAME:-vectordb}
+      - POSTGRES_USER=${PGVECTOR_USER:-postgres}
+      - POSTGRES_PASSWORD=${PGVECTOR_PASSWORD:-password}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --locale=C
+    ports:
+      - "${PGVECTOR_PORT:-5432}:5432"
+    networks:
+      - my_network
+    volumes:
+      - ./data/pgvector:/var/lib/postgresql/data
+      - ./init-scripts/pgvector:/docker-entrypoint-initdb.d # 초기 스크립트용
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PGVECTOR_USER:-postgres} -d ${PGVECTOR_DBNAME:-vectordb}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  my_network:
+    # Custom network, allowing containers to resolve each other by name
+    driver: bridge
