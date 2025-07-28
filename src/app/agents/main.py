@@ -156,12 +156,33 @@ async def agent_endpoint(request: ChatCompletionRequest):
                                     # 3단계: 인사이트
                                     insights = response_data.get('insights', '인사이트가 없습니다.')
                                     
+                                    # Cypher 쿼리 추출
+                                    cypher_query = ""
+                                    if 'past_steps' in node_state:
+                                        # past_steps에서 prod_meta_search 결과 찾기
+                                        for step in node_state.get('past_steps', []):
+                                            if step.get('tool') == 'prod_meta_search':
+                                                # step의 result에서 cypher 정보 추출
+                                                step_result = step.get('result', {})
+                                                if isinstance(step_result, dict) and 'cypher' in step_result:
+                                                    actual_cypher = step_result['cypher']
+                                                    if actual_cypher:
+                                                        cypher_query = actual_cypher
+                                                        break
+                                                # 백업: query args에서 검색어 추출
+                                                elif isinstance(step.get('query'), dict) and 'query' in step['query']:
+                                                    search_query = step['query']['query']
+                                                    cypher_query = f"검색 쿼리: '{search_query}'\n(실제 생성된 Cypher는 로그 참조)"
+                                                    break
+                                    
+                                    cypher_section = f"\n\n**🔍 생성된 Cypher 쿼리:**\n```cypher\n{cypher_query}\n```" if cypher_query else ""
+                                    
                                     final_content = f"""
 **🎯 인사이트 및 추천:**
 {insights}
 
 **📝 검색 결과 요약:**
-{summary}
+{summary}{cypher_section}
 
 **📊 원본 데이터:**
 ```json
