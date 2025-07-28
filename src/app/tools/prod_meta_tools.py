@@ -58,15 +58,14 @@ The question is:
 {question}"""
 
 @tool(parse_docstring=True)
-def prod_meta_search(query: str) -> Dict:
+def prod_meta_search(query: str, original_input: str = None) -> Dict:
     """
-    Provides detailed search results for SKTelecom's mobile plans, additional services, and benefitial offers.
     Provides detailed search results for SKTelecom's mobile plans, additional services, and benefitial offers.
     Takes a user query, generates a Cypher query, and returns the result from the graph database in text format.
 
     Args:
-        query (str): User's query
-        query (str): User's query
+        query (str): Processed query for Neo4j Cypher generation
+        original_input (str, optional): Original user input for vector similarity search
 
     Returns:
         dict: A dictionary containing the generated Cypher query and the search results.
@@ -74,15 +73,31 @@ def prod_meta_search(query: str) -> Dict:
     logger.info(f"Neo4j prod_meta_search 시작. 쿼리: '{query}'")
     
     try:
-        # 1. 유사한 Few-shot 예시 검색
+        # 1. 유사한 Few-shot 예시 검색 (하이브리드 방식)
         logger.info("벡터 검색으로 Few-shot 예시 찾는 중...")
+        
+        # 우선 original_input으로 검색 시도
+        search_text = original_input if original_input else query
+        logger.info(f"벡터 검색 입력: '{search_text}'")
+        
         similar_examples = asyncio.run(
             few_shot_retriever.find_similar_examples(
-                query=query,
+                query=search_text,
                 top_k=3,
                 min_similarity=0.3
             )
         )
+        
+        # original_input으로 찾지 못했으면 query로 재시도
+        if not similar_examples and original_input and original_input != query:
+            logger.info("original_input으로 검색 실패, 정제된 query로 재시도...")
+            similar_examples = asyncio.run(
+                few_shot_retriever.find_similar_examples(
+                    query=query,
+                    top_k=3,
+                    min_similarity=0.3
+                )
+            )
         
         # 2. Few-shot 예시를 프롬프트에 추가
         few_shot_text = ""

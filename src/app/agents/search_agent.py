@@ -91,6 +91,10 @@ def execute_single_step(state: AgentState, step: dict) -> None:
             return
 
     try:
+        # prod_meta_search의 경우 original_input 추가
+        if tool == "prod_meta_search" and "original_input" not in args:
+            args["original_input"] = state.get("input")
+            
         result = resolve_tool(tool, args)
         store_result(state, tool, result, task, args)
     except Exception as e:
@@ -150,9 +154,9 @@ def replan_or_finish(state: AgentState) -> str:
     logger.info(f"🔄 현재 retry_count: {retry_count}/{max_retries}")
     logger.info(f"🔄 past_steps 개수: {len(past_steps)}")
     
-    # 실패 작업 확인
-    failed_steps = [step for step in past_steps 
-                   if not step.get("result_metadata", {}).get("validated", True)]
+    # 실패 작업 확인 (validate_steps 함수 사용)
+    from src.app.agents.call_helpers import validate_steps
+    failed_steps = validate_steps(state)
     
     logger.info(f"🔄 실패한 단계 개수: {len(failed_steps)}")
     
@@ -174,6 +178,13 @@ def replan_or_finish(state: AgentState) -> str:
             new_retry_count = retry_count + 1
             state["retry_count"] = new_retry_count
             logger.info(f"🔄 재시도 결정: retry_count를 {retry_count} -> {new_retry_count}로 증가")
+            
+            # 최대 재시도 횟수에 도달하면 강제 종료
+            if new_retry_count >= max_retries:
+                logger.warning(f"🔄 최대 재시도 횟수 {max_retries} 도달, 강제 종료")
+                state["response"] = {"raw_data": [], "summary": f"해당 조건의 요금제를 찾을 수 없습니다.", "insights": "다른 검색 조건으로 시도해보세요."}
+                return "final_response"
+            
             return "planner"
     else:
         # 성공

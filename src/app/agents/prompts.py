@@ -12,7 +12,7 @@ PLANNING_SYS_PROMPT = """
 - "parallel": 병렬로 실행 가능함
 
 각 도구는 필요 시 다음 인자를 갖습니다:
-- get_service_info, get_subscribed_products → {{ "user_id": "..." }}
+- get_service_info, get_subscribed_products → {{ "svc_mgmt_num": "7022044239" }}
 - prod_meta_search → {{ "query": "..." }}
 
 출력 예시:
