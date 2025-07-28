@@ -61,9 +61,11 @@ The question is:
 def prod_meta_search(query: str) -> Dict:
     """
     Provides detailed search results for SKTelecom's mobile plans, additional services, and benefitial offers.
+    Provides detailed search results for SKTelecom's mobile plans, additional services, and benefitial offers.
     Takes a user query, generates a Cypher query, and returns the result from the graph database in text format.
 
     Args:
+        query (str): User's query
         query (str): User's query
 
     Returns:
