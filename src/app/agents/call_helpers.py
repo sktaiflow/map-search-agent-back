@@ -98,7 +98,7 @@ def complete_args(tool: str, args: dict, state: AgentState) -> dict:
 
 def store_result(state: AgentState, tool: str, result: dict, task: str, args: dict):
     if tool == "prod_meta_search":
-        state["product_meta"] = result.get("result")
+        state["product_meta"] = result.get("raw_data", [])
     elif tool in {"get_service_info", "get_subscribed_products"}:
         state["user_info"] = result
 
@@ -134,27 +134,53 @@ def create_final_response(state: AgentState, failed_steps: list) -> AgentState:
     logger.info(f"입력된 state 키들: {list(state.keys())}")
     logger.info(f"failed_steps: {failed_steps}")
     
+    # 실제 검색된 데이터 추출
+    product_data = state.get("product_meta", [])
+    
     system_message = f"""
-    당신은 LangGraph의 검증자이며, 모든 tool 실행 결과를 바탕으로 최종 응답을 생성해야 합니다.
+    당신은 SKT 요금제 전문 상담원입니다. 검색된 실제 데이터를 바탕으로 고객에게 실질적으로 도움이 되는 3단계 응답을 JSON 형식으로 생성하세요.
 
-    요구되는 출력 형식은 다음과 같은 JSON 형식입니다:
+    요구되는 JSON 출력 형식:
     {{
-      "response": "최종 자연어 응답 (사용자에게 보여질 형태)",
-      "reasoning": "이 응답을 도출한 이유나 추론 근거"
+      "response": {{
+        "raw_data": [실제 검색된 상품들의 핵심 정보를 구조화],
+        "summary": "가격대별, 혜택별로 분류한 구체적 요약",
+        "insights": "실제 추천과 주의사항, 비교분석"
+      }},
+      "reasoning": "분석 근거"
     }}
 
-    다음은 context입니다:
+    사용자 질문: {state["input"]}
 
-    질문: {state["input"]}
+    검색된 실제 데이터:
+    {json.dumps(product_data, ensure_ascii=False, indent=2)}
 
-    계획:
-    {json.dumps(state["plan"], ensure_ascii=False, indent=2)}
-
-    수행된 단계 및 결과:
-    {json.dumps(state["past_steps"], ensure_ascii=False, indent=2)}
-
-    실패한 단계:
-    {json.dumps(failed_steps, ensure_ascii=False, indent=2)}
+    JSON 응답 작성 가이드라인:
+    
+    1. raw_data 작성 시:
+    - 상품명, 월정액, 주요혜택, 가입조건을 필수 포함
+    - 원본 데이터의 구체적 수치와 조건을 그대로 활용
+    - 단순히 "무제한 데이터" 같은 일반론 금지
+    
+    2. summary 작성 시:
+    - 가격대별로 분류 (6만원대, 7만원대, 9만원대, 10만원대 등)
+    - 연령제한 있는 요금제와 일반 요금제 구분
+    - 온라인 전용 vs 일반 가입채널 구분
+    - 구체적인 혜택별 분류 (디즈니+, 유튜브, 스마트기기 등)
+    
+    3. insights 작성 시:
+    - 실제 가격 비교와 가성비 분석
+    - 연령, 사용패턴에 따른 구체적 추천
+    - 약정할인 적용 시 실제 절약 금액
+    - 각 혜택의 실제 가치 분석 (예: 디즈니+ 월 구독료 9,900원)
+    - 주의사항: 가입조건, 연령제한, 온라인 전용 등
+    
+    절대 금지사항:
+    - "다양한 혜택을 제공합니다" 같은 뻔한 표현
+    - "고려해보세요" 같은 추상적 조언
+    - 구체적 수치 없는 일반론
+    
+    반드시 유효한 JSON 형식으로만 응답하세요.
     """
     
     try:
@@ -173,17 +199,38 @@ def create_final_response(state: AgentState, failed_steps: list) -> AgentState:
 
         # 응답 처리
         if isinstance(response_dict, dict):
-            final_response = response_dict.get("response", "응답이 생성되지 않았습니다.")
+            response_data = response_dict.get("response", {})
             reasoning = response_dict.get("reasoning", "추론 정보 없음")
             
-            state["response"] = final_response
+            # 3단계 구조로 response 설정
+            if isinstance(response_data, dict):
+                state["response"] = {
+                    "raw_data": response_data.get("raw_data", state.get("product_meta", [])),
+                    "summary": response_data.get("summary", "요약 정보가 생성되지 않았습니다."),
+                    "insights": response_data.get("insights", "인사이트가 생성되지 않았습니다.")
+                }
+            else:
+                # 레거시 호환: 기존 문자열 응답을 insights로 처리
+                state["response"] = {
+                    "raw_data": state.get("product_meta", []),
+                    "summary": "검색 결과를 요약하지 못했습니다.",
+                    "insights": response_data if isinstance(response_data, str) else "응답이 생성되지 않았습니다."
+                }
+            
             state["reasoning"] = reasoning
             
-            logger.info(f"✅ 최종 응답 설정 완료: {final_response[:100]}...")
+            logger.info(f"✅ 3단계 응답 설정 완료")
+            logger.info(f"  - raw_data: {len(state['response']['raw_data']) if isinstance(state['response']['raw_data'], list) else 'N/A'} items")
+            logger.info(f"  - summary: {state['response']['summary'][:50]}...")
+            logger.info(f"  - insights: {state['response']['insights'][:50]}...")
         else:
             logger.error(f"❌ LLM 응답이 dict가 아님: {type(response_dict)}")
-            state["response"] = "최종 응답을 생성하는 데 실패했습니다."
-            state["reasoning"] = f"파싱 실패. LLM 응답: {response_dict}"
+            state["response"] = {
+                "raw_data": state.get("product_meta", []),
+                "summary": "응답 생성에 실패했습니다.",
+                "insights": f"파싱 실패. LLM 응답: {response_dict}"
+            }
+            state["reasoning"] = "응답 파싱 실패"
 
         # raw_results 설정
         state["raw_results"] = {
@@ -196,6 +243,10 @@ def create_final_response(state: AgentState, failed_steps: list) -> AgentState:
 
     except Exception as e:
         logger.exception("🔥 create_final_response 함수에서 예외 발생")
-        state["response"] = f"최종 응답 생성 중 오류가 발생했습니다: {str(e)}"
+        state["response"] = {
+            "raw_data": state.get("product_meta", []),
+            "summary": f"응답 생성 중 오류가 발생했습니다: {str(e)}",
+            "insights": "예외로 인해 인사이트를 생성할 수 없습니다."
+        }
         state["reasoning"] = "예외 발생으로 인한 오류"
         return state

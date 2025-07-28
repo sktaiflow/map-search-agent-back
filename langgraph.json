@@ -3,7 +3,7 @@
     "graphs": {
       "search_agent": "src.app.agents.search_agent:app"
     },
-    "env": "./.env",
+    "env": "./docker/.env",
     "python_version": "3.12",
     "dependencies": [
       "."

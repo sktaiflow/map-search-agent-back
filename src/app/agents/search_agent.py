@@ -32,7 +32,16 @@ def plan_step(state: AgentState) -> AgentState:
     LLM을 호출하여 도구 사용 순서와 방법을 결정합니다.
     """
     logger.info("--- 🧠 계획 수립 단계 시작 ---")
-    
+
+    # ✅ 첫 계획일 때만 초기화
+    if state.get("retry_count") is None:
+        state["retry_count"] = 0
+        state["max_retries"] = 3
+        state["past_steps"] = []
+        logger.info("🔄 재시도 카운터 초기화")
+    else:
+        logger.info(f"🔄 재계획 시도 {state.get('retry_count', 0)}/{state.get('max_retries', 3)}")
+
     # 도구 목록을 JSON 형식으로 준비
     tool_list_json = json.dumps(
         [{"name": name} for name in tool_registry.keys()],
@@ -54,9 +63,13 @@ def plan_step(state: AgentState) -> AgentState:
     logger.info(f"수립된 계획: {plan}")
     
     state["plan"] = plan
-    state["past_steps"] = []  # 계획을 새로 수립할 때마다 과거 기록은 초기화
+    # ✅ 재계획 시에는 past_steps를 절대 초기화하지 않음
+    if "past_steps" not in state:
+        state["past_steps"] = []  # 첫 계획일 때만 초기화
+        logger.info("🔄 첫 계획: past_steps 초기화")
+    else:
+        logger.info(f"🔄 재계획: 기존 past_steps 유지 (현재 {len(state.get('past_steps', []))}개)")
     return state
-
 
 def execute_single_step(state: AgentState, step: dict) -> None:
     """
@@ -126,20 +139,46 @@ def execute_steps(state: AgentState) -> AgentState:
 
 
 def replan_or_finish(state: AgentState) -> str:
-    """
-    실행 결과를 검증하고, 다음 단계를 결정합니다.
-    """
-    logger.info("--- 🤔 재계획 또는 종료 결정 단계 시작 ---")
-    failed_steps = validate_steps(state)
+    """재계획 또는 종료 결정"""
+    logger.info("--- 🔄 replan_or_finish 함수 호출됨 ---")
     
-    if not failed_steps:
-        logger.info("모든 작업 성공. 최종 응답 생성으로 이동.")
-        return "final_response"  # 최종 응답 생성 노드로 이동
+    # 재시도 제한 로직
+    retry_count = state.get("retry_count", 0)
+    max_retries = state.get("max_retries", 3)
+    past_steps = state.get("past_steps", [])
+    
+    logger.info(f"🔄 현재 retry_count: {retry_count}/{max_retries}")
+    logger.info(f"🔄 past_steps 개수: {len(past_steps)}")
+    
+    # 실패 작업 확인
+    failed_steps = [step for step in past_steps 
+                   if not step.get("result_metadata", {}).get("validated", True)]
+    
+    logger.info(f"🔄 실패한 단계 개수: {len(failed_steps)}")
+    
+    if failed_steps:
+        logger.info(f"🔄 실패 단계 발견: {[step.get('task', 'Unknown') for step in failed_steps]}")
+        if retry_count >= max_retries:
+            # 포기
+            logger.info(f"🔄 최대 재시도 횟수 도달, 포기")
+            state["response"] = f"죄송합니다. {max_retries}번 시도했지만 처리할 수 없었습니다."
+            return "final_response"
+        else:
+            # 재시도 (무한 루프 방지)
+            past_steps_count = len(state.get("past_steps", []))
+            if past_steps_count > 20:
+                logger.warning(f"🔄 무한 루프 방지: past_steps가 {past_steps_count}개로 너무 많음, 강제 종료")
+                state["response"] = "처리 중 무한 루프가 감지되어 종료합니다."
+                return "final_response"
+            
+            new_retry_count = retry_count + 1
+            state["retry_count"] = new_retry_count
+            logger.info(f"🔄 재시도 결정: retry_count를 {retry_count} -> {new_retry_count}로 증가")
+            return "planner"
     else:
-        logger.warning(f"실패한 작업이 있습니다: {failed_steps}")
-        logger.info("재계획이 필요합니다. 계획 단계로 돌아갑니다.")
-        return "planner"  # 재계획
-
+        # 성공
+        logger.info("🔄 모든 단계 성공, 최종 응답으로 이동")
+        return "final_response"
 
 def create_final_response_node(state: AgentState) -> AgentState:
     """
@@ -149,9 +188,12 @@ def create_final_response_node(state: AgentState) -> AgentState:
     
     failed_steps = validate_steps(state)
     updated_state = create_final_response(state, failed_steps)
+    logger.info(f"🔧 create_final_response 반환 키들: {list(updated_state.keys())}")
     state.update(updated_state)
     
     logger.info(f"✅ 최종 응답 생성 완료. state 키들: {list(state.keys())}")
+    logger.info(f"🔧 reasoning 확인: {'reasoning' in state}")
+    logger.info(f"🔧 raw_results 확인: {'raw_results' in state}")
     return state
 
 

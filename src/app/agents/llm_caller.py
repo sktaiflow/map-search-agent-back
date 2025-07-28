@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional, Union
 
 from langchain_core.messages import BaseMessage, SystemMessage
@@ -35,10 +36,11 @@ def call_smartbee(
         Union[Dict, Any]: LLM의 응답입니다. JSON 파싱에 성공하면 dict, 그렇지 않으면 원본 응답 객체를 반환합니다.
     """
     try:
-        # LLM 모델 초기화
+        # LLM 모델 초기화 (SKT AI Hub 환경변수 사용)
         llm = ChatOpenAI(
             model="gpt-4o",
-            openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_API_BASE"),
             temperature=0,
             streaming=False,  # 스트리밍 설정은 호출 방식에 따라 다를 수 있으나, 기본값으로 유지
         )

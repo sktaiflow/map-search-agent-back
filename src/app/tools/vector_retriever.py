@@ -46,6 +46,7 @@ class FewShotRetriever:
         # 1. 쿼리 임베딩 생성
         query_embedding = await self.get_embedding(query)
         if not query_embedding:
+            logger.warning(f"임베딩 생성 실패: {query}")
             return []
         
         # 2. 벡터 유사도 검색
@@ -62,30 +63,30 @@ class FewShotRetriever:
                     domain_tags,
                     1 - (nl_embedding <=> $1::vector) AS similarity
                 FROM few_shot_examples 
+                WHERE 1 - (nl_embedding <=> $1::vector) >= $2
                 ORDER BY nl_embedding <=> $1::vector
-                LIMIT $2
+                LIMIT $3
             """
             
-            rows = await conn.fetch(sql, vector_str, top_k)
+            rows = await conn.fetch(sql, vector_str, min_similarity, top_k)
             
-            # 3. 유사도 필터링 및 결과 처리
+            # 3. 결과 처리
             examples = []
             for row in rows:
-                if row['similarity'] >= min_similarity:
-                    examples.append({
-                        'natural_language': row['natural_language'],
-                        'cypher_query': row['cypher_query'],
-                        'similarity': float(row['similarity']),
-                        'quality_score': float(row['quality_score']),
-                        'domain_tags': row['domain_tags']
-                    })
+                examples.append({
+                    'natural_language': row['natural_language'],
+                    'cypher_query': row['cypher_query'],
+                    'similarity': float(row['similarity']),
+                    'quality_score': float(row['quality_score']),
+                    'domain_tags': row['domain_tags']
+                })
             
-            # 4. 사용 통계 업데이트 (비동기)
-            if examples:
-                await self._update_usage_stats(conn, [ex['natural_language'] for ex in examples])
-            
+            logger.info(f"벡터 검색 결과: {len(examples)}개 (유사도 >= {min_similarity})")
             return examples
             
+        except Exception as e:
+            logger.error(f"벡터 검색 실패: {e}")
+            return []
         finally:
             await conn.close()
     

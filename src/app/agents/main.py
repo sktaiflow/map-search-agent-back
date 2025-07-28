@@ -68,8 +68,16 @@ async def agent_endpoint(request: ChatCompletionRequest):
                         }
                         yield f"data: {json.dumps(header_chunk)}\n\n"
 
-                        # ✅ JSON 본문 라인 단위 출력
-                        pretty_json = json.dumps(node_state, ensure_ascii=False, indent=2)
+                        # ✅ JSON 본문 라인 단위 출력 (큰 데이터 필터링)
+                        filtered_state = {k: v for k, v in node_state.items() 
+                                        if k not in ['product_meta', 'raw_results']}
+                        # 큰 데이터는 요약 정보만 표시
+                        if 'product_meta' in node_state:
+                            filtered_state['product_meta'] = f"[{len(node_state['product_meta'])} items]"
+                        if 'raw_results' in node_state:
+                            filtered_state['raw_results'] = "[filtered for display]"
+                        
+                        pretty_json = json.dumps(filtered_state, ensure_ascii=False, indent=2)
                         for line in pretty_json.splitlines():
                             line_chunk = {
                                 "id": f"chunk-{node_name}-line",
@@ -110,6 +118,14 @@ async def agent_endpoint(request: ChatCompletionRequest):
                 if final_state:
                     logger.info(f"📊 final_state 키들: {list(final_state.keys())}")
                     
+                    # final_state 전체 구조 디버깅
+                    if 'final_response' in final_state:
+                        logger.info(f"🔧 final_response 노드 키들 상세: {list(final_state['final_response'].keys())}")
+                        if 'reasoning' in final_state['final_response']:
+                            logger.info(f"🔧 reasoning 내용: {final_state['final_response']['reasoning'][:100]}...")
+                        if 'raw_results' in final_state['final_response']:
+                            logger.info(f"🔧 raw_results 내용: {final_state['final_response']['raw_results']}")
+                    
                     # 모든 노드의 상태를 확인하여 response가 있는지 찾기
                     final_response_found = False
                     for node_name, node_state in final_state.items():
@@ -119,9 +135,50 @@ async def agent_endpoint(request: ChatCompletionRequest):
                             
                             if "response" in node_state:
                                 logger.info(f"✅ 최종 응답 발견! 노드: {node_name}")
-                                logger.info(f"📝 응답 내용: {node_state['response'][:100]}...")
+                                logger.info(f"🔍 node_state 키들: {list(node_state.keys())}")
+                                logger.info(f"🔍 reasoning 존재: {'reasoning' in node_state}")
+                                logger.info(f"🔍 raw_results 존재: {'raw_results' in node_state}")
                                 
-                                # 최종 응답을 OpenWebUI 형식으로 전송
+                                response_data = node_state['response']
+                                logger.info(f"🔍 response 타입: {type(response_data)}")
+                                
+                                # 3단계 구조 응답 처리
+                                if isinstance(response_data, dict):
+                                    # 1단계: 원본 데이터
+                                    raw_data = response_data.get('raw_data', [])
+                                    raw_data_json = json.dumps(raw_data, ensure_ascii=False, indent=2)
+                                    if len(raw_data_json) > 2000:
+                                        raw_data_json = raw_data_json[:2000] + "...\n(결과가 잘렸습니다)"
+                                    
+                                    # 2단계: 단순 요약
+                                    summary = response_data.get('summary', '요약이 없습니다.')
+                                    
+                                    # 3단계: 인사이트
+                                    insights = response_data.get('insights', '인사이트가 없습니다.')
+                                    
+                                    final_content = f"""
+**🎯 인사이트 및 추천:**
+{insights}
+
+**📝 검색 결과 요약:**
+{summary}
+
+**📊 원본 데이터:**
+```json
+{raw_data_json}
+```
+
+**🤔 추론 과정:**
+{node_state.get('reasoning', '추론 정보 없음')}"""
+                                else:
+                                    # 레거시 호환
+                                    final_content = f"""
+**🎯 최종 답변:**
+{response_data}
+
+**🤔 추론 과정:**
+{node_state.get('reasoning', '추론 정보 없음')}"""
+                                
                                 final_chunk = {
                                     "id": "chatcmpl-final",
                                     "object": "chat.completion.chunk", 
@@ -131,7 +188,7 @@ async def agent_endpoint(request: ChatCompletionRequest):
                                         "index": 0,
                                         "delta": {
                                             "role": "assistant",
-                                            "content": f"\n\n**🎯 최종 답변:**\n{node_state['response']}\n\n**🤔 추론 과정:**\n{node_state.get('reasoning', '추론 정보 없음')}"
+                                            "content": final_content
                                         },
                                         "finish_reason": "stop"
                                     }]

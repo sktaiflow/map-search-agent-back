@@ -23,9 +23,13 @@ class AgentState(TypedDict):
     input: str
     plan: List[PlanStep]
     past_steps: List[PastStep]
-    response: Optional[str]
+    response: Optional[Dict[str, Any]]  # 3단계 구조: {raw_data, summary, insights}
+    reasoning: Optional[str]
+    raw_results: Optional[Dict[str, Any]]
     user_info: Optional[Dict[str, Any]]
     product_meta: Optional[Dict[str, Any]]
     messages: Annotated[list, add_messages]
     cypher: Optional[str]
     step_index: Optional[int]
+    retry_count: Optional[int]
+    max_retries: Optional[int]

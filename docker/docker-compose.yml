@@ -78,6 +78,7 @@ services:
       - PGVECTOR_USER=${PGVECTOR_USER}
       - PGVECTOR_PASSWORD=${PGVECTOR_PASSWORD}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
     networks:
       - my_network
     volumes:
@@ -85,6 +86,7 @@ services:
     command: [ "uvicorn", "src.app.agents.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
     depends_on:
       - neo4j
+      - pgvector
   openwebui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: openwebui-container

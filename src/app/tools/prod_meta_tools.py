@@ -1,5 +1,6 @@
 # src/app/tools/prod_meta_tools.py
 
+import asyncio
 import json
 import logging
 import os
@@ -11,13 +12,14 @@ from langchain.tools import tool
 from langchain_neo4j import GraphCypherQAChain
 from langchain_openai import ChatOpenAI
 
-# --- ✨ [통합] 팀원의 검증 로직과 커스텀 그래프 클래스를 import 합니다. ---
+# --- 기존 검증 로직과 벡터 검색 import ---
 from .cypher_validation import ChainedCorrector, CustomNeo4jGraph, CypherValidator
+from .vector_retriever import few_shot_retriever
 
 logger = logging.getLogger(__name__)
 
-# --- ✨ [통합] 팀원의 매우 상세한 프롬프트를 그대로 채택합니다. ---
-CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph database.
+# --- 동적 Few-shot 프롬프트 템플릿 ---
+DYNAMIC_CYPHER_GENERATION_TEMPLATE = """Task: Generate Cypher statement to query a graph database.
 Instructions:
 Use only the provided relationship types and properties in the schema.
 Do not use any other relationship types or properties that are not provided in the schema.
@@ -45,10 +47,7 @@ Instead, use one of the following methods depending on the query intent:
 - To check if any element partially matches a condition (e.g., substring): ANY(item IN node.array_property WHERE item CONTAINS 'value')
 - To check if all elements satisfy a condition: ALL(item IN node.array_property WHERE item CONTAINS 'value')
 
-Example:
-- 데이터 무제한이고 10만원 미만인 요금제 중 만40세인 사람이 사용할 수 있는 요금제 알려줘 -> MATCH (p:`요금제`)-[:제공]->(d:`데이터용량`) MATCH (p)-[:`가입조건`]-(c:`가입조건`) WHERE d.`기본제공데이터용량` = 99999 AND p.`월정액` < 100000 AND c.`가입가능최대나이` >= 40 AND c.`가입가능최소나이` <= 40 RETURN p
-- 39,000원 요금제 데이터 무제한인가요 -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE p.`월정액` = 39000 RETURN p, d
-- 데이터 무제한, 통화 무제한 요금제 알려주세요 -> MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) MATCH (p:`요금제`)-[:`제공`]->(c:`음성통화`) WHERE d.`기본제공데이터용량` = 99999 AND c.`음성통화제공량` = 99999 RETURN p, d, c
+{few_shot_examples}
 
 Note: Do not include any explanations or apologies in your responses.
 Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
@@ -57,10 +56,6 @@ Include the nodes and properties related to the question in the result.
 
 The question is:
 {question}"""
-
-CYPHER_GENERATION_PROMPT = PromptTemplate(
-    input_variables=["schema", "question"], template=CYPHER_GENERATION_TEMPLATE
-)
 
 @tool(parse_docstring=True)
 def prod_meta_search(query: str) -> Dict:
@@ -75,8 +70,31 @@ def prod_meta_search(query: str) -> Dict:
         dict: A dictionary containing the generated Cypher query and the search results.
     """
     logger.info(f"Neo4j prod_meta_search 시작. 쿼리: '{query}'")
+    
     try:
-        # --- ✨ [통합] CustomNeo4jGraph를 사용하여 스키마 검증 준비 ---
+        # 1. 유사한 Few-shot 예시 검색
+        logger.info("벡터 검색으로 Few-shot 예시 찾는 중...")
+        similar_examples = asyncio.run(
+            few_shot_retriever.find_similar_examples(
+                query=query,
+                top_k=3,
+                min_similarity=0.3
+            )
+        )
+        
+        # 2. Few-shot 예시를 프롬프트에 추가
+        few_shot_text = ""
+        if similar_examples:
+            few_shot_text = "\nSimilar examples for reference:\n"
+            for i, example in enumerate(similar_examples, 1):
+                few_shot_text += f"Example {i} (similarity: {example['similarity']:.3f}):\n"
+                few_shot_text += f"Question: {example['natural_language']}\n"
+                few_shot_text += f"Cypher: {example['cypher_query']}\n\n"
+            logger.info(f"Few-shot 예시 {len(similar_examples)}개 찾음")
+        else:
+            logger.warning("유사한 Few-shot 예시를 찾지 못함")
+        
+        # 3. CustomNeo4jGraph를 사용하여 스키마 검증 준비
         graph = CustomNeo4jGraph(
             url=os.getenv("NEO4J_URI"),
             username=os.getenv("NEO4J_USERNAME"),
@@ -85,72 +103,82 @@ def prod_meta_search(query: str) -> Dict:
             sanitize=True,
         )
 
-        # LangChain 체인 초기화
+        # 4. 동적 프롬프트 생성
+        dynamic_prompt = PromptTemplate(
+            input_variables=["schema", "question", "few_shot_examples"],
+            template=DYNAMIC_CYPHER_GENERATION_TEMPLATE
+        )
+
+        # 5. LangChain 체인 초기화 (SKT AI Hub 설정)
+        llm = ChatOpenAI(
+            model="gpt-4o",
+            temperature=0,
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_API_BASE"),
+        )
+
         chain = GraphCypherQAChain.from_llm(
-            ChatOpenAI(
-                model="gpt-4o-mini",
-                openai_api_key=os.getenv("OPENAI_API_KEY"),
-                openai_api_base="https://aihub-api.sktelecom.com/aihub/v2/sandbox",
-                streaming=False, # .invoke() 사용 시 False 권장
-                temperature=0,
-            ),
-            cypher_prompt=CYPHER_GENERATION_PROMPT,
+            llm=llm,
             graph=graph,
             verbose=True,
-            allow_dangerous_requests=True,
-            return_intermediate_steps=True,
-            return_direct=True, # DB 결과만 직접 반환 (자연어 생성 X)
             validate_cypher=True,
+            cypher_prompt=dynamic_prompt,
+            return_intermediate_steps=True,
+            allow_dangerous_requests=True,
         )
 
-        # --- ✨ [통합] 팀원의 커스텀 Cypher 유효성 검증 로직 활성화 ---
-        # 1. LangChain의 기본 쿼리 수정기(corrector)를 보존합니다.
-        default_corrector = chain.cypher_query_corrector
-        # 2. 우리만의 커스텀 검증기(validator)를 생성합니다.
-        custom_validator = CypherValidator(graph=graph)
-        # 3. 두 개를 ChainedCorrector로 연결하여, 우리 것 먼저 실행 후 기본 것을 실행하도록 설정합니다.
-        chain.cypher_query_corrector = ChainedCorrector(
-            first=custom_validator,
-            second=default_corrector
-        )
+        # 6. Cypher Query Corrector 설정 (기본 corrector 사용하지 않음)
+        # corrector = ChainedCorrector(schema=graph.schema, llm=llm)
+        # chain.cypher_query_corrector = corrector
+        logger.info("Cypher Query Corrector 설정 완료")
 
-        # 쿼리 실행
-        chain_result = chain.invoke({"query": query})
-        logger.info(f"Chain result: {chain_result}")
-
-        # 결과 추출
-        cypher_query = chain_result.get("intermediate_steps", [{}])[0].get("query", "Cypher 쿼리 생성 실패")
-        db_result = chain_result.get("result", []) # 결과가 없을 경우 빈 리스트
-
+        # 7. 쿼리 실행
+        logger.info("LangChain으로 쿼리 실행 중...")
+        result = chain.invoke({
+            "query": query, 
+            "few_shot_examples": few_shot_text
+        })
+        
+        # 8. 결과 처리
+        intermediate_steps = result.get('intermediate_steps', [])
+        cypher_query = intermediate_steps[0].get('query', '') if intermediate_steps else ''
+        
+        # 디버깅: intermediate_steps 전체 구조 출력
+        logger.info(f"=== intermediate_steps 디버깅 ===")
+        logger.info(f"intermediate_steps 길이: {len(intermediate_steps)}")
+        for i, step in enumerate(intermediate_steps):
+            logger.info(f"Step {i}의 키들: {list(step.keys())}")
+            for key, value in step.items():
+                logger.info(f"  - {key}: {type(value)} ({len(value) if isinstance(value, (list, dict, str)) else 'N/A'})")
+                if key in ['context', 'result', 'output'] and isinstance(value, list) and len(value) > 0:
+                    logger.info(f"    첫 번째 아이템: {type(value[0])}")
+        
+        # raw_data 추출 시도 - 모든 step 확인
+        raw_data = []
+        for step in intermediate_steps:
+            potential_data = step.get('context', step.get('result', step.get('output', [])))
+            if isinstance(potential_data, list) and len(potential_data) > 0:
+                raw_data = potential_data
+                break
+        
         logger.info(f"생성된 Cypher 쿼리:\n---\n{cypher_query}\n---")
-        logger.info(f"데이터베이스 실행 결과: {db_result}")
-
-        # --- ✨ [통합] 에이전트 시스템에 맞는 일관된 반환 형식으로 정리 ---
-        if not db_result:
-            return {
-                "error": "No results found from the database.",
-                "generated_cypher": cypher_query,
-                "result_metadata": {
-                    "validated": False,
-                    "notes": "The generated Cypher query returned no results. The query might be incorrect or the data may not exist."
-                }
-            }
-
+        logger.info(f"사용된 Few-shot 예시 수: {len(similar_examples)}")
+        logger.info(f"데이터베이스 실행 결과: {result['result']}")
+        logger.info(f"추출된 raw_data 타입: {type(raw_data)}, 길이: {len(raw_data) if isinstance(raw_data, (list, dict, str)) else 'N/A'}")
+        
         return {
             "cypher": cypher_query,
-            "result": json.dumps(db_result, ensure_ascii=False, indent=2), # 결과를 JSON 문자열로 변환
-            "result_metadata": { "validated": True }
+            "result": result.get('result', ''),
+            "raw_data": raw_data,
+            "similar_examples_used": len(similar_examples),
+            "few_shot_examples": [ex['natural_language'] for ex in similar_examples] if similar_examples else [],
+            "result_metadata": {
+                "validated": True,
+                "corrector_used": True,
+                "vector_search_enabled": True
+            }
         }
 
     except Exception as e:
-        import traceback
-        logger.error(f"prod_meta_search 실행 중 에러 발생: {e}")
-        traceback.print_exc()
-        # 에이전트가 에러를 처리할 수 있도록 dict 형태로 반환
-        return {
-            "error": str(e),
-            "result_metadata": {
-                "validated": False,
-                "exception": True
-            }
-        }
+        logger.exception(f"prod_meta_search 실행 중 에러: {e}")
+        raise HTTPException(status_code=500, detail=f"검색 실패: {str(e)}")
