@@ -22,6 +22,9 @@ from src.app.agents.utils import tool_to_openai_function, call_pe_tool_v2, call_
 from src.app.agents.utils import neo4j_connect
 from src.app.agents.schema import PlanExecuteState, Plan, Response
 
+from langchain.globals import set_debug
+set_debug(True)
+
 import logging
 from src.app.agents.logging_config import setup_logging
 
@@ -58,19 +61,14 @@ Additional rules:
 For example, if the user query requires comparison with the user's current plan, you should first use get_service_info to retrieve the name of user's current plan, and then use prod_meta_search to find it and other plans to be compared.
 
 Examples
-- {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "무제한 요금제에 대한 정보가 필요함"}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "가입 조건을 확인하기 위해 고객의 개인 정보가 필요함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객 정보를 기반으로 해당 고객이 가입할 수 있는 10만원 이하의 요금제 중 넷플릭스 할인 혜택을 포함하는 요금제를 찾아야 함."}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "고객이 현재 가입되어 있는 요금제가 무엇인지 알아내야함"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "이전 단계에서 획득한 고객의 현재 요금제 정보를 기반으로 고객의 현재 요금제보다 월정액이 저렴한 무제한 요금제를 찾아야함."}}]}}
-- {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "24세의 고객이 가입할 수 있는 wavve 할인 혜택이 있는 가장 싼 요금제를 찾아야 함"}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the unlimited plan"}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "To get the basic information of the user"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the Netflix discount plan under the 100000 won and available for the user. It requries basic information from previous steps"}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "To get the current plan of the user"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the unlimited plan cheaper than the user's current plan. Information about user's current plan could be gotten from this step"}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the cheapest plan with Wavve discount for the 24 years old"}}]}}
+- {{"svc_mgmt_num": "12345", "userQuery": "5GX 프리미엄 요금제에 넷플릭스 할인 혜택이 있어?"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the Netflix discount benefit for the 5GX Premium plan"}}]}}
 
 Adhere strictly to this format and output only the JSON array without any additional styling or emphasis.
 """
-# - {{"svc_mgmt_num": "12345", "userQuery": "무제한 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the unlimited plan"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "내가 가입할 수 있는 넷플릭스 할인되는 10만원 이하 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason": "To get the basic information of the user"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the Netflix discount plan under the 100000 won and available for the user. It requries basic information from previous steps"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "지금 요금제보다 싸고 데이터 무제한인 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "get_service_info", "reason"; "To get the monthly price of the user's current plan"}}, {{"step": 2, "tool": "prod_meta_search", "reason": "To find the unlimited plan cheaper than the user's current plan. Information about user's current plan could be gotten from this step"}}]}}
-# - {{"svc_mgmt_num": "12345", "userQuery": "24세가 가입할 수 있는 웨이브 할인되는 가장 싼 요금제 알려줘"}} -> {{"plan": [{{"step": 1, "tool": "prod_meta_search", "reason": "To find the cheapest plan with Wavve discount for the 24 years old"}}]}}
-
-
 
 # class PlanExecuteState(TypedDict):
 #     input: str
@@ -140,9 +138,11 @@ Task of current step: {task}"""
         tool_args = json.loads(tool_call["function"]["arguments"])
 
         if tool_name == "prod_meta_search":
-            cypher, result = prod_meta_search(tool_args["query"])
-            state["product_meta"] = result
-            state["cypher"] = cypher
+            # cypher, result = prod_meta_search(tool_args["query"])
+            result = prod_meta_search(tool_args["query"])
+            state["product_meta"] = result["result"]
+            state["cypher"] = result["cypher"]
+            state["case"] = result["case"]
         elif tool_name == "get_service_info":
             result = get_service_info(tool_args["svc_mgmt_num"])
             state["user_info"] = result
@@ -199,6 +199,7 @@ def replan_step(state: PlanExecuteState):
     # logger.info(state["input"])
     # logger.info(state["plan"])
     # logger.info(state["past_steps"])
+    logger.info(state)
     # 임시로 제거한 프롬프트
     # When generating the final response, if there is a markdown table, use its style.
     system_message = f"""You are responsible for the Re-plan stage of LangGraph.

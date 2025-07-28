@@ -13,9 +13,9 @@ services:
       - NEO4J_dbms_security_procedures_allowlist=gds.*,n10s.*,apoc.*
       - NEO4J_dbms_unmanaged__extension__classes=n10s.endpoint=/rdf
       - NEO4J_apoc_import_file_enabled=true
-      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_export_file_enabled=true
       - NEO4J_apoc_import_file_use__neo4j__config=true
-      - NEO4J_AUTH=neo4j/neo4jpassword
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
       - NEO4J_server_memory_heap_initial__size=1G
       - NEO4J_server_memory_heap_max__size=2G
       - NEO4J_dbms_memory_pagecache_size=1G
@@ -98,6 +98,19 @@ services:
     depends_on:
       - neo4j
       - backendapi
+  pgvector:
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: pgvector-container
+    environment:
+      - POSTGRES_DB=${PGVECTOR_DBNAME}
+      - POSTGRES_USER=${PGVECTOR_USER}
+      - POSTGRES_PASSWORD=${PGVECTOR_PASSWORD}
+    ports:
+      - "5432:5432"
+    networks:
+      - my_network
+    volumes:
+      - ./data/pgvector:/var/lib/postgresql/data
 
 networks:
   my_network:  # Custom network, allowing containers to resolve each other by name
