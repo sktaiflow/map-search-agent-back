@@ -1,19 +1,19 @@
 natural_language,cypher_query,domain_tags,quality_score
-18세 미만만 가입할 수 있는 요금제가 있어?,"MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c","['pricing', 'age_condition', 'age']",1.0
-5GX 프리미엄 요금제와 비슷한 요금의 요금제 비교해줘,"MATCH (p:`요금제` {`상품명`: '5GX 프리미엄'}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)","['comparison', 'pricing', 'sorting']",1.0
+18세 미만만 가입할 수 있는 요금제가 있어?,"MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최대나이` < 18 AND c.`가입가능최소나이` < 18 RETURN p, c","['pricing', 'age', 'age_condition']",1.0
+5GX 프리미엄 요금제와 비슷한 요금의 요금제 비교해줘,"MATCH (p:`요금제` {`상품명`: '5GX 프리미엄'}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)","['comparison', 'pricing', 'sorting', 'specific_plan']",1.0
 무제한 데이터 요금제 하나 알려줘,"MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p, d LIMIT 1","['pricing', 'limited_result', 'data']",1.0
-65세 이상이면 요금 할인혜택 없나요,"MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 OPTIONAL MATCH (p)-[:`제공혜택`]->(h:`혜택`) RETURN p, c, h","['pricing', 'age_condition', 'benefits', 'optional_data', 'age']",1.0
+65세 이상이면 요금 할인혜택 없나요,"MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 OPTIONAL MATCH (p)-[:`제공혜택`]->(h:`혜택`) RETURN p, c, h","['benefits', 'optional_data', 'age', 'pricing', 'age_condition']",1.0
 실버요금제,"MATCH (p:`요금제`)-[:`연관`]->(c:`개념`) WHERE c.`키워드` = '실버요금제' RETURN p, c",['pricing'],0.9
 내 요금제로 스마트기기 쓸 수 있어?,"MATCH (p:`요금제` {`상품명`: '5GX 프라임'})-[:`제공혜택`]->(c:`혜택`) WHERE c.`혜택명` CONTAINS '스마트워치'  OR c.`혜택명` CONTAINS '태블릿' RETURN p, c","['pricing', 'device']",1.0
-데이터 무제한이고 10만원 미만인 요금제 중 만40세인 사람이 사용할 수 있는 요금제 알려줘,MATCH (p:`요금제`)-[:제공]->(d:`데이터용량`) MATCH (p)-[:`가입조건`]-(c:`가입조건`) WHERE d.`기본제공데이터용량` = 99999 AND p.`월정액` < 100000 AND c.`가입가능최대나이` >= 40 AND c.`가입가능최소나이` <= 40 RETURN p,"['pricing', 'data', 'age_condition', 'age']",1.0
-19세이하 요금제,"MATCH (p:`요금제`)-[:`가입조건`]->(a:`가입조건`) WHERE a.`가입가능최대나이` <= 19 AND a.`가입가능최소나이` <= 19 RETURN p, a","['pricing', 'age_condition', 'age']",0.9
+데이터 무제한이고 10만원 미만인 요금제 중 만40세인 사람이 사용할 수 있는 요금제 알려줘,MATCH (p:`요금제`)-[:제공]->(d:`데이터용량`) MATCH (p)-[:`가입조건`]-(c:`가입조건`) WHERE d.`기본제공데이터용량` = 99999 AND p.`월정액` < 100000 AND c.`가입가능최대나이` >= 40 AND c.`가입가능최소나이` <= 40 RETURN p,"['pricing', 'age', 'age_condition', 'data']",1.0
+19세이하 요금제,"MATCH (p:`요금제`)-[:`가입조건`]->(a:`가입조건`) WHERE a.`가입가능최대나이` <= 19 AND a.`가입가능최소나이` <= 19 RETURN p, a","['pricing', 'age', 'age_condition']",0.9
 데이터를 사용한만큼 금액을 내는 요금제는 없어?,"MATCH (p:`요금제`)-[:`연관`]->(c:`개념`) WHERE c.`키워드` = '종량제요금제' RETURN p, c","['pricing', 'data']",1.0
 데이터 30기가면 될 것 같은데 내가 가입가능한 요금제가 뭐가 있을까?,"MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` >= 30 ORDER BY d.`기본제공데이터용량` ASC LIMIT 3 RETURN p, d","['pricing', 'limited_result', 'sorting', 'data']",1.0
 요금제에 음악 듣기 서비스가 되는 요금제가 있나요,"MATCH (p:`요금제`)-[]->(n:`개념`) WHERE n.`키워드` CONTAINS '음악듣기요금제' RETURN p, n","['benefits', 'pricing']",1.0
-멤버십 VIP 시켜주는 요금제 중 가장 제공 혜택 개수가 많은 요금제는 뭐야?,"MATCH (p:`요금제`)-[:`제공혜택`]->(h:`혜택`) WHERE h.`혜택명` CONTAINS 'VIP' WITH p MATCH (p)-[:`제공혜택`]->(b:`혜택`) WITH p, COUNT(b) AS b_count ORDER BY b_count DESC RETURN p, b_count","['pricing', 'sorting', 'comparison', 'benefits', 'membership', 'aggregation']",1.0
-우주패스 할인율 제일 크게 주는 요금제가 뭐야?,"MATCH (p:`요금제`)-[:`제공혜택`]->(h:`혜택`) WHERE h.`혜택명` CONTAINS '우주패스' ORDER BY h.`최대할인금액` DESC RETURN p, h LIMIT 1","['benefits', 'pricing', 'limited_result', 'sorting']",1.0
-65세 이상 요금 할인 혜택 알려줘,"MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 OPTIONAL MATCH (p)-[:`제공혜택`]->(h:`혜택`) RETURN p, h","['pricing', 'age_condition', 'benefits', 'optional_data', 'age']",1.0
-FLO 제일 싸게 쓰려면 어떻게 해야해?,"MATCH (h:`혜택`) WHERE h.`혜택명` = 'FLO 무료' ORDER BY h.`최대할인금액` DESC LIMIT 1 WITH h MATCH (p:`요금제`)-[]->(h) ORDER BY p.`월정액` ASC RETURN p, h","['pricing', 'limited_result', 'sorting']",1.0
+멤버십 VIP 시켜주는 요금제 중 가장 제공 혜택 개수가 많은 요금제는 뭐야?,"MATCH (p:`요금제`)-[:`제공혜택`]->(h:`혜택`) WHERE h.`혜택명` CONTAINS 'VIP' WITH p MATCH (p)-[:`제공혜택`]->(b:`혜택`) WITH p, COUNT(b) AS b_count ORDER BY b_count DESC RETURN p, b_count","['comparison', 'sorting', 'benefits', 'aggregation', 'membership', 'pricing']",1.0
+우주패스 할인율 제일 크게 주는 요금제가 뭐야?,"MATCH (p:`요금제`)-[:`제공혜택`]->(h:`혜택`) WHERE h.`혜택명` CONTAINS '우주패스' ORDER BY h.`최대할인금액` DESC RETURN p, h LIMIT 1","['benefits', 'pricing', 'sorting', 'limited_result']",1.0
+65세 이상 요금 할인 혜택 알려줘,"MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 OPTIONAL MATCH (p)-[:`제공혜택`]->(h:`혜택`) RETURN p, h","['benefits', 'optional_data', 'age', 'pricing', 'age_condition']",1.0
+FLO 제일 싸게 쓰려면 어떻게 해야해?,"MATCH (h:`혜택`) WHERE h.`혜택명` = 'FLO 무료' ORDER BY h.`최대할인금액` DESC LIMIT 1 WITH h MATCH (p:`요금제`)-[]->(h) ORDER BY p.`월정액` ASC RETURN p, h","['pricing', 'sorting', 'limited_result']",1.0
 무제한 데이터 혜택 요금제,MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE d.`기본제공데이터용량` = 99999 RETURN p,"['benefits', 'pricing', 'data']",1.0
 베이직플러스로 변경 시 T가족모아데이터 이용 가능한가요?,"MATCH (p:요금제)-[r]->(b:혜택) WHERE b.혜택명 = 'T가족모아데이터'  AND p.상품명 = '베이직플러스' RETURN p, r, b",['data'],1.0
 "39,000원 요금제 데이터 무제한인가요","MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`) WHERE p.`월정액` = 39000 RETURN p, d","['pricing', 'data']",1.0
@@ -24,3 +24,9 @@ SKT 표준 요금제도 T끼리 데이터선물 받을 수 있어?,"MATCH (p:`�
 시니어요금제,"MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 RETURN p, c","['pricing', 'age_condition']",0.9
 자녀요금제는어떤것들이있나요?,MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최대나이` <= 18 RETURN p,"['pricing', 'age_condition']",1.0
 VIP 되려면 0청년 59 요금제 쓰면 돼?,"MATCH (p:`요금제`)-[r:`제공혜택`]->(n:`혜택` {`혜택명`:'T멤버십 VIP'}) WHERE p.`상품명` CONTAINS '0 청년' AND p.`상품명` CONTAINS '59' RETURN p, n","['pricing', 'membership']",1.0
+5GX 프리미엄 요금제 알려줘,MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '5GX 프리미엄' RETURN p,"['pricing', 'specific_plan']",1.0
+티플랜 요금제 정보,MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '티플랜' OR ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '티플랜') RETURN p,"['pricing', 'specific_plan']",1.0
+0플랜 알려줘,MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '0플랜' OR ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '0플랜') RETURN p,['specific_plan'],0.8
+베이직플러스 요금제,MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '베이직플러스' RETURN p,"['pricing', 'specific_plan']",1.0
+다이렉트5G 요금제는 뭐야?,MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '다이렉트5G' RETURN p,['pricing'],1.0
+0틴플랜 종류 알려줘,MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '0틴플랜' RETURN p,[],0.9

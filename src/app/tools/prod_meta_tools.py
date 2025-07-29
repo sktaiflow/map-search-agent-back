@@ -21,43 +21,55 @@ set_debug(True)
 logger = logging.getLogger(__name__)
 
 # --- 동적 Few-shot 프롬프트 템플릿 ---
-DYNAMIC_CYPHER_GENERATION_TEMPLATE = """Task: Generate Cypher statement to query a graph database.
-Instructions:
-Use only the provided relationship types and properties in the schema.
-Do not use any other relationship types or properties that are not provided in the schema.
-Korean terms should be surrounded by backticks (``).
+DYNAMIC_CYPHER_GENERATION_TEMPLATE = """작업: 그래프 데이터베이스 조회를 위한 Cypher 쿼리문을 생성하세요.
 
-Schema:
+지침:
+- 제공된 스키마의 관계 타입과 속성만 사용하세요.
+- 스키마에 없는 관계 타입이나 속성은 절대 사용하지 마세요.
+- 한국어 용어는 백틱(``)으로 감싸주세요.
+
+스키마:
 {schema}
 
-Domain mapping and other rules:
-- For searching a plan itself, find 상품명 (product name), 마케팅키워드 (marketing keyword). 
-- For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields about capacity, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
-- For questions about cheap or expensive plans, sort by the value of 월정액 (monthly price).
-- For search keywords, prefer a single noun split by a space. For example, use "넷플릭스" instead of "넷플릭스 할인".
-- For comparing products, generate a Cypher query that retrieves all products to be compared, and then compare the results.
+도메인 매핑 및 규칙:
+- 기본제공데이터용량, 문자제공량, 음성통화제공량 등 용량 관련 숫자 필드에서 '무제한'은 99999 값으로 처리하세요. 단, 가격 필드에는 적용하지 마세요.
+- 저렴하거나 비싼 요금제에 대한 질문시 월정액 값을 기준으로 정렬하세요.
+- 검색 키워드는 공백으로 구분된 단일 명사를 선호하세요. 예: "넷플릭스 할인" 대신 "넷플릭스"
+- 상품 비교 시 비교할 모든 상품을 조회하는 쿼리를 생성한 후 결과를 비교하세요.
 
-For age-related queries, generate WHERE clause based on the following examples:
-- Plans only for 18 years old -> 가입가능최대나이 = 18 AND 가입가능최소나이 = 18
-- Plans for 18 years old -> 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
-- Plans only for 18 years old and above -> 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
-- Plans only for 18 years old and below -> 가입가능최대나이 <= 18 AND 가입가능최소나이 <= 18
-- Plans only for younger than 13 years old -> 가입가능최대나이 < 13 AND 가입가능최소나이 < 13
+특정 요금제명 검색 우선순위:
+특정 요금제명으로 검색할 때는 다음 우선순위를 따르세요:
+1. 첫 번째 우선순위: 상품명에서 CONTAINS로 검색
+2. 두 번째 우선순위: 라인업 필드에서 검색 (있는 경우)
+3. 마지막 우선순위: 마케팅키워드에서 검색
 
-For querying list properties, do not use the CONTAINS operator directly on the array itself.
-Instead, use one of the following methods depending on the query intent:
-- To check for exact inclusion of a value: 'value' IN node.array_property
-- To check if any element partially matches a condition (e.g., substring): ANY(item IN node.array_property WHERE item CONTAINS 'value')
-- To check if all elements satisfy a condition: ALL(item IN node.array_property WHERE item CONTAINS 'value')
+특정 요금제명 검색 예시:
+- "5GX 프리미엄 알려줘" → WHERE p.`상품명` CONTAINS '5GX 프리미엄'
+- "티플랜 요금제" → WHERE p.`상품명` CONTAINS '티플랜' OR p.`라인업` CONTAINS '티플랜' OR ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '티플랜')
+- "0플랜 정보" → WHERE p.`상품명` CONTAINS '0플랜' OR ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '0플랜')
+
+연령 관련 쿼리는 다음 예시를 기반으로 WHERE 절을 생성하세요:
+- 만 18세만 가능한 요금제 → 가입가능최대나이 = 18 AND 가입가능최소나이 = 18
+- 만 18세 가입 가능한 요금제 → 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
+- 만 18세 이상만 가능한 요금제 → 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
+- 만 18세 이하만 가능한 요금제 → 가입가능최대나이 <= 18 AND 가입가능최소나이 <= 18
+- 만 13세 미만만 가능한 요금제 → 가입가능최대나이 < 13 AND 가입가능최소나이 < 13
+
+배열 속성 쿼리 시 CONTAINS 연산자를 배열에 직접 사용하지 마세요.
+대신 쿼리 의도에 따라 다음 방법 중 하나를 사용하세요:
+- 정확한 값 포함 확인: 'value' IN node.array_property
+- 부분 일치 조건 확인: ANY(item IN node.array_property WHERE item CONTAINS 'value')
+- 모든 요소가 조건을 만족하는지 확인: ALL(item IN node.array_property WHERE item CONTAINS 'value')
 
 {few_shot_examples}
 
-Note: Do not include any explanations or apologies in your responses.
-Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
-Do not include any text except the generated Cypher statement.
-Include the nodes and properties related to the question in the result.
+주의사항:
+- 응답에 설명이나 사과는 포함하지 마세요.
+- Cypher 쿼리문 생성 외의 다른 질문에는 응답하지 마세요.
+- 생성된 Cypher 쿼리문만 포함하세요.
+- 질문과 관련된 노드와 속성을 결과에 포함하세요.
 
-The question is:
+질문:
 {question}"""
 
 @tool(parse_docstring=True)
