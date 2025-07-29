@@ -15,6 +15,8 @@ from langchain_openai import ChatOpenAI
 # --- 기존 검증 로직과 벡터 검색 import ---
 from .cypher_validation import ChainedCorrector, CustomNeo4jGraph, CypherValidator
 from .vector_retriever import few_shot_retriever
+from langchain.globals import set_debug
+set_debug(True)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ Schema:
 {schema}
 
 Domain mapping and other rules:
+- For searching a plan itself, find 상품명 (product name), 마케팅키워드 (marketing keyword). 
 - For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields about capacity, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
 - For questions about cheap or expensive plans, sort by the value of 월정액 (monthly price).
 - For search keywords, prefer a single noun split by a space. For example, use "넷플릭스" instead of "넷플릭스 할인".
@@ -144,8 +147,7 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
             allow_dangerous_requests=True,
         )
 
-        # 6. Cypher Query Corrector 설정 (기본 corrector 사용하지 않음)
-        # Query pre-validation
+        # 6. Cypher Query Corrector 설정
         # # 기존(기본) corrector 보존
         # default_corrector = chain.cypher_query_corrector 
         # custum_corrector = CypherValidator(graph=graph)
@@ -161,6 +163,7 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
             "query": query, 
             "few_shot_examples": few_shot_text
         })
+        logging.info(result)
         
         # 8. 결과 처리
         intermediate_steps = result.get('intermediate_steps', [])
