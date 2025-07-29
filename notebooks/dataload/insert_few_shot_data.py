@@ -9,7 +9,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
 
-env_path = "/Users/hazel/Documents/map-search-agent/docker/.env"
+env_path = "docker/.env"
 load_dotenv(env_path)
 
 class FewShotDataInserter:

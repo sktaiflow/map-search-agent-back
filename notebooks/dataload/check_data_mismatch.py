@@ -48,12 +48,13 @@ def check_data_mismatches():
         # 모든 요금제 데이터 가져오기
         result = session.run("""
             MATCH (p:`요금제`)-[:`제공`]->(d:`데이터용량`)
-            RETURN p.`상품명` as name, p.`상품설명` as description, d.`기본제공데이터용량` as db_data
+            RETURN p.`고유ID` as pid, p.`상품명` as name, p.`상품설명` as description, d.`기본제공데이터용량` as db_data
             ORDER BY p.`상품명`
         """)
         
         for record in result:
             name = record["name"]
+            pid = record["pid"]
             description = record["description"]
             db_data = float(record["db_data"]) if record["db_data"] else 0.0
             
@@ -64,6 +65,7 @@ def check_data_mismatches():
                 # 데이터가 일치하지 않는 경우
                 if abs(desc_data - db_data) > 0.1:  # 소수점 오차 허용
                     mismatches.append({
+                        'ID': pid,
                         'name': name,
                         'description': description,
                         'description_data': desc_data,
@@ -83,7 +85,7 @@ if __name__ == "__main__":
         print("=" * 100)
         
         for i, mismatch in enumerate(mismatches, 1):
-            print(f"\n{i}. {mismatch['name']}")
+            print(f"\n{i}. {mismatch['ID']} : {mismatch['name']}")
             print(f"   📝 상품설명: {mismatch['description'][:100]}...")
             print(f"   📊 설명에서 추출된 데이터: {mismatch['description_data']}GB")
             print(f"   💾 DB에 저장된 데이터: {mismatch['db_data']}GB")
