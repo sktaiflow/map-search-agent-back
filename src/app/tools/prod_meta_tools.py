@@ -224,7 +224,7 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
             cypher_prompt=dynamic_prompt,
             return_intermediate_steps=True,
             allow_dangerous_requests=True,
-            return_direct=True,
+            return_direct=True, # 자연어 응답 생성 건너뛰기
         )
         
         # 6. Cypher Query Corrector 설정
