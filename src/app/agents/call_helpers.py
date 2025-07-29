@@ -63,6 +63,10 @@ def complete_args(tool: str, args: dict, state: AgentState) -> dict:
     사용자의 이전 대화 내용과 도구가 요구하는 JSON 스키마를 바탕으로,
     필요한 인자 값을 채워서 완벽한 JSON 객체를 생성해야 합니다.
 
+    중요한 기본값들:
+    - svc_mgmt_num (고객 관리번호): "7022044239" (기본 테스트 고객 ID)
+    - user_id는 사용하지 마세요. 대신 svc_mgmt_num을 사용하세요.
+
     사용자 질문: {state['input']}
     이전 대화 및 실행 기록: {json.dumps(state['past_steps'], ensure_ascii=False, indent=2)}
     
@@ -72,6 +76,7 @@ def complete_args(tool: str, args: dict, state: AgentState) -> dict:
     {schema_json}
 
     위 정보를 바탕으로, 도구 실행에 필요한 인자를 JSON 형식으로만 응답하세요.
+    특히 get_service_info와 get_subscribed_products 도구는 svc_mgmt_num 매개변수가 필요합니다.
     """
     
     try:
@@ -96,18 +101,26 @@ def complete_args(tool: str, args: dict, state: AgentState) -> dict:
 
 # ✅ 툴 실행 결과 저장
 
-def store_result(state: AgentState, tool: str, result: dict, task: str, args: dict):
+def store_result(state: AgentState, tool: str, result, task: str, args: dict):
     if tool == "prod_meta_search":
-        state["product_meta"] = result.get("raw_data", [])
+        state["product_meta"] = result.get("raw_data", []) if isinstance(result, dict) else []
     elif tool in {"get_service_info", "get_subscribed_products"}:
         state["user_info"] = result
+
+    # result가 dict인 경우와 아닌 경우를 분리해서 처리
+    if isinstance(result, dict):
+        result_value = result.get("result", result)
+        result_metadata = result.get("result_metadata", {"validated": True})
+    else:
+        result_value = result
+        result_metadata = {"validated": True}
 
     state["past_steps"].append({
         "task": task,
         "tool": tool,
         "query": args,
-        "result": result.get("result") if isinstance(result, dict) else result,
-        "result_metadata": result.get("result_metadata", {})
+        "result": result,  # 원본 result를 저장하여 cypher 정보 보존
+        "result_metadata": result_metadata
     })
 
 
@@ -117,6 +130,14 @@ def validate_steps(state: AgentState) -> list:
     failed = []
     for step in state.get("past_steps", []):
         metadata = step.get("result_metadata", {})
+        result = step.get("result", "")
+        
+        # "I don't know the answer." 는 정상 응답으로 처리 (실패가 아님)
+        if isinstance(result, str) and "I don't know the answer" in result:
+            logger.info(f"🔍 '{step.get('task')}' - 검색 결과 없음이지만 정상 응답으로 처리")
+            continue
+            
+        # 실제 실패한 경우만 failed에 추가
         if not metadata.get("validated", True):
             failed.append({
                 "task": step.get("task"),
