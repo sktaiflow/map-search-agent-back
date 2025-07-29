@@ -5,8 +5,8 @@ from src.app.tools.user_tools import (
     get_subscribed_products,
     thinking_tool,
 )
+# from src.app.tools.prod_meta_tools import (
 from src.app.tools.prod_meta_tools import (
-# from src.app.tools.prod_meta_tools_v2 import (
     prod_meta_search,
 )
 
