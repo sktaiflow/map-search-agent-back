@@ -24,6 +24,8 @@ def extract_domain_tags(nl_text: str, cypher_query: str) -> List[str]:
         tags.append('comparison')
     if re.search(r'(아이패드|태블릿|스마트워치|기기)', nl_text):
         tags.append('device')
+    if re.search(r'(5GX|티플랜|0플랜|베이직플러스|프리미엄) (요금제|알려|정보)', nl_text):
+        tags.append('specific_plan')
     
     # Cypher 기반 태그
     if '가입조건' in cypher_query:
@@ -94,7 +96,14 @@ raw_data = [
     ("키즈 요금제에서 MMS 사용료가 있나요?", "MATCH (p:`요금제`)-[:`제공`]->(m:`문자메시지`) WHERE ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '키즈') RETURN p, m"),
     ("시니어요금제", "MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 RETURN p, c"),
     ("자녀요금제는어떤것들이있나요?", "MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최대나이` <= 18 RETURN p"),
-    ("VIP 되려면 0청년 59 요금제 쓰면 돼?", "MATCH (p:`요금제`)-[r:`제공혜택`]->(n:`혜택` {`혜택명`:'T멤버십 VIP'}) WHERE p.`상품명` CONTAINS '0 청년' AND p.`상품명` CONTAINS '59' RETURN p, n")
+    ("VIP 되려면 0청년 59 요금제 쓰면 돼?", "MATCH (p:`요금제`)-[r:`제공혜택`]->(n:`혜택` {`혜택명`:'T멤버십 VIP'}) WHERE p.`상품명` CONTAINS '0 청년' AND p.`상품명` CONTAINS '59' RETURN p, n"),
+    # 특정 요금제명 검색 예시들 (상품명 우선 검색)
+    ("5GX 프리미엄 요금제 알려줘", "MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '5GX 프리미엄' RETURN p"),
+    ("티플랜 요금제 정보", "MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '티플랜' OR ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '티플랜') RETURN p"),
+    ("0플랜 알려줘", "MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '0플랜' OR ANY(keyword IN p.`마케팅키워드` WHERE keyword CONTAINS '0플랜') RETURN p"),
+    ("베이직플러스 요금제", "MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '베이직플러스' RETURN p"),
+    ("다이렉트5G 요금제는 뭐야?", "MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '다이렉트5G' RETURN p"),
+    ("0틴플랜 종류 알려줘", "MATCH (p:`요금제`) WHERE p.`상품명` CONTAINS '0틴플랜' RETURN p")
 ]
 
 # 데이터 처리
