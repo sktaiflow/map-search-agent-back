@@ -178,4 +178,6 @@ plugins/graph-data-science.jar
 
 .DS_Store
 .vscode
+
+.env
 CLAUDE.md
