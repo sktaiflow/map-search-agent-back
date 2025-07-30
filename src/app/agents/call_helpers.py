@@ -103,7 +103,26 @@ def complete_args(tool: str, args: dict, state: AgentState) -> dict:
 
 def store_result(state: AgentState, tool: str, result, task: str, args: dict):
     if tool == "prod_meta_search":
-        state["product_meta"] = result.get("raw_data", []) if isinstance(result, dict) else []
+        # 새로운 case 분기 구조 처리
+        if isinstance(result, dict):
+            raw_data = result.get("raw_data", [])
+            
+            # Case별 처리: raw_data가 리스트의 리스트인 경우 (case 2) 평탄화
+            if isinstance(raw_data, list) and raw_data:
+                if isinstance(raw_data[0], list):
+                    # Case 2: 여러 서브쿼리 결과들 - 병합
+                    flattened_data = []
+                    for sublist in raw_data:
+                        if isinstance(sublist, list):
+                            flattened_data.extend(sublist)
+                    state["product_meta"] = flattened_data
+                else:
+                    # Case 1: 단일 결과 리스트
+                    state["product_meta"] = raw_data
+            else:
+                state["product_meta"] = raw_data if isinstance(raw_data, list) else []
+        else:
+            state["product_meta"] = []
     elif tool in {"get_service_info", "get_subscribed_products"}:
         state["user_info"] = result
 
@@ -158,8 +177,27 @@ def create_final_response(state: AgentState, failed_steps: list) -> AgentState:
     # 실제 검색된 데이터 추출
     product_data = state.get("product_meta", [])
     
+    # Case 정보 추출 (prod_meta_search 결과에서)
+    search_case = "1"  # 기본값
+    case_context = ""
+    
+    for step in state.get("past_steps", []):
+        if step.get('tool') == 'prod_meta_search':
+            step_result = step.get('result', {})
+            if isinstance(step_result, dict) and 'case' in step_result:
+                search_case = step_result['case']
+                break
+    
+    # Case별 컨텍스트 추가
+    if search_case == "1":
+        case_context = "검색 케이스: 정확한 검색 결과가 발견되었습니다."
+    elif search_case == "2":
+        case_context = "검색 케이스: 모든 조건을 만족하는 요금제는 없지만, 조건을 완화하여 관련 요금제들을 찾았습니다. 요청하신 조건과 부분적으로 일치하는 옵션들을 제시합니다."
+    
     system_message = f"""
     당신은 SKT 요금제 전문 상담원입니다. 검색된 실제 데이터를 바탕으로 고객에게 실질적으로 도움이 되는 3단계 응답을 JSON 형식으로 생성하세요.
+    
+    {case_context}
 
     요구되는 JSON 출력 형식:
     {{
