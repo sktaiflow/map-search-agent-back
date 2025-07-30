@@ -12,11 +12,15 @@ from langchain.tools import tool
 from langchain_neo4j import GraphCypherQAChain
 from langchain_openai import ChatOpenAI
 
-# --- 기존 검증 로직과 벡터 검색 import ---
-from .cypher_validation import ChainedCorrector, CustomNeo4jGraph, CypherValidator
+from .cypher_validation import CustomNeo4jGraph, CypherValidator, ChainedCorrector
+from .CypherAnalyzer import CypherDecomposer
 from .vector_retriever import few_shot_retriever
 
 logger = logging.getLogger(__name__)
+
+# For debug
+from langchain.globals import set_debug
+# set_debug(True)
 
 # --- 동적 Few-shot 프롬프트 템플릿 ---
 DYNAMIC_CYPHER_GENERATION_TEMPLATE = """작업: 그래프 데이터베이스 조회를 위한 Cypher 쿼리문을 생성하세요.
@@ -69,6 +73,8 @@ DYNAMIC_CYPHER_GENERATION_TEMPLATE = """작업: 그래프 데이터베이스 조
 
 질문:
 {question}"""
+
+
 
 @tool(parse_docstring=True)
 def prod_meta_search(query: str, original_input: str = None) -> Dict:
@@ -191,15 +197,58 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
                 raw_data = potential_data
                 break
         
-        logger.info(f"생성된 Cypher 쿼리:\n---\n{cypher_query}\n---")
+        # Cypher 쿼리 정제 (cypher 프리픽스 제거)
+        refined_cypher = cypher_query[6:].strip() if cypher_query.startswith("cypher") else cypher_query.strip()
+        
+        logger.info(f"생성된 Cypher 쿼리:\n{refined_cypher}")
         logger.info(f"사용된 Few-shot 예시 수: {len(similar_examples)}")
         logger.info(f"데이터베이스 실행 결과: {result['result']}")
         logger.info(f"추출된 raw_data 타입: {type(raw_data)}, 길이: {len(raw_data) if isinstance(raw_data, (list, dict, str)) else 'N/A'}")
         
+        # Case 1: 기본 검색 성공 (기존 로직과 동일)
+        search_res = result.get('result', '')
+        if raw_data and search_res != "I don't know the answer.":
+            logger.info("####### Case 1: 기본 검색 성공 ######")
+            return {
+                "case": "1",
+                "cypher": refined_cypher,
+                "result": search_res,
+                "raw_data": raw_data,
+                "similar_examples_used": len(similar_examples),
+                "few_shot_examples": [ex['natural_language'] for ex in similar_examples] if similar_examples else [],
+                "result_metadata": {
+                    "validated": True,
+                    "corrector_used": True,
+                    "vector_search_enabled": True
+                }
+            }
+
+        # Case 2: 검색 실패시 조건 완화 검색 적용
+        logger.info("####### 기본 검색 실패, 조건 완화 검색 적용 ######")
+        
+        # CypherDecomposer를 사용하여 조건 분해
+        decomposer = CypherDecomposer(llm_model=llm)
+        sub_queries = decomposer.decompose(
+            base_cypher=refined_cypher, original_question=query
+        )
+        logger.info(f"분해된 서브쿼리들: {sub_queries}")
+        
+        # sub_queries에 있는 cypher들을 각각 실행해보고 결과 수집
+        cypher_results = []
+        for sub_cypher in sub_queries:
+            try:
+                sub_result = graph.query(sub_cypher)
+                logger.info(f"서브쿼리 결과 개수: {len(sub_result)}")
+                cypher_results.append(sub_result)
+            except Exception as e:
+                logger.warning(f"서브쿼리 실행 실패: {e}")
+                cypher_results.append([])
+
         return {
-            "cypher": cypher_query,
-            "result": result.get('result', ''),
-            "raw_data": raw_data,
+            "case": "2", 
+            "cypher": sub_queries, 
+            "result": "",
+            "raw_data": cypher_results,
             "similar_examples_used": len(similar_examples),
             "few_shot_examples": [ex['natural_language'] for ex in similar_examples] if similar_examples else [],
             "result_metadata": {

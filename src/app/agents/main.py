@@ -68,14 +68,35 @@ async def agent_endpoint(request: ChatCompletionRequest):
                         }
                         yield f"data: {json.dumps(header_chunk)}\n\n"
 
-                        # ✅ JSON 본문 라인 단위 출력 (큰 데이터 필터링)
-                        filtered_state = {k: v for k, v in node_state.items() 
-                                        if k not in ['product_meta', 'raw_results']}
-                        # 큰 데이터는 요약 정보만 표시
+                        # ✅ JSON 본문 라인 단위 출력 (큰 데이터만 필터링)
+                        # 작은 데이터는 그대로 표시, 큰 데이터만 요약
+                        filtered_state = {}
+                        
+                        # 작은 데이터들은 그대로 포함
+                        small_data_fields = ['input', 'plan', 'current_step', 'status']
+                        for key in small_data_fields:
+                            if key in node_state:
+                                if key == 'input' and len(str(node_state[key])) > 100:
+                                    filtered_state[key] = str(node_state[key])[:100] + "..."
+                                else:
+                                    filtered_state[key] = node_state[key]
+                        
+                        # 큰 데이터들만 요약으로 대체
                         if 'product_meta' in node_state:
-                            filtered_state['product_meta'] = f"[{len(node_state['product_meta'])} items]"
+                            product_count = len(node_state['product_meta']) if isinstance(node_state['product_meta'], list) else 0
+                            filtered_state['product_meta'] = f"[{product_count}개 검색 결과]"
+                        
+                        if 'past_steps' in node_state:
+                            filtered_state['past_steps'] = f"[{len(node_state['past_steps'])}개 완료된 단계]"
+                        
+                        if 'reasoning' in node_state:
+                            filtered_state['reasoning'] = "[추론 과정 있음]"
+                        
+                        if 'response' in node_state:
+                            filtered_state['response'] = "[최종 응답 생성됨]"
+                        
                         if 'raw_results' in node_state:
-                            filtered_state['raw_results'] = "[filtered for display]"
+                            filtered_state['raw_results'] = "[원시 결과 데이터]"
                         
                         pretty_json = json.dumps(filtered_state, ensure_ascii=False, indent=2)
                         for line in pretty_json.splitlines():
@@ -144,11 +165,30 @@ async def agent_endpoint(request: ChatCompletionRequest):
                                 
                                 # 3단계 구조 응답 처리
                                 if isinstance(response_data, dict):
-                                    # 1단계: 원본 데이터
+                                    # 1단계: 원본 데이터 (OpenWebUI 표시용 문자열 길이 제한)
                                     raw_data = response_data.get('raw_data', [])
-                                    raw_data_json = json.dumps(raw_data, ensure_ascii=False, indent=2)
-                                    if len(raw_data_json) > 2000:
-                                        raw_data_json = raw_data_json[:2000] + "...\n(결과가 잘렸습니다)"
+                                    
+                                    # 전체 JSON을 우선 생성
+                                    full_json = json.dumps(raw_data, ensure_ascii=False, indent=2)
+                                    
+                                    # 2000자 이하로 제한
+                                    if len(full_json) > 2000:
+                                        # 아이템을 하나씩 줄여가며 2000자 이하가 될 때까지 자르기
+                                        if isinstance(raw_data, list):
+                                            for i in range(len(raw_data), 0, -1):
+                                                truncated_data = raw_data[:i]
+                                                truncated_json = json.dumps(truncated_data, ensure_ascii=False, indent=2)
+                                                if len(truncated_json) <= 2000:
+                                                    raw_data_json = truncated_json + f"\n\n... (총 {len(raw_data)}개 중 {i}개만 표시됨)"
+                                                    break
+                                            else:
+                                                # 아이템 1개도 2000자를 넘는 경우
+                                                raw_data_json = full_json[:2000] + f"\n\n... (문자열이 잘림, 총 {len(raw_data)}개 아이템)"
+                                        else:
+                                            # 리스트가 아닌 경우 그냥 자르기
+                                            raw_data_json = full_json[:2000] + "\n\n... (문자열이 잘림)"
+                                    else:
+                                        raw_data_json = full_json
                                     
                                     # 2단계: 단순 요약
                                     summary = response_data.get('summary', '요약이 없습니다.')
