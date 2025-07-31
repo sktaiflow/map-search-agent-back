@@ -82,7 +82,7 @@ def prod_meta_search(query: str):
         # LangChain 초기화
         chain = GraphCypherQAChain.from_llm(
             ChatOpenAI(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 streaming=True,
                 temperature=0,
             ),
