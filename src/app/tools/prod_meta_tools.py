@@ -17,7 +17,6 @@ from langchain.tools import tool
 from langchain_neo4j import GraphCypherQAChain
 from langchain_openai import ChatOpenAI
 
-# from langchain_ollama import ChatOllama # 사외망에서 테스트 실행시에
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 from langchain.chains.llm import LLMChain
 
@@ -209,12 +208,6 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_API_BASE"),
         )
-
-        # llm = ChatOllama(
-        #     base_url="http://host.docker.internal:11434",
-        #     # model="tomasonjo/llama3-text2cypher-demo:latest",
-        #     model="qwen3:8b",
-        # )
         
         chain = GraphCypherQAChain.from_llm(
             llm=llm,
