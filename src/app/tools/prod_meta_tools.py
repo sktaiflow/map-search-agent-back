@@ -157,7 +157,7 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_API_BASE"),
         )
-        
+
         chain = GraphCypherQAChain.from_llm(
             llm=llm,
             graph=graph,
