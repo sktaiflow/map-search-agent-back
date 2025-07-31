@@ -17,10 +17,7 @@ from langchain.tools import tool
 from langchain_neo4j import GraphCypherQAChain
 from langchain_openai import ChatOpenAI
 
-from langchain.output_parsers import StructuredOutputParser, ResponseSchema
-from langchain.chains.llm import LLMChain
-
-from .cypher_validation import CustomNeo4jGraph, CypherValidator, ChainedCorrector
+from .cypher_validation import ChainedCorrector, CustomNeo4jGraph, CypherValidator
 from .CypherAnalyzer import CypherDecomposer
 from .vector_retriever import few_shot_retriever
 
@@ -29,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 # For debug
 from langchain.globals import set_debug
+
 # set_debug(True)
 
 # --- 동적 Few-shot 프롬프트 템플릿 ---
@@ -82,55 +80,6 @@ DYNAMIC_CYPHER_GENERATION_TEMPLATE = """작업: 그래프 데이터베이스 조
 
 질문:
 {question}"""
-
-
-def determine_question(query: str, llm_model: ChatOpenAI, plan_list: list):
-    """
-    Determine whether the question contains plan name or not
-    """
-
-    response_schemas = [
-        ResponseSchema(
-            name="mentioned",
-            description="Plans specified in the question (refer to the plan list below).",
-        ),
-        ResponseSchema(
-            name="candidates",
-            description="List of plans that are likely mentioned in the question (the top 5 most probable plans). If none, return an empty list.",
-        ),
-    ]
-    output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
-    format_instructions = output_parser.get_format_instructions()
-
-    # 프롬프트 템플릿 정의
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            SystemMessagePromptTemplate.from_template("Should answer in JSON format"),
-            HumanMessagePromptTemplate.from_template(
-                "Determine whether the question is asking about a specific plan or about finding a plan that meets certain conditions.\n"
-                "If it’s the former, select the specified plan from the plan list below. Otherwise, do not select any plans.\n"
-                "{format_instructions}\n"
-                "Plan list:\n"
-                "{plan_list}\n"
-                "User's question:\n"
-                '"{query}"'
-            ),
-        ]
-    )
-
-    pipeline = prompt | llm_model
-    raw_output = pipeline.invoke(
-        {
-            "format_instructions": format_instructions,
-            "plan_list": plan_list,
-            "query": query,
-        }
-    )
-
-    result = output_parser.parse(raw_output.content)
-
-    return result
-
 
 @tool(parse_docstring=True)
 def prod_meta_search(query: str, original_input: str = None) -> Dict:
@@ -247,26 +196,79 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
         
         # 디버깅: intermediate_steps 출력
         logger.info(f"=== intermediate_steps 디버깅 ===")
+        logger.info(f"intermediate_steps 길이: {len(intermediate_steps)}")
+        for i, step in enumerate(intermediate_steps):
+            logger.info(f"Step {i}의 키들: {list(step.keys())}")
+            for key, value in step.items():
+                logger.info(f"  - {key}: {type(value)} ({len(value) if isinstance(value, (list, dict, str)) else 'N/A'})")
+                if key in ['context', 'result', 'output'] and isinstance(value, list) and len(value) > 0:
+                    logger.info(f"    첫 번째 아이템: {type(value[0])}")
+        
+        # raw_data 추출 시도 - 모든 step 확인
+        raw_data = []
+        for step in intermediate_steps:
+            potential_data = step.get('context', step.get('result', step.get('output', [])))
+            if isinstance(potential_data, list) and len(potential_data) > 0:
+                raw_data = potential_data
+                break
+        
+        # Cypher 쿼리 정제 (cypher 프리픽스 제거)
+        refined_cypher = cypher_query[6:].strip() if cypher_query.startswith("cypher") else cypher_query.strip()
+        
         logger.info(f"생성된 Cypher 쿼리:\n{refined_cypher}")
         logger.info(f"사용된 Few-shot 예시 수: {len(similar_examples)}")
         logger.info(f"데이터베이스 실행 결과: {result['result']}")
         
-        if search_res != []:
-            logger.info("####### Case 1 ######")
-            # search_res_json = json.dumps(search_res, ensure_ascii=False, indent=2)
-            search_res_json = search_res
+        # Case 1: 기본 검색 성공 (기존 로직과 동일)
+        search_res = result.get('result', '')
+        if raw_data and search_res != "I don't know the answer.":
+            logger.info("####### Case 1: 기본 검색 성공 ######")
             return {
-                "case": "1", 
-                "cypher": [refined_cypher], 
-                "result": "",
-                "raw_data": [search_res_json],
+                "case": "1",
+                "cypher": refined_cypher,
+                "result": search_res,
+                "raw_data": raw_data,
                 "similar_examples_used": len(similar_examples),
-                "few_show_examples": [ex['natural_language'] for ex in similar_examples] if similar_examples else [],
+                "few_shot_examples": [ex['natural_language'] for ex in similar_examples] if similar_examples else [],
                 "result_metadata": {
                     "validated": True,
                     "corrector_used": True,
                     "vector_search_enabled": True
                 }
+            }
+
+        # Case 2: 검색 실패시 조건 완화 검색 적용
+        logger.info("####### 기본 검색 실패, 조건 완화 검색 적용 ######")
+        
+        # CypherDecomposer를 사용하여 조건 분해
+        decomposer = CypherDecomposer(llm_model=llm)
+        sub_queries = decomposer.decompose(
+            base_cypher=refined_cypher, original_question=query
+        )
+        logger.info(f"분해된 서브쿼리들: {sub_queries}")
+        
+        # sub_queries에 있는 cypher들을 각각 실행해보고 결과 수집
+        cypher_results = []
+        for sub_cypher in sub_queries:
+            try:
+                sub_result = graph.query(sub_cypher)
+                logger.info(f"서브쿼리 결과 개수: {len(sub_result)}")
+                cypher_results.append(sub_result)
+            except Exception as e:
+                logger.warning(f"서브쿼리 실행 실패: {e}")
+                cypher_results.append([])
+
+        return {
+            "case": "2", 
+            "cypher": sub_queries, 
+            "result": "",
+            "raw_data": cypher_results,
+            "similar_examples_used": len(similar_examples),
+            "few_shot_examples": [ex['natural_language'] for ex in similar_examples] if similar_examples else [],
+            "result_metadata": {
+                "validated": True,
+                "corrector_used": True,
+                "vector_search_enabled": True
             }
 
         # 9. (한 번의 Text2Cypher로 결과를 찾지 못한 경우) 질문에 상품명이 포함되어있는지 확인하고 case 2-1, case 2-2로 분기
