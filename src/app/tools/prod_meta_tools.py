@@ -45,6 +45,7 @@ DYNAMIC_CYPHER_GENERATION_TEMPLATE = """작업: 그래프 데이터베이스 조
 - 저렴하거나 비싼 요금제에 대한 질문시 월정액 값을 기준으로 정렬하세요.
 - 검색 키워드는 공백으로 구분된 단일 명사를 선호하세요. 예: "넷플릭스 할인" 대신 "넷플릭스"
 - 상품 비교 시 비교할 모든 상품을 조회하는 쿼리를 생성한 후 결과를 비교하세요.
+- 질문에 숫자형 필드에 대한 조건이 포함된 경우, 해당 필드를 기준으로 결과를 정렬하도록 ORDER BY 문을 사용하세요.
 
 특정 요금제명 검색 우선순위:
 특정 요금제명으로 검색할 때는 다음 우선순위를 따르세요:
@@ -126,10 +127,10 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
         # 2. Few-shot 예시를 프롬프트에 추가
         few_shot_text = ""
         if similar_examples:
-            few_shot_text = "\nSimilar examples for reference:\n"
+            few_shot_text = "\n아래의 예제 질문과 그에 따른 cypher 생성 예를 참고하여 최종 cypher를 생성하세요. ORDER BY 절을 무시하지 마세요.\n"
             for i, example in enumerate(similar_examples, 1):
-                few_shot_text += f"Example {i} (similarity: {example['similarity']:.3f}):\n"
-                few_shot_text += f"Question: {example['natural_language']}\n"
+                few_shot_text += f"예제 {i} (유사도: {example['similarity']:.3f}):\n"
+                few_shot_text += f"질문: {example['natural_language']}\n"
                 few_shot_text += f"Cypher: {example['cypher_query']}\n\n"
             logger.info(f"Few-shot 예시 {len(similar_examples)}개 찾음")
         else:
@@ -169,6 +170,10 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
             return_direct=True, # 자연어 응답 생성 건너뛰기
         )
         
+        logger.info("#################### dynamic_prompt ########################")
+        logger.info(dynamic_prompt)
+        logger.info("############################################################")
+        
         # 6. Cypher Query Corrector 설정
         # # 기존(기본) corrector 보존
         # default_corrector = chain.cypher_query_corrector 
@@ -192,6 +197,7 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
         # 8. 결과 처리
         intermediate_steps = result.get('intermediate_steps', [])
         cypher_query = intermediate_steps[0].get('query', '') if intermediate_steps else ''
+        # Cypher 쿼리 정제 (cypher 프리픽스 제거)
         refined_cypher = cypher_query[6:].strip() if cypher_query.startswith("cypher") else cypher_query.strip()
         
         # 디버깅: intermediate_steps 출력
@@ -204,16 +210,19 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
                 if key in ['context', 'result', 'output'] and isinstance(value, list) and len(value) > 0:
                     logger.info(f"    첫 번째 아이템: {type(value[0])}")
         
-        # raw_data 추출 시도 - 모든 step 확인
-        raw_data = []
-        for step in intermediate_steps:
-            potential_data = step.get('context', step.get('result', step.get('output', [])))
-            if isinstance(potential_data, list) and len(potential_data) > 0:
-                raw_data = potential_data
-                break
+        # # raw_data 추출 시도 - 모든 step 확인
+        # raw_data = []
+        # for step in intermediate_steps:
+        #     potential_data = step.get('context', step.get('result', step.get('output', [])))
+        #     if isinstance(potential_data, list) and len(potential_data) > 0:
+        #         raw_data = potential_data
+        #         break
         
-        # Cypher 쿼리 정제 (cypher 프리픽스 제거)
-        refined_cypher = cypher_query[6:].strip() if cypher_query.startswith("cypher") else cypher_query.strip()
+        # raw data (검색 결과) 추출 시도
+        raw_data = result.get('result', [])
+        logger.info("################## raw data ###################")
+        logger.info(raw_data)
+        logger.info("###############################################")
         
         logger.info(f"생성된 Cypher 쿼리:\n{refined_cypher}")
         logger.info(f"사용된 Few-shot 예시 수: {len(similar_examples)}")
