@@ -270,6 +270,7 @@ def prod_meta_search(query: str, original_input: str = None) -> Dict:
                 "corrector_used": True,
                 "vector_search_enabled": True
             }
+        }
 
         # 9. (한 번의 Text2Cypher로 결과를 찾지 못한 경우) 질문에 상품명이 포함되어있는지 확인하고 case 2-1, case 2-2로 분기
         # 요금제 노드의 상품명 속성값 모두를 리스트로 만들어서 불러오기
