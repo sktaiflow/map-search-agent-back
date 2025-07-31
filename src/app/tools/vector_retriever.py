@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 import asyncpg
 import numpy as np
 from openai import OpenAI
+import ollama
 
 logger = logging.getLogger(__name__)
 
@@ -102,5 +103,57 @@ class FewShotRetriever:
         except Exception as e:
             logger.warning(f"사용 통계 업데이트 실패: {e}")
 
+
+
+class FewShotRetrieverOllama:
+    """Ollama 기반 FewShotRetriever"""
+    def __init__(self):
+        # Ollama 임베딩 모델 설정 (환경변수 OLLAMA_EMBED_MODEL, 기본 nomic-embed-text)
+        self.emb_model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+        self.client = ollama.Client(host="http://host.docker.internal:11434")
+        # 벡터 DB 설정은 기존과 동일
+        self.db_config = {
+            'host': os.getenv("PGVECTOR_HOST", "localhost"),
+            'port': int(os.getenv("PGVECTOR_PORT", 5432)),
+            'database': os.getenv("PGVECTOR_DBNAME", "vectordb"),
+            'user': os.getenv("PGVECTOR_USER", "postgres"),
+            'password': os.getenv("PGVECTOR_PASSWORD")
+        }
+
+    async def get_embedding(self, text: str) -> List[float]:
+        """텍스트의 임베딩 벡터 생성 via Ollama"""
+        try:
+            # ollama.embed은 블로킹 호출이므로 스레드에서 실행
+            response = await asyncio.to_thread(
+                self.client.embed,
+                model=self.emb_model,
+                input=text
+            )
+            embed_vec = response.get("embeddings")[0]
+            if len(embed_vec) != 1536:
+                embed_vec = embed_vec + [0.0] * (1536 - len(embed_vec))
+                
+            return embed_vec
+        except Exception as e:
+            logger.error(f"임베딩 생성 실패 (Ollama): {e}")
+            return None
+
+    async def find_similar_examples(
+        self,
+        query: str,
+        top_k: int = 3,
+        min_similarity: float = 0.5
+    ) -> List[Dict]:
+        """유사한 Few-shot 예시 검색 (Ollama)"""
+        # 나머지 로직은 FewShotRetriever.find_similar_examples 그대로 복사
+        return await FewShotRetriever.find_similar_examples(self, query, top_k, min_similarity)
+
+    async def _update_usage_stats(self, conn, used_examples: List[str]):
+        """사용 통계 업데이트 (Ollama)"""
+        # 나머지 로직은 FewShotRetriever._update_usage_stats 그대로 복사
+        return await FewShotRetriever._update_usage_stats(self, conn, used_examples)
+
+
 # 전역 인스턴스
 few_shot_retriever = FewShotRetriever()
+# few_shot_retriever = FewShotRetrieverOllama()

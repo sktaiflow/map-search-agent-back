@@ -8,6 +8,7 @@ import asyncpg
 import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
+import ollama
 
 env_path = "docker/.env"
 load_dotenv(env_path)
@@ -121,9 +122,39 @@ class FewShotDataInserter:
             
         finally:
             await conn.close()
+            
+            
+
+# Ollama 기반 임베딩 삽입기
+class FewShotDataInserterOllama(FewShotDataInserter):
+    def __init__(self, model: str = None):
+        super().__init__()
+        self.model = model or os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+
+    async def get_embedding(self, text: str) -> List[float]:
+        """Ollama 임베딩 생성 (Python 라이브러리 사용)"""
+        try:
+            # 동기 함수 호출을 비동기로 실행
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: ollama.embed(model=self.model, input=text)
+            )
+            embed_vec = result.get("embeddings")[0]
+            if len(embed_vec) != 1536:
+                embed_vec = embed_vec + [0.0] * (1536 - len(embed_vec))
+                
+            return embed_vec
+        except Exception as e:
+            print(f"임베딩 생성 실패 for '{text[:30]}...': {e}")
+            return None
+
+
+    
 
 async def main():
     inserter = FewShotDataInserter()
+    # inserter = FewShotDataInserterOllama()
     
     await inserter.insert_data()
 
