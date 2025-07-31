@@ -192,7 +192,7 @@ def create_final_response(state: AgentState, failed_steps: list) -> AgentState:
     if search_case == "1":
         case_context = "검색 케이스: 정확한 검색 결과가 발견되었습니다."
     elif search_case == "2":
-        case_context = "검색 케이스: 모든 조건을 만족하는 요금제는 없지만, 조건을 완화하여 관련 요금제들을 찾았습니다. 요청하신 조건과 부분적으로 일치하는 옵션들을 제시합니다."
+        case_context = "검색 케이스: 모든 조건을 만족하는 요금제는 없지만, 조건을 완화하여 관련 요금제들을 찾았습니다. 검색된 모든 관련 요금제들을 포함하여 포괄적인 옵션들을 제시합니다."
     
     system_message = f"""
     당신은 SKT 요금제 전문 상담원입니다. 검색된 실제 데이터를 바탕으로 고객에게 실질적으로 도움이 되는 3단계 응답을 JSON 형식으로 생성하세요.
@@ -220,6 +220,7 @@ def create_final_response(state: AgentState, failed_steps: list) -> AgentState:
     - 상품명, 월정액, 주요혜택, 가입조건을 필수 포함
     - 원본 데이터의 구체적 수치와 조건을 그대로 활용
     - 단순히 "무제한 데이터" 같은 일반론 금지
+    - Case 2 상황에서는 검색된 모든 관련 요금제를 포함하여 포괄적인 선택지 제공
     
     2. summary 작성 시:
     - 가격대별로 분류 (6만원대, 7만원대, 9만원대, 10만원대 등)
@@ -233,6 +234,7 @@ def create_final_response(state: AgentState, failed_steps: list) -> AgentState:
     - 약정할인 적용 시 실제 절약 금액
     - 각 혜택의 실제 가치 분석 (예: 디즈니+ 월 구독료 9,900원)
     - 주의사항: 가입조건, 연령제한, 온라인 전용 등
+    - Case 2 상황에서는 특히 사용자가 찾던 조건과 부분적으로 일치하는 이유 설명
     
     절대 금지사항:
     - "다양한 혜택을 제공합니다" 같은 뻔한 표현
