@@ -1,0 +1,13 @@
+# Data sync module requirements for Airflow + Papermill
+requests>=2.28.0
+apache-airflow>=2.5.0
+papermill>=2.4.0
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# Optional: AWS support (if using S3)
+boto3>=1.26.0
+
+# Standard libraries (usually included in Python)
+pathlib
+typing
