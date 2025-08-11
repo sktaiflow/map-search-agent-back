@@ -56,7 +56,7 @@ SELECT productCode FROM mc_intg_prod WHERE pmSyncYn='Y'
 | 변수명 | 설명 | 기본값 |
 |--------|------|--------|
 | `MAP_API_BASE_URL` | MAP API 기본 URL | `https://api.map-stg.sktelecom.com` |
-| `MAP_API_KEY` | MAP API 인증 키 | `vdFXmlw8DqSimAmysgojBVoXE34C3pDw` |
+| `MAP_API_KEY` | MAP API 인증 키 | `***************` |
 | `API_TIMEOUT` | API 타임아웃 (초) | `30` |
 | `DATALOAD_DIR` | 데이터 저장 디렉토리 | `./notebooks/dataload/` |
 | `MAX_WORKERS` | 병렬 처리 최대 워커 수 | `10` |
