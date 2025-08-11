@@ -1,0 +1,13 @@
+# Data sync module requirements for Airflow + NES Operator
+requests>=2.28.0
+apache-airflow>=2.5.0
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# SKT VANE 자체 패키지들 (회사 내부 패키지)
+# apache-airflow-providers-sktvane (NES Operator 포함)
+# hooks.slack, utils 등도 회사 자체 패키지
+
+# Standard Airflow providers
+apache-airflow-providers-google>=10.0.0
+apache-airflow-providers-amazon>=8.0.0
