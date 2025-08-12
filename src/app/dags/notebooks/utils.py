@@ -145,32 +145,6 @@ def parse_offer_benefits(data: Any) -> List[Dict[str, str]]:
             return None
 
 
-# def parse_optional_offer_benefits(data: Any) -> List[Dict[str, str]]:
-#     """Parse optionalOfferBenefits data to extract product information."""
-#     def parse_list(list_data: List[Dict]) -> List[Dict[str, str]]:
-#         result_data = []
-#         for item in list_data:
-#             product_list = extract_val(item, ['benefitInfo', 'productInformation', 'productList'])
-#             if product_list:
-#                 for product in product_list:
-#                     result_data.append({
-#                         'productId': product.get('pmProductId', ''),
-#                         'productName': product.get('productName', '')
-#                     })
-#         return result_data if result_data else None
-
-#     if isinstance(data, dict):
-#         return parse_list([data])
-#     elif isinstance(data, list):
-#         return parse_list(data)
-#     else:
-#         try:
-#             data = ast.literal_eval(str(data))
-#             return parse_list(data if isinstance(data, list) else [data])
-#         except:
-#             return None
-
-
 def parse_data_option_providing_method(data: Any) -> List[Dict[str, str]]:
     """Parse dataOptionProvidingMethod data to extract option information."""
     def parse_list(list_data: List[Dict]) -> List[Dict[str, str]]:

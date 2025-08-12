@@ -75,7 +75,7 @@ dag = DAG(
 def get_nes_model_operator(task):
     operator = NesOperator(
         task_id=task,
-        input_nb=f"https://github.com/sktaiflow/map-search-agent/tree/{branch}/src/app/data_sync/notebooks/{task}.ipynb",
+        input_nb=f"https://github.com/sktaiflow/map-search-agent/tree/{branch}/src/app/dags/notebooks/{task}.ipynb",
         parameters={
             "env": env,
             "dt": "{{ ds }}",
