@@ -41,7 +41,7 @@ class MAPClient:
         await self._http_client.close()
 
     @traced
-    async def request(
+    async def _request(
         self, method: str, endpoint: str, headers: dict[str, Any] = {}, **kwargs
     ) -> HTTPBaseClientResponse:
         try:
