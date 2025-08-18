@@ -1,7 +1,7 @@
 import asyncio
 import attr
 import random
-from utils import json
+import json
 
 
 from aiohttp import (
@@ -10,8 +10,10 @@ from aiohttp import (
     ClientSession,
     ClientError,
 )
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict
 import aiohttp
+from aiohttp.typedefs import LooseHeaders
+from multidict import CIMultiDictProxy
 
 
 # TODO map 서비스 레이턴시 기준 나오면 수정 필요
@@ -23,8 +25,8 @@ class Retry:
     """
 
     total: int = 2
-    base: float = 0.1
-    cap: float = 0.2
+    base: float = 0.3
+    cap: float = 0.75
     retry_on_status: List[int] = attr.Factory(list)
     retry_on_read_timeout: bool = False
 
@@ -34,12 +36,11 @@ class Retry:
         """
         exp = self.base * (2**attempts)
         upper = min(self.cap, exp)
-        return asyncio.get_running_loop().random() * upper
+        return random.random() * upper
 
     def equal_jitter(self, attempts: int) -> float:
         t = min(self.cap, self.base * (2**attempts))
-        loop = asyncio.get_running_loop()
-        return (t / 2.0) + (loop.random() * (t / 2.0))
+        return (t / 2.0) + (random.random() * (t / 2.0))
 
     def backoff(
         self,
@@ -68,7 +69,7 @@ class InvalidHttpStatus(Exception):
 
 
 class HTTPBaseClientResponse:
-    def __init__(self, status: int, headers: "aiohttp.typedefs.LooseHeaders", body: bytes) -> None:
+    def __init__(self, status: int, headers: CIMultiDictProxy[str], body: bytes) -> None:
         self.status = status
         self.headers = headers
         self.body = body
@@ -89,11 +90,13 @@ class HTTPBaseClient:
         session: Optional[ClientSession] = None,
         timeout: Optional[ClientTimeout] = None,
         retry: Optional[Retry] = None,
+        default_headers: Optional[Dict[str, str]] = None,
     ) -> None:
         self._session = session
         self.timeout = timeout or ClientTimeout(connect=0.5, sock_connect=1, sock_read=3)
         self.retry = retry or Retry()
         self._owns_session = session is None  # (외부주입인지 체크)
+        self._default_headers: Dict[str, str] = default_headers or {}
 
     @property
     def session(self) -> ClientSession:
@@ -121,11 +124,21 @@ class HTTPBaseClient:
         method: str,
         url: str,
         timeout: Optional[ClientTimeout] = None,
+        headers: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> HTTPBaseClientResponse:
 
         for attempts in range(self.retry.total + 1):
             try:
+                merged_headers: Dict[str, str] = dict(self.session._default_headers)
+                if self._default_headers:
+                    merged_headers.update(self._default_headers)
+
+                if headers:
+                    merged_headers.update(headers)
+
+                kwargs["headers"] = merged_headers
+
                 async with self.session.request(
                     method=method,
                     url=url,
@@ -139,20 +152,30 @@ class HTTPBaseClient:
 
                 return HTTPBaseClientResponse(resp.status, resp.headers, body)
 
+            except asyncio.CancelledError:
+                raise
+
             except asyncio.TimeoutError as e:
-                if not self.retry.retry_on_read_timeout:
+                # 읽기/연결 타임아웃 재시도 여부
+                if not self.retry.retry_on_read_timeout or attempts >= self.retry.total:
                     raise
 
+                await asyncio.sleep(self.retry.backoff(attempts))
+
+            except InvalidHttpStatus as e:
                 if attempts < self.retry.total:
                     await asyncio.sleep(self.retry.backoff(attempts))
                 else:
                     raise
 
-            except ClientError:
+            except ClientError as e:
                 if attempts < self.retry.total:
                     await asyncio.sleep(self.retry.backoff(attempts))
                 else:
                     raise
+
+            except Exception:
+                raise
 
 
 def build_http_client(
