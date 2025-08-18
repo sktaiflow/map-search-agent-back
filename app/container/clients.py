@@ -4,6 +4,7 @@ from app.clients.map import MAPClient
 from app.clients.http_base import HTTPBaseClient, ClientTimeout, Retry
 import httpx
 import asyncio
+from configs import config
 
 
 async def init_http_client(limits: httpx.Limits, timeout: ClientTimeout, retry: Retry):
@@ -34,6 +35,6 @@ class ClientContainer(containers.DeclarativeContainer):
     map_client = providers.Factory(
         MAPClient,
         http_client=http_client,
-        host=settings.provided.map_base_url,
-        api_key=settings.provided.map_api_key,
+        host=config.map_base_url,
+        api_key=config.map_api_key,
     )
