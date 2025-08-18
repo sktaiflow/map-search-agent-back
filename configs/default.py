@@ -31,6 +31,13 @@ class BaseConfig(BaseSettings):
     app_name: str = os.environ.get("APP_NAME", "map-search-agent")
     api_version: str = os.getenv("API_VERSION", "0.0.1")
 
+    # map api config
+    map_base_url: str = ""
+    map_api_key: str = ""
+
+    # postgres config
+
+    # openai
     # smart bee
     openai_api_base: str = ""
     openai_api_key: str = ""
