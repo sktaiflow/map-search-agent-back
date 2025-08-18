@@ -90,13 +90,11 @@ class HTTPBaseClient:
         session: Optional[ClientSession] = None,
         timeout: Optional[ClientTimeout] = None,
         retry: Optional[Retry] = None,
-        default_headers: Optional[Dict[str, str]] = None,
     ) -> None:
         self._session = session
         self.timeout = timeout or ClientTimeout(connect=0.5, sock_connect=1, sock_read=3)
         self.retry = retry or Retry()
         self._owns_session = session is None  # (외부주입인지 체크)
-        self._default_headers: Dict[str, str] = default_headers or {}
 
     @property
     def session(self) -> ClientSession:
@@ -124,21 +122,11 @@ class HTTPBaseClient:
         method: str,
         url: str,
         timeout: Optional[ClientTimeout] = None,
-        headers: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> HTTPBaseClientResponse:
 
         for attempts in range(self.retry.total + 1):
             try:
-                merged_headers: Dict[str, str] = dict(self.session._default_headers)
-                if self._default_headers:
-                    merged_headers.update(self._default_headers)
-
-                if headers:
-                    merged_headers.update(headers)
-
-                kwargs["headers"] = merged_headers
-
                 async with self.session.request(
                     method=method,
                     url=url,
@@ -146,10 +134,8 @@ class HTTPBaseClient:
                     **kwargs,
                 ) as resp:
                     body = await resp.read()
-
                     if self.retry.retry_on_status and resp.status in self.retry.retry_on_status:
                         raise InvalidHttpStatus(resp.status, body)
-
                 return HTTPBaseClientResponse(resp.status, resp.headers, body)
 
             except asyncio.CancelledError:
