@@ -1,10 +1,11 @@
 from aiohttp import ClientSession, TCPConnector
 from dependency_injector import containers, providers
 from app.clients.map import MAPClient
+from app.clients.synonym import SynonymClient
 from app.clients.http_base import HTTPBaseClient, ClientTimeout, Retry
 import httpx
 import asyncio
-from configs import config
+from configs import config as global_config
 
 
 async def init_http_client(limits: httpx.Limits, timeout: ClientTimeout, retry: Retry):
@@ -20,9 +21,6 @@ async def init_http_client(limits: httpx.Limits, timeout: ClientTimeout, retry: 
 
 
 class ClientContainer(containers.DeclarativeContainer):
-    settings = providers.Dependency()
-    config = providers.Configuration()
-
     http_client = providers.Resource(
         init_http_client,
         limits=httpx.Limits(
@@ -32,9 +30,15 @@ class ClientContainer(containers.DeclarativeContainer):
         retry=Retry(total=1, base=0.15, cap=0.25),
     )
     # HTTP 클라이언트 (서비스별로 session 주입)
-    map_client = providers.Factory(
+    map_api = providers.Factory(
         MAPClient,
         http_client=http_client,
-        host=config.map_base_url,
-        api_key=config.map_api_key,
+        host=global_config.map_base_url,
+        api_key=global_config.map_api_key,
+    )
+    synonym_api = providers.Factory(
+        SynonymClient,
+        http_client=http_client,
+        host=global_config.synonym_base_url,
+        api_key=global_config.synonym_api_key,
     )
