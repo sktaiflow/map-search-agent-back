@@ -12,3 +12,7 @@ async def init_postgres_client(
     client = await session.client("dynamodb", endpoint_url=endpoint_url).__aenter__()
     yield client
     await client.__aexit__(None, None, None)
+
+
+async def init_neo4j_client(session, endpoint_url: str = None) -> AsyncGenerator[BaseClient, None]:
+    pass
