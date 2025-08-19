@@ -4,7 +4,7 @@ services:
     ports:
       - "4566-4599:4566-4599"
     environment:
-      - SERVICES=kinesis,dynamodb
+      - SERVICES=dynamodb
       - DOCKER_HOST=unix:///var/run/docker.sock
       - SKIP_SSL_CERT_DOWNLOAD=true
       - PERSISTENCE=1
