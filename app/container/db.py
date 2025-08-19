@@ -47,3 +47,26 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
         init_pgvector_models,
         postgres_db=postgres_db,
     )
+
+
+from neo4j import AsyncGraphDatabase, READ_ACCESS, WRITE_ACCESS
+
+
+class Neo4jContainer(containers.DeclarativeContainer):
+
+    driver = providers.Singleton(
+        AsyncGraphDatabase.driver,
+        uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
+        auth=providers.Callable(
+            lambda u, p: (u, p), global_config.neo4j_username, global_config.neo4j_password
+        ),
+        max_connection_lifetime=60,
+        max_connection_pool_size=50,
+    )
+
+    session = providers.Resource(lambda d: _neo4j_session(d), driver)
+
+
+async def _neo4j_session(driver):
+    async with driver.session(default_access_mode=READ_ACCESS) as session:
+        yield session
