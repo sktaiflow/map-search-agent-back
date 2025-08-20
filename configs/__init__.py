@@ -15,7 +15,7 @@ def get_config(stack_type: str) -> BaseConfig:
 
         from pathlib import Path
 
-        env_file = Path(__file__).parent.parent / f".env.{stack_type}"
+        env_file = Path(__file__).parent.parent / f".env.local"
         if not env_file.exists():
             raise FileNotFoundError(f"env file not found: {env_file}")
 

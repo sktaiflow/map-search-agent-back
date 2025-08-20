@@ -68,15 +68,6 @@ async def async_create_chat_completion(
         base_url=config.openai_api_base,
         api_key=config.openai_api_key,
         disable_streaming=True,
-        default_headers={
-            "X-TRANSACTION-ID": get_request_id() or str(uuid.uuid4().hex[:16]),
-            "X-Langfuse-Trace-Id": trace.format_trace_id(
-                trace.get_current_span().get_span_context().trace_id
-            ),
-            "X-Langfuse-Parent-Span-Id": trace.format_span_id(
-                trace.get_current_span().get_span_context().span_id
-            ),
-        },
         max_retries=1,
         timeout=timeout,
     ).bind(**kwargs)
@@ -153,15 +144,7 @@ def create_chat_completion(
         model=model,
         base_url=config.openai_api_base,
         api_key=config.openai_api_key,
-        default_headers={
-            "X-TRANSACTION-ID": get_request_id() or str(uuid.uuid4().hex[:16]),
-            "X-Langfuse-Trace-Id": trace.format_trace_id(
-                trace.get_current_span().get_span_context().trace_id
-            ),
-            "X-Langfuse-Parent-Span-Id": trace.format_span_id(
-                trace.get_current_span().get_span_context().span_id
-            ),
-        },
+        default_headers={},
         max_retries=1,
         timeout=timeout,
     ).bind(**kwargs)

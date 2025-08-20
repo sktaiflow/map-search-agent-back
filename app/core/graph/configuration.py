@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields, field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
+from dataclasses import dataclass, fields, field
 
 from langchain_core.runnables import RunnableConfig
 
@@ -12,15 +13,11 @@ from langchain_core.runnables import RunnableConfig
 class Configuration:
     """The configuration for the agent."""
 
-    # Changeme: Add configurable values here!
-    # these values can be pre-set when you
-    # create assistants (https://langchain-ai.github.io/langgraph/cloud/how-tos/configuration_cloud/)
-    # and when you invoke the graph
-    embdding_kwargs: dict = field(default_factory=dict)
+    embedding_kwargs: dict = field(default_factory=dict)
     llm_model: str = "gpt-4o"
     version: str = "map-v1.0"
-    # temperature: int = 0
-    # streaming: bool = False
+    temperature: float = 0.0
+    streaming: bool = False
 
     @classmethod
     def from_runnable_config(cls, config: Optional[RunnableConfig] = None) -> Configuration:

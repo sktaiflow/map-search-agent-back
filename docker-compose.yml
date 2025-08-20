@@ -1,0 +1,52 @@
+services:
+  localstack:
+    image: localstack/localstack:stable
+    ports:
+      - "4566-4599:4566-4599"
+    environment:
+      - SERVICES=dynamodb
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - SKIP_SSL_CERT_DOWNLOAD=true
+      - PERSISTENCE=1
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - localstack-data:/var/lib/localstack
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      DYNAMO_ENDPOINT: "http://localstack:4566"
+      AWS_REGION: "ap-northeast-2"
+      AWS_ACCESS_KEY_ID: "localstack-access-key"
+      AWS_SECRET_ACCESS_KEY: "localstack-secret-access-key"
+    depends_on:
+      - localstack
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin  # DB 사용자 이름
+      POSTGRES_PASSWORD: admin  # DB 비밀번호
+      POSTGRES_DB: map-db  # 기본 데이터베이스 이름
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  pgweb:
+    image: sosedoff/pgweb
+    container_name: pgweb
+    restart: always
+    ports:
+      - "5050:8081"
+    environment:
+      DATABASE_URL: "postgres://admin:admin@postgres_db:5432/map-db?sslmode=disable"
+    depends_on:
+      - postgres  # PostgreSQL이 실행된 후 pgweb 실행
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+  localstack-data:

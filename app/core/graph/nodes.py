@@ -2,20 +2,12 @@ from typing import Dict, Any
 from .state import OverallState, OutputState, InputState
 from .configuration import Configuration as Config
 from langchain_core.runnables import RunnableConfig
-from .analayzer import replace_query_with_synonym
-from .prompts import PLANNING_SYS_PROMPT
+from app.core.prompts import PLANNING_SYS_PROMPT
 
 """
 동작 플로우 sudo code
-
 query -> init -> plan -> execute -> evaluate -> replan -> output
-
-init: 초기 상태 설정 (동의어, 오타 치환)
-plan: 쿼리를 브레이크다운하여 subtasks 생성
-execute: plan_node 에서 만들어진 subtasks 를 실행
-evaluate: execute_node 에서 만들어진 결과를 평가
-replan: evaluate_node 에서 평가 결과가 부정확할 경우 재계획
-output: 최종 결과물 생성
+preprocess_node: 초기 상태 설정 (동의어, 오타 치환)
 """
 
 
