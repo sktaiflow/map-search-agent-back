@@ -8,8 +8,8 @@ import os
 from .configuration import Configuration as Config
 from configs import StackType, config
 from utils.logger import logger
-from .state import OverallStateModel, InputState, OutputState
-from .nodes import init_node, plan_node, execute_node, evaluate_node, output_node, replan_node
+from .state import OverallState, InputState, OutputState
+from .nodes import init_node, plan_node, execute_node, evaluate_node, output_node, replan_node, replan_or_finish
 
 
 class BaseGraph:
@@ -43,7 +43,7 @@ class MapSearchGraph(BaseGraph):
 
     def create_graph(self) -> StateGraph:
         workflow = StateGraph(
-            OverallStateModel, input=InputState, output=OutputState, config_schema=Config
+            OverallState, input=InputState, output=OutputState, config_schema=Config
         )
 
         ## 노드 추가
@@ -55,18 +55,22 @@ class MapSearchGraph(BaseGraph):
         workflow.add_node("output", output_node)
         workflow.add_node("replan", replan_node)
 
+        ## edge 추가
+        workflow.add_edge(START, "init")
+        workflow.add_edge("init", "plan")
+        workflow.add_edge("plan", "execute")
+        workflow.add_edge("execute", "evaluate")
+        
         ## 조건부 노드 추가
         workflow.add_conditional_edges(
-            "agent",
-            replan_or_finish,  # 이 함수가 "final_response" 또는 "planner"를 반환
+            "evaluate",
+            replan_or_finish,
             {
-                "final_response": "final_response",  # ✅ 최종 응답 노드로 이동
-                "planner": "planner",  # 재계획으로 이동
+                "output": "output",
+                "replan": "replan",
             },
         )
-
-        ## edge 추가
-
-        workflow.add_edge(workflow.get_node("init"), workflow.get_node("plan"))
-        workflow.add_edge(workflow.get_node("plan"), workflow.get_node("execute"))
-        workflow.add_edge(workflow.get_node("execute"), workflow.get_node("evaluate"))
+        
+        # Replan goes back to plan
+        workflow.add_edge("replan", "plan")
+        workflow.add_edge("output", END)

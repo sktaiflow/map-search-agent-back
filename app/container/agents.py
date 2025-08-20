@@ -1,19 +1,19 @@
 from dependency_injector import containers, providers
 
-from app.agents.schedule_agent_with_graph import 
-from app.core.containers import GraphContainer
+from app.agents.map_search_agent import MapSearchAgent
+from app.container.graphs import GraphContainer
 
 
 class AgentContainer(containers.DeclarativeContainer):
     graphs: GraphContainer = providers.DependenciesContainer()
 
-    map_agent = providers.Singleton(
-        MAPSearchAgent,
-        graph=graphs.map_agent,
+    map_search_agent = providers.Singleton(
+        MapSearchAgent,
+        graph=graphs.map_search_graph,
     )
 
     factory = providers.Dict(
         {
-            MAPSearchAgent.config.agent_name: map_agent,
+            MapSearchAgent.config.agent_name: map_search_agent,
         }
     )
