@@ -1,0 +1,68 @@
+# embedding_client.py
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
+from langchain_openai import OpenAIEmbeddings
+import numpy as np
+
+
+class EmbeddingOutput(BaseModel):
+    model: str
+    vectors: List[float]
+
+
+class EmbeddingClient:
+    """
+    - OpenAIEmbeddings 팩토리 주입
+    - 배치/비동기/차원 관리/정규화 등 운영 편의 로직 포함
+    """
+
+    def __init__(
+        self,
+        embeddings_factory,  # Callable[..., OpenAIEmbeddings]
+        *,
+        default_model: str = "text-embedding-3-small",
+        default_dimensions: Optional[int] = None,
+        normalize: bool = True,
+    ):
+        self._emb_factory = embeddings_factory
+        self._embed_model = default_model
+        self._default_dimensions = default_dimensions
+        self._normalize = normalize
+
+    def _maybe_normalize(self, arr: List[List[float]]) -> List[List[float]]:
+        if not self._normalize:
+            return arr
+        m = np.array(arr, dtype=np.float32)
+        norms = np.linalg.norm(m, axis=1, keepdims=True) + 1e-12
+        m = m / norms
+        return m.tolist()
+
+    async def aembed(
+        self,
+        text: str,
+        *,
+        model: Optional[str] = None,
+        dimensions: Optional[int] = None,
+    ) -> EmbeddingOutput:
+        """
+        단일 문자열을 입력받아 임베딩 벡터를 반환
+        """
+        assert self._emb_factory is not None, "embeddings_factory not injected"
+
+        _model = model or self._embed_model
+        _dims = dimensions if dimensions is not None else self._embed_dims
+
+        emb: OpenAIEmbeddings = self._emb_factory(
+            model=_model,
+            dimensions=_dims,
+        )
+
+        vector: list[float] = await emb.aembed_query(text)
+
+        if self._normalize:
+            n_vector = self._maybe_normalize([vector])
+
+        return EmbeddingOutput(
+            model=_model,
+            vectors=n_vector[0],  # 통일성을 위해 List[List[float]]로 반환
+        )
