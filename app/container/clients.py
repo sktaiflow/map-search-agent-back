@@ -21,24 +21,31 @@ async def init_http_client(limits: httpx.Limits, timeout: ClientTimeout, retry: 
 
 
 class ClientContainer(containers.DeclarativeContainer):
-    http_client = providers.Resource(
-        init_http_client,
-        limits=httpx.Limits(
-            max_connections=2048, max_keepalive_connections=2048, keepalive_expiry=10
-        ),
-        timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=0.5),
-        retry=Retry(total=1, base=0.15, cap=0.25),
-    )
-    # HTTP 클라이언트 (서비스별로 session 주입)
+
     map_api = providers.Factory(
         MAPClient,
-        http_client=http_client,
+        http_client=providers.Resource(
+            init_http_client,
+            limits=httpx.Limits(
+                max_connections=2048, max_keepalive_connections=2048, keepalive_expiry=10
+            ),
+            timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=0.5),
+            retry=Retry(total=1, base=0.15, cap=0.25),
+        ),
         host=global_config.map_base_url,
         api_key=global_config.map_api_key,
     )
+
     synonym_api = providers.Factory(
         SynonymClient,
-        http_client=http_client,
+        http_client=providers.Resource(
+            init_http_client,
+            limits=httpx.Limits(
+                max_connections=2048, max_keepalive_connections=2048, keepalive_expiry=10
+            ),
+            timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=0.5),
+            retry=Retry(total=1, base=0.15, cap=0.25),
+        ),
         host=global_config.synonym_base_url,
         api_key=global_config.synonym_api_key,
     )
