@@ -1,7 +1,7 @@
 import asyncio
 import attr
 import random
-import json
+import utils.json as json
 
 
 from aiohttp import (
@@ -24,7 +24,7 @@ class Retry:
     - equal: Equal Jitter (변동성 절충)
     """
 
-    total: int = 2
+    total: int = 1
     base: float = 0.3
     cap: float = 0.75
     retry_on_status: List[int] = attr.Factory(list)
