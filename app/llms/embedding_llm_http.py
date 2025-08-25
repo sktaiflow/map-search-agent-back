@@ -2,22 +2,22 @@ from typing import Optional
 
 from app.clients.http_base import HTTPBaseClient, InvalidHttpStatus
 from app.errors import ExternalRequestError
-import json
+import utils.json as json
 
 
-class SmartbeeEmbeddingAPIError(ExternalRequestError):
+class LLMEmbeddingAPIError(ExternalRequestError):
     def __init__(
         self,
         status_code: Optional[int] = None,
         code: Optional[str] = None,
         message: Optional[str] = None,
     ):
-        super().__init__("PE Tool Embedding API", status_code, code=code, message=message)
+        super().__init__("OpenAI Embedding API", status_code, code=code, message=message)
         self.code = code
         self.message = message
 
 
-class SmartbeeEmbeddingModel:
+class OpenAIEmbeddingModel:
     def __init__(
         self,
         http_client: HTTPBaseClient,
@@ -30,17 +30,17 @@ class SmartbeeEmbeddingModel:
         self._api_key = api_key
         self._model = model
 
-    async def embed(self, text: str = None, texts: list[str] = None):
+    async def aembed(self, text: str = None, texts: list[str] = None):
         if text:
             request_data = {
-                "service_code": "map-search-agent",
+                "service_code": "",  # TODO: Smartbee에서는 필요없음
                 "input": text.replace("\n", " "),
                 "model": self._model,
                 "encoding_format": "float",
             }
         elif texts:
             request_data = {
-                "service_code": "map-search-agent",
+                "service_code": "",  # TODO: Smartbee에서는 필요없음
                 "input": [text.replace("\n", " ") for text in texts],
                 "model": self._model,
                 "encoding_format": "float",
@@ -55,13 +55,12 @@ class SmartbeeEmbeddingModel:
         try:
             response = await self._http_client.request(
                 method="POST",
-                url=f"{self._host}/api/v1/embeddings",
+                url=f"{self._host}/embeddings",
                 headers=headers,
                 json=request_data,
             )
             if response.status // 100 != 2:
                 raise InvalidHttpStatus(response.status, response.body)
-
             return response.json()["res"]["data"][0]["embedding"]
         except InvalidHttpStatus as e:
             try:
@@ -71,6 +70,6 @@ class SmartbeeEmbeddingModel:
                 )
             except Exception:
                 code, message = None, None
-            raise SmartbeeEmbeddingAPIError(e.status, code, message)
+            raise LLMEmbeddingAPIError(e.status, code, message)
         except Exception as e:
-            raise SmartbeeEmbeddingAPIError(message=str(e))
+            raise LLMEmbeddingAPIError(message=str(e))
