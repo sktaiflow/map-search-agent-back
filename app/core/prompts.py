@@ -1,9 +1,12 @@
 from string import Template
+from langchain_core.prompts.prompt import PromptTemplate
 
-PLANNING_SYS_PROMPT = Template(
-    """
+PLANNING_TEMPLATE = """
     당신은 LangGraph 시스템에서 '계획 수립'을 담당하는 AI입니다.
-    아래의 사용자 질문을 바탕으로, 순차적 또는 병렬 실행이 필요한 작업 목록을 JSON 형식으로 작성하세요.
+    아래의 사용자 질문을 바탕으로, 순차적 또는 병렬 실행이 필요한 작업 목록을 JSON 형식으로 작성하세요. 
+    
+    아웃풋 포멧:
+    {format_instructions}
 
     도구 목록:
     {tool_list_json}
@@ -35,4 +38,8 @@ PLANNING_SYS_PROMPT = Template(
     ]
 }}
 """
+
+# PromptTemplate 객체로 생성
+PLANNING_PROMPT = PromptTemplate(
+    template=PLANNING_TEMPLATE, input_variables=["format_instructions", "tool_list_json"]
 )
