@@ -1,8 +1,9 @@
 from typing import Dict, Any, Optional
 from app.clients.http_base import HTTPBaseClient, InvalidHttpStatus, HTTPBaseClientResponse
-from utils.trace import traced, trace
+
+# from utils.trace import traced, trace
 from utils import logger
-import json
+import utils.json as json
 
 
 class ExternalRequestError(Exception):
@@ -40,19 +41,24 @@ class MAPClient:
     async def close(self):
         await self._http_client.close()
 
-    @traced
     async def _request(
         self, method: str, endpoint: str, headers: dict[str, Any] = {}, **kwargs
     ) -> HTTPBaseClientResponse:
         try:
-            url = f"{self._host}{endpoint}"
+            url = f"{self._host}/{endpoint}"
             ## 헤더 API KEY 추가
             headers = {"x-apim-key": self._api_key, "content-type": "application/json", **headers}
-            # logger.info(type="map-request", url=url, method=method, extra=kwargs)
+            logger.info(type="map-request", url=url, method=method, extra=kwargs)
             response = await self._http_client.request(method, url, headers=headers, **kwargs)
             if response.status != 200:
                 raise InvalidHttpStatus(response.status, response.body)
 
+            response_data = response.json()
+
+            if response.status // 100 != 2:
+                raise InvalidHttpStatus(response.status, response.body)
+
+            logger.info(type="map-response", response=response_data)
             return response
 
         except InvalidHttpStatus as e:
