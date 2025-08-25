@@ -1,8 +1,7 @@
 from typing import Dict, Any, Optional
 from app.clients.http_base import HTTPBaseClient, InvalidHttpStatus, HTTPBaseClientResponse
-from utils.trace import traced, trace
-from utils import logger
-import json
+from app import logger
+import utils.json as json
 
 
 class ExternalRequestError(Exception):
@@ -20,7 +19,7 @@ class SynonymAPIError(ExternalRequestError):
         code: Optional[str] = None,
         message: Optional[str] = None,
     ):
-        super().__init__("UPS API", status_code, code=code, message=message)
+        super().__init__("Synonym API", status_code, code=code, message=message)
         self.code = code
         self.message = message
 
@@ -32,5 +31,32 @@ class SynonymClient:
         self._host = host
         self._api_key = api_key
 
-    async def _request(self, method: str, endpoint: str, headers: dict[str, Any] = {}, **kwargs):
-        pass
+    async def _request(
+        self, method: str, endpoint: str, headers: dict[str, Any] = {}, **kwargs
+    ) -> HTTPBaseClientResponse:
+        try:
+            url = f"{self._host}{endpoint}"
+            ## 헤더 API KEY 추가
+            headers = {"x-apim-key": self._api_key, "content-type": "application/json", **headers}
+            logger.info(type="synonym-request", url=url, method=method, extra=kwargs)
+            response = await self._http_client.request(method, url, headers=headers, **kwargs)
+            if response.status != 200:
+                raise InvalidHttpStatus(response.status, response.body)
+
+            response_data = response.json()
+
+            logger.info(type="synonym-response", response=response_data)
+            if response.status // 100 != 2:
+                raise InvalidHttpStatus(response.status, response.body)
+
+            return response
+
+        except InvalidHttpStatus as e:
+            try:
+                data = json.loads(e.body)
+                code, message = data.get("code"), data.get("message")
+            except Exception:
+                code, message = None, None
+                raise SynonymAPIError(e.status, code, message)
+        except Exception as e:
+            raise SynonymAPIError(message=str(e))
