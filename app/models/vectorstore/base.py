@@ -27,15 +27,19 @@ class BaseModel(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
-    expire_at = Column(DateTime(timezone=True), nullable=True, index=True)
-    EXPIRE_DAYS = 30  # 30 days
     USE_HNSW = True
+
+    @classmethod
+    async def drop_table(cls, engine: AsyncEngine) -> None:
+        async with engine.begin() as conn:
+            await conn.execute(text(f"DROP TABLE IF EXISTS {cls.__tablename__};"))
+            logger.info(f"Table '{cls.__tablename__}' dropped successfully.")
 
     @classmethod
     async def create_table_and_hnsw_index(
         cls,
         engine: AsyncEngine = None,
-        vector_column: str = "vector",
+        vector_column: str = "query_embedding",
         m: int = 16,
         ef_construction: int = 64,
     ):
@@ -58,7 +62,29 @@ class BaseModel(Base):
             logger.info(f"Checking if table '{cls.__tablename__}' exists: {table_exists}")
 
             if not table_exists:
-                logger.info(f"Table {cls.__tablename__} does not exist...")
+                logger.info(f"Table {cls.__tablename__} does not exist. Creating table...")
+                # semantic_retrieval.py의 실제 구조에 맞춰 테이블 생성
+                create_table_sql = text(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS {cls.__tablename__} (
+                        doc_id SERIAL PRIMARY KEY,
+                        query TEXT NOT NULL,
+                        cypher_query TEXT NOT NULL,
+                        query_embedding vector(1536),
+                        usage_count INTEGER DEFAULT 0,
+                        quality_score FLOAT DEFAULT 0.0,
+                        unknown_num INTEGER DEFAULT 0,
+                        unknown_bool BOOLEAN DEFAULT true,
+                        unknown_null INTEGER DEFAULT 0,
+                        domain_tags TEXT[],
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        UNIQUE(query)
+                    );
+                """
+                )
+                await conn.execute(create_table_sql)
+                logger.info(f"Table '{cls.__tablename__}' created successfully.")
             else:
                 logger.info(f"Table '{cls.__tablename__}' already exists. Skipping.")
 
@@ -112,8 +138,6 @@ class BaseModel(Base):
         now = datetime.now(tz=timezone.utc)
         self.created_at = now
         self.updated_at = now
-        if self.expire_at is None:
-            self.expire_at = now + timedelta(days=self.EXPIRE_DAYS)
 
         session.add(self)
         await session.commit()
@@ -132,10 +156,6 @@ class BaseModel(Base):
         now = datetime.now(tz=timezone.utc)
         values["updated_at"] = now
 
-        # expire_at이 명시적으로 제공되지 않은 경우에만 기본값 설정
-        if "expire_at" not in values or values["expire_at"] is None:
-            values["expire_at"] = now + timedelta(days=cls.EXPIRE_DAYS)
-
         await session.execute(update(cls).where(cls.id == id_).values(**values))
         await session.commit()
 
@@ -149,10 +169,6 @@ class BaseModel(Base):
         if self.created_at is None:
             self.created_at = now
         self.updated_at = now
-
-        # expire_at이 명시적으로 설정되지 않은 경우에만 기본값 적용
-        if not hasattr(self, "expire_at") or self.expire_at is None:
-            self.expire_at = now + timedelta(days=self.EXPIRE_DAYS)
 
         session.add(self)
         await session.commit()
@@ -217,7 +233,7 @@ class BaseModel(Base):
             list[tuple[_T, float]]: 검색된 객체와 점수 리스트
         """
         filters = filters or {}
-        vector_column = getattr(cls, "VECTOR_COLUMN", "vector")
+        vector_column = getattr(cls, "VECTOR_COLUMN", "query_embedding")
 
         stmt = text(
             f"""
@@ -236,7 +252,7 @@ class BaseModel(Base):
             LIMIT :limit
             """
         )
-
+        print(">>>>>>> stmt", stmt)
         # Execute the query
         params = {
             "embedding": f"[{', '.join(map(str, embedding))}]",
@@ -245,6 +261,7 @@ class BaseModel(Base):
             "similarity_cutoff": similarity_cutoff,
         }
         result = await session.execute(stmt, params)
+        print(">>>>>>> result", result)
         rows = result.mappings().all()  # 컬럼 이름으로 안전하게 가져옴
 
         objects_and_scores = [
@@ -277,7 +294,7 @@ class BaseModel(Base):
         Returns:
             list: 검색 결과 (memory, score) 튜플 리스트
         """
-        vector_column = getattr(cls, "VECTOR_COLUMN", "vector")
+        vector_column = getattr(cls, "VECTOR_COLUMN", "query_embedding")
 
         # 필터 조건 구성
         filter_conditions = []
@@ -294,7 +311,8 @@ class BaseModel(Base):
 
         try:
             embeddings_array = ", ".join(
-                f"ARRAY[{', '.join(map(str, embedding))}]::vector" for embedding in embeddings
+                f"ARRAY[{', '.join(map(str, embedding))}]::query_embedding"
+                for embedding in embeddings
             )
         except Exception as e:
             raise ValueError(
@@ -315,8 +333,7 @@ class BaseModel(Base):
                     input_vectors,
                     public.{cls.__tablename__}
                 WHERE {cls.__tablename__}.{vector_column} IS NOT NULL
-                {filter_sql}
-                AND (memory_type = 'user_info' AND payload->>'category' IN ('extra_information', 'health_information', 'relationship'))
+                {"AND " + " AND ".join(f"{key} = :{key}" for key in filters.keys()) if filters else ""}
             )
             SELECT * FROM similarity_calc
             WHERE score >= :similarity_cutoff
@@ -366,12 +383,12 @@ class BaseModel(Base):
 
     @classmethod
     @session_required
-    async def abulk_delete_expired(cls: Type[_T], session: AsyncSession) -> _T:
+    async def abulk_delete(cls: Type[_T], session: AsyncSession) -> _T:
         """
-        만료된 데이터를 삭제(bulk delete)합니다.
+        모든 데이터를 삭제(bulk delete)합니다.
         """
 
-        stmt = delete(cls).where(cls.expire_at < func.now()).returning(cls.id)
+        stmt = delete(cls).returning(cls.id)
         result = await session.execute(stmt)
 
         deleted_ids = result.scalars().all()
@@ -390,10 +407,6 @@ class BaseModel(Base):
         now = datetime.now(tz=timezone.utc)
         values["created_at"] = now
         values["updated_at"] = now
-
-        # expire_at이 명시적으로 제공되지 않은 경우에만 기본값 설정
-        if "expire_at" not in values or values["expire_at"] is None:
-            values["expire_at"] = now + timedelta(days=cls.EXPIRE_DAYS)
 
         if isinstance(values.get("id"), str):
             values["id"] = uuid.UUID(values["id"])
