@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 
 from configs.default import BaseConfig, StackType
-import json
+import utils.json as json
 
 DEFAULT_SECRET_ID = "map_secrete"
 
@@ -15,10 +15,9 @@ def get_config(stack_type: str) -> BaseConfig:
 
         from pathlib import Path
 
-        env_file = Path(__file__).parent.parent / f".env.local"
+        env_file = Path(__file__).parent / f".env.local"
         if not env_file.exists():
             raise FileNotFoundError(f"env file not found: {env_file}")
-
         load_dotenv(dotenv_path=env_file)
         return LocalConfig(_env_file=str(env_file), _env_file_encoding="utf-8")
 
