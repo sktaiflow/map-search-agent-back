@@ -26,7 +26,7 @@ class EmbeddingClient:
     ):
         self._emb_factory = embeddings_factory
         self._embed_model = default_model
-        self._default_dimensions = default_dimensions
+        self._embed_dims = default_dimensions
         self._normalize = normalize
 
     def _maybe_normalize(self, arr: List[List[float]]) -> List[List[float]]:
@@ -37,32 +37,33 @@ class EmbeddingClient:
         m = m / norms
         return m.tolist()
 
+    # TODO: logger 추가 (assert -> logging, raise -> logging)
     async def aembed(
         self,
         text: str,
         *,
         model: Optional[str] = None,
-        dimensions: Optional[int] = None,
     ) -> EmbeddingOutput:
         """
         단일 문자열을 입력받아 임베딩 벡터를 반환
         """
         assert self._emb_factory is not None, "embeddings_factory not injected"
 
-        _model = model or self._embed_model
-        _dims = dimensions if dimensions is not None else self._embed_dims
+        model_to_use = model or self._embed_model
 
-        emb: OpenAIEmbeddings = self._emb_factory(
-            model=_model,
-            dimensions=_dims,
-        )
+        try:
+            vector: list[float] = await self._emb_factory.aembed_query(text)
+            print(f"임베딩 성공 - 벡터 길이: {len(vector)}")
 
-        vector: list[float] = await emb.aembed_query(text)
+            if self._normalize:
+                n_vector = self._maybe_normalize([vector])
+            else:
+                n_vector = [vector]
 
-        if self._normalize:
-            n_vector = self._maybe_normalize([vector])
+            return EmbeddingOutput(
+                model=model_to_use,
+                vectors=n_vector[0],
+            )
 
-        return EmbeddingOutput(
-            model=_model,
-            vectors=n_vector[0],  # 통일성을 위해 List[List[float]]로 반환
-        )
+        except Exception as e:
+            raise
