@@ -1,32 +1,13 @@
 # llm_client.py
-from typing import Any, Dict, List, Optional
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel
+from typing import Any, Dict, List, Optional, Union
+from langchain_core.runnables import Runnable, RunnablePassthrough
 import uuid
 from opentelemetry import trace
-
-
-# ---- 타입 그대로 유지 ----
-class ToolCall(BaseModel):
-    id: Optional[str] = None
-    type: Optional[str] = None
-    function: Optional[Dict[str, Any]] = None
-
-
-class LLMMetadata(BaseModel):
-    id: Optional[str] = None
-    response: Dict[str, Any] = {}
-    usage: Dict[str, Any] = {}
-
-
-class LLMOutput(BaseModel):
-    type: str
-    content: str
-    tool_calls: List[ToolCall] = []
-    metadata: LLMMetadata = LLMMetadata()
-
-
-# -------------------------
+from app.llms.schema import ToolCall, LLMMetadata, LLMOutput
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import BaseMessage
+from functools import reduce
+import operator
 
 
 def _default_headers() -> Dict[str, str]:
@@ -96,34 +77,26 @@ class LLMClient:
                     kw["tool_choice"] = {"type": "function", "function": {"name": tool_choice}}
         return kw
 
-    def complete(
+    def _build_llm_runnable(
         self,
-        messages: List[Dict[str, str]],
         *,
-        model: str = "gpt-4o",
-        temperature: float = 0.4,
-        max_tokens: int = 8000,
-        llm_kwargs: Optional[Dict[str, Any]] = None,
-        reasoning_effort: str = "medium",
-        is_result: bool = False,
-        tools: Optional[List[Dict]] = None,
-        tool_choice: Optional[str] = None,
-        response_format: Optional[Dict] = None,
-        timeout: int = 20,
-        **kwargs,
-    ) -> LLMOutput:
-        if model is None:
-            raise ValueError("Model cannot be None")
-
+        model: str,
+        temperature: float,
+        max_tokens: int,
+        llm_kwargs: Optional[Dict[str, Any]],
+        reasoning_effort: str,
+        is_result: bool,
+        tools: Optional[List[Dict]],
+        tool_choice: Optional[str],
+        response_format: Optional[Dict],
+        timeout: int,
+    ) -> Runnable:
+        """
+        공통: ChatOpenAI 인스턴스를 per-call로 만들고 bind된 Runnable을 반환
+        """
         default_headers = self._headers_provider()
-        chat = self._chat_factory(
-            model=model,
-            timeout=timeout,
-            default_headers=default_headers,
-            max_retries=self._max_retries,
-        )
 
-        llm = chat.bind(
+        llm: Runnable = self._chat_factory.bind(
             **self._build_kwargs(
                 model=model,
                 temperature=temperature,
@@ -136,24 +109,107 @@ class LLMClient:
                 response_format=response_format,
             )
         )
+        return llm
 
-        message = llm.invoke(messages)
-        has_tools = bool(getattr(message, "tool_calls", None))
-        return LLMOutput(
-            type="tool" if has_tools else "text",
-            content=message.content or "",
-            tool_calls=[ToolCall(**tc) for tc in (message.tool_calls or [])],
-            metadata=LLMMetadata(
-                id=getattr(message, "id", None),
-                response=getattr(message, "response_metadata", {}) or {},
-                usage=getattr(message, "usage_metadata", {}) or {},
-            ),
+    def _normalize_to_llm_output(self, message: Any) -> LLMOutput:
+        if isinstance(message, BaseMessage):
+            has_tools = bool(getattr(message, "tool_calls", None))
+            return LLMOutput(
+                type="tool" if has_tools else "text",
+                content=message.content or "",
+                tool_calls=[ToolCall(**tc) for tc in (message.tool_calls or [])],
+                metadata=LLMMetadata(
+                    id=getattr(message, "id", None),
+                    response=getattr(message, "response_metadata", {}) or {},
+                    usage=getattr(message, "usage_metadata", {}) or {},
+                ),
+            )
+        else:
+            return LLMOutput(
+                type="text",
+                content=(
+                    message if isinstance(message, str) else ("" if message is None else message)
+                ),
+                tool_calls=[],
+                metadata=LLMMetadata(id=None, response={}, usage={}),
+            )
+
+    def build_chain(
+        self,
+        *,
+        prompt: Optional[Runnable] = None,
+        llm: Optional[Runnable] = None,
+        parser: Optional[Runnable] = None,
+        fallback_when_no_prompt: bool = True,
+    ) -> Runnable:
+        """
+        주어진 컴포넌트만으로 Runnable 체인을 동적으로 구성.
+        - prompt | llm | parser 형태를 가능한 부분까지만 연결
+        - prompt가 없으면 기본적으로 입력을 그대로 llm에 전달 (Passthrough)
+        """
+        parts: list[Runnable] = []
+
+        if prompt is not None:
+            parts.append(prompt)
+        elif fallback_when_no_prompt:
+            # 입력(dict/str/messages)을 그대로 다음 단계로 넘김
+            parts.append(RunnablePassthrough())
+
+        if llm is not None:
+            parts.append(llm)
+
+        if parser is not None:
+            parts.append(parser)
+
+        if not parts:
+            raise ValueError("At least one of prompt/llm/parser must be provided.")
+
+        return reduce(operator.or_, parts)
+
+    def complete(
+        self,
+        messages: List[Dict[str, str]],
+        *,
+        prompt: Optional[Runnable] = None,
+        parser: Optional[Runnable] = None,
+        model: str = "gpt-4o",
+        temperature: float = 0.4,
+        max_tokens: int = 8000,
+        llm_kwargs: Optional[Dict[str, Any]] = None,
+        reasoning_effort: str = "medium",
+        is_result: bool = False,
+        tools: Optional[List[Dict]] = None,
+        tool_choice: Optional[str] = None,
+        response_format: Optional[Dict] = {"type": "json_object"},
+        timeout: int = 20,
+        **kwargs,
+    ) -> LLMOutput:
+        if model is None:
+            raise ValueError("Model cannot be None")
+
+        llm = self._build_llm_runnable(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            llm_kwargs=llm_kwargs,
+            reasoning_effort=reasoning_effort,
+            is_result=is_result,
+            tools=tools,
+            tool_choice=tool_choice,
+            response_format=response_format,
+            timeout=timeout,
         )
+        chain = self.build_chain(prompt=prompt, llm=llm, parser=parser)
+        message = chain.invoke(messages)
+
+        return self._normalize_to_llm_output(message)
 
     async def acomplete(
         self,
         messages: List[Dict[str, str]],
         *,
+        prompt: Optional[Runnable] = None,
+        parser: Optional[Runnable] = None,
         model: str = "gpt-4o",
         temperature: float = 0.4,
         max_tokens: int = 8000,
@@ -169,51 +225,18 @@ class LLMClient:
         if model is None:
             raise ValueError("Model cannot be None")
 
-        default_headers = self._headers_provider()
-        chat = self._chat_factory(
+        llm = self._build_llm_runnable(
             model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            llm_kwargs=llm_kwargs,
+            reasoning_effort=reasoning_effort,
+            is_result=is_result,
+            tools=tools,
+            tool_choice=tool_choice,
+            response_format=response_format,
             timeout=timeout,
-            default_headers=default_headers,
-            max_retries=self._max_retries,
         )
-
-        llm = chat.bind(
-            **self._build_kwargs(
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                llm_kwargs=llm_kwargs,
-                reasoning_effort=reasoning_effort,
-                is_result=is_result,
-                tools=tools,
-                tool_choice=tool_choice,
-                response_format=response_format,
-            )
-        )
-
-        message = await llm.ainvoke(messages)
-        has_tools = bool(getattr(message, "tool_calls", None))
-        return LLMOutput(
-            type="tool" if has_tools else "text",
-            content=message.content or "",
-            tool_calls=[ToolCall(**tc) for tc in (message.tool_calls or [])],
-            metadata=LLMMetadata(
-                id=getattr(message, "id", None),
-                response=getattr(message, "response_metadata", {}) or {},
-                usage=getattr(message, "usage_metadata", {}) or {},
-            ),
-        )
-
-    def embed(
-        self,
-        text: str = None,
-        texts: list[str] = None,
-    ) -> list[float]:
-        pass
-
-    async def aembed(
-        self,
-        text: str = None,
-        texts: list[str] = None,
-    ) -> list[float]:
-        pass
+        chain = self.build_chain(prompt=prompt, llm=llm, parser=parser)
+        message = await chain.ainvoke(messages)
+        return self._normalize_to_llm_output(message)
