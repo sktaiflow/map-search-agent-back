@@ -30,11 +30,12 @@ async def init_pgvector_models(
     engine = postgres_db.engine
     try:
         for model in models:
+            # await model.drop_table(engine=engine) # Test용 코드 (테이블삭제), stg, prd에서는 사용 X
             await model.create_table_and_hnsw_index(engine=engine)
         yield models
     except Exception as e:
         logger.error(f"Error initializing PGVector models: {e}")
-        yield e
+        raise
 
 
 class PGVectorDBContainer(containers.DeclarativeContainer):
@@ -50,6 +51,16 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
 
 
 from neo4j import AsyncGraphDatabase, READ_ACCESS, WRITE_ACCESS
+from app.database.neo4j import Neo4jClientConfig, AsyncNeo4jClient
+
+neo4jclientconfig = Neo4jClientConfig(
+    uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
+    user=global_config.neo4j_username,
+    password=global_config.neo4j_password,
+    max_pool_size=50,
+    connection_timeout=0.5,
+    fetch_size=1000,
+)
 
 
 class Neo4jContainer(containers.DeclarativeContainer):
