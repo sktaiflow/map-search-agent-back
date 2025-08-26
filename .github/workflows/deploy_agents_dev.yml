@@ -1,0 +1,96 @@
+name: CICD AICC Agent
+on:
+  push:
+    branches:
+      - develop
+      - feature/**
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build and Push to ECR
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-2
+      ECR_REGISTRY: ${{ secrets.AWS_DEV_ACCOUNT }}.dkr.ecr.ap-northeast-2.amazonaws.com
+      ECR_REPOSITORY: dev/locust
+      IMAGE_TAG: ${{ github.sha }}
+      ECS_CLUSTER_NAME: map-agents-ecs-cluster-dev
+      ECS_SERVICE_NAME: map-agents-service
+
+    steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Install uv
+          uses: astral-sh/setup-uv@v5
+        
+        - name: 
+          run: uv python install
+
+        - name: Install dependencies
+          run: uv sync
+
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-region: ${{ env.AWS_REGION }}
+            role-to-assume: ${{ secrets.AWS_DEV_ASSUME_ROLE }}
+            role-session-name: GitActionOIDCSession
+            role-duration-seconds: 3600
+
+        - name: Login to Amazon ECR
+          id: login-ecr
+          run: |
+            aws ecr get-login-password --region $AWS_REGION | \
+            docker login --username AWS --password-stdin $ECR_REGISTRY
+
+        - name: Build and push Docker image
+          uses: docker/build-push-action@v5
+          with:
+            context: .
+            push: true
+            tags: |
+                ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+                ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+            cache-from: type=gha
+            cache-to: type=gha,mode=max
+            platforms: linux/amd64
+            build-args: |
+                VERSION=${{ env.IMAGE_TAG }}
+                STACK_TYPE=dev
+                BUILDKIT_INLINE_CACHE=1
+            provenance: false
+
+        - name: Deploy to ECS
+          run: |
+            aws ecs update-service \
+            --cluster $ECS_CLUSTER_NAME \
+            --service $ECS_MASTER_SERVICE_NAME \
+            --force-new-deployment
+
+        - name: Wait for deployment
+          run: |
+            aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER_NAME \
+            --services $ECS_MASTER_SERVICE_NAME
+
+        - name: Deploy to SECONDARY ECS
+          run: |
+            aws ecs update-service \
+            --cluster $ECS_CLUSTER_NAME \
+            --service $ECS_WORKER_SERVICE_NAME \
+            --force-new-deployment
+
+        - name: Wait for deployment
+          run: |
+            aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER_NAME \
+            --services $ECS_WORKER_SERVICE_NAME
