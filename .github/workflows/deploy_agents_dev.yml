@@ -1,4 +1,4 @@
-name: CICD AICC Agent
+name: CICD MAP Agents
 on:
   push:
     branches:
