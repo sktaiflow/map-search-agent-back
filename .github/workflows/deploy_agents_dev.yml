@@ -20,7 +20,7 @@ jobs:
     env:
       AWS_REGION: ap-northeast-2
       ECR_REGISTRY: ${{ secrets.AWS_DEV_ACCOUNT }}.dkr.ecr.ap-northeast-2.amazonaws.com
-      ECR_REPOSITORY: dev/locust
+      ECR_REPOSITORY: dev/map-agent
       IMAGE_TAG: ${{ github.sha }}
       ECS_CLUSTER_NAME: map-agents-ecs-cluster-dev
       ECS_SERVICE_NAME: map-agents-service
