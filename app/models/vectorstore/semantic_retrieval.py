@@ -1,5 +1,17 @@
 import uuid
-from sqlalchemy import Column, String, Index, Float
+from sqlalchemy import (
+    Column,
+    String,
+    Index,
+    Float,
+    DateTime,
+    text,
+    Integer,
+    Text,
+    Boolean,
+    ARRAY,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects.postgresql import JSONB
@@ -15,21 +27,32 @@ _T = TypeVar("_T", bound="BaseModel")
 
 
 class SemanticSearchModel(BaseModel):
-    __tablename__ = "semantic_search_store"
+    __tablename__ = "map_db_vector_store"
 
-    doc_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    vector = Column(Vector(config.vector_store_embedding_model_dims))
-    agent_id = Column(String(100), nullable=True)
-    relevance_score = Column(Float, nullable=True)
+    doc_id = Column(Integer, primary_key=True, autoincrement=True)
+    query = Column(Text, nullable=False)
+    cypher_query = Column(Text, nullable=False)
+    query_embedding = Column(Vector(config.vector_store_embedding_model_dims))
+    usage_count = Column(Integer, default=0)
+    quality_score = Column(Float, default=0.0)
+    unknown_num = Column(Integer, default=0)
+    unknown_bool = Column(Boolean, default=True)
+    unknown_null = Column(Integer, default=0)
+    domain_tags = Column(ARRAY(Text))
+    created_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
 
-    __table_args__ = (Index("ix_user_id_memory_type", "user_id", "memory_type", "updated_at"),)
+    __table_args__ = (
+        Index("ix_doc_id", "doc_id", "updated_at"),
+        UniqueConstraint("query", name="uq_query"),
+    )
 
     @classmethod
     @session_required
     async def asearch_by_vector_orm(
         cls, session: AsyncSession, embeddings: list[float], limit: int = 3
     ):
-        vector_column = getattr(cls, "vector")
+        vector_column = getattr(cls, "query_embedding")
         distance = vector_column.cosine_distance(embeddings).label("score")
 
         stmt = select(cls, distance).order_by(distance).limit(limit)

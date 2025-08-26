@@ -1,35 +1,31 @@
 # app/containers/llm.py
 from dependency_injector import containers, providers
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from configs import config as global_config
-from llms.embedding_llm import EmbeddingClient
-from llms.llm import LLMClient, _default_headers
-from langchain_openai import OpenAIEmbeddings
-from configs import config as global_config
+from app.llms.embedding_llm import EmbeddingClient
+from app.llms.llm import LLMClient, _default_headers
 
 
 class LLMContainer(containers.DeclarativeContainer):
 
-    headers_provider = providers.Callable(_default_headers)
-
+    # TODO: smartbee 사용시 url suffix 추가
     chat_singleton = providers.Singleton(
         ChatOpenAI,
-        base_url=global_config.openai_api_base,
+        base_url=f"{global_config.openai_api_base}/compatible/openai",
         api_key=global_config.openai_api_key,
-        # timeout/headers는 per-call로 주입
     )
+
     llm_client = providers.Factory(
         LLMClient,
         chat_factory=chat_singleton,
-        headers_provider=headers_provider,
         max_retries=1,
     )
 
+    # TODO: smartbee 사용시 url suffix 추가
     embeddings_singleton = providers.Singleton(
         OpenAIEmbeddings,
+        base_url=f"{global_config.openai_api_base}",
         api_key=global_config.openai_api_key,
-        base_url=global_config.openai_api_base,
-        # model/dimensions는 호출부에서 per-call 지정
     )
     embed_client = providers.Factory(
         EmbeddingClient,

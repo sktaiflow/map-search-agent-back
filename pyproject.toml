@@ -87,6 +87,7 @@ dependencies = [
     "langgraph-checkpoint-postgres>=2.0.23",
     "langfuse==2.60.7",
     "ddtrace==3.7.1",
+    "greenlet>=3.2.4",
 ]
 
 [project.optional-dependencies]

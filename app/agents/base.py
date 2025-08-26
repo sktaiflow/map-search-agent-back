@@ -1,10 +1,12 @@
 from pydantic import BaseModel
 from app import logger
-from typing import Any
-from core.graph.base import BaseGraph
-from uuid import UUID, uuid4
+from app.graph.base import BaseGraph
+from app.schemas.api.schema import InvokeRequest
+
 from langchain_core.runnables import RunnableConfig
-from app.schemas.chat import ChatMessage, InvokeRequest
+from abc import abstractmethod
+from typing import Any
+from uuid import UUID, uuid4
 from abc import abstractmethod
 
 
@@ -55,29 +57,12 @@ class BaseAgent:
         # content = await self.postprocess_messages(invoke_result)
         return content
 
+    @abstractmethod
     def postprocess_input(self, user_input: InvokeRequest) -> tuple[dict[str, Any], UUID]:
-        run_id = uuid4()
-        thread_id = user_input.thread_id or str(uuid4())
-        checkpoint_id = str(uuid4())
-        kwargs = {
-            "input": {
-                "id": user_input.id,
-                # "messages": [HumanMessage(content=user_input.user_message)],
-                "user_message": user_input.user_message,
-                "thread_id": thread_id,
-            },
-            "config": {
-                "configurable": {
-                    "thread_id": thread_id,
-                    "checkpoint_id": checkpoint_id,
-                },
-            },
-            "run_id": run_id,
-        }
-        return kwargs
+        pass
 
     @abstractmethod
-    async def postprocess_messages(self, content: str) -> ChatMessage:
+    async def postprocess_messages(self, content: str):
         """
         graph 의 invoke 결과를 가공하고자 할 때 사용합니다.
         Args:

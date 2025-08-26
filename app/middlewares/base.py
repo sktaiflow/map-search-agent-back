@@ -7,13 +7,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from uuid import uuid4
 from contextvars import ContextVar
-
-from ddtrace import tracer
-
+import json
 from utils.logger import logger
-from utils import json
 from utils.timezone import KST
-
 
 __ctx_request_context: ContextVar[Request] = ContextVar("ctx-request-context", default=None)
 
@@ -58,51 +54,27 @@ async def common_middleware(request: Request, call_next):
         if request.url.path in MONITORING_EXCLUDED_PATHS:
             return await call_next(request)
 
-        current_span = tracer.current_span()
-        if current_span:
-            current_span.set_tag(
-                "langfuse_parent_span_id", request.headers.get("X-Langfuse-Parent-Span-Id", "")
-            )
-            current_span.set_tag(
-                "langfuse_trace_id", request.headers.get("X-Langfuse-Trace-Id", "")
-            )
-            current_span.set_tag("request_id", request.state.request_id)
+        # current_span = tracer.current_span()
+        # if current_span:
+        #     current_span.set_tag(
+        #         "langfuse_parent_span_id", request.headers.get("X-Langfuse-Parent-Span-Id", "")
+        #     )
+        #     current_span.set_tag(
+        #         "langfuse_trace_id", request.headers.get("X-Langfuse-Trace-Id", "")
+        #     )
+        #     current_span.set_tag("request_id", request.state.request_id)
 
         response: Response = await call_next(request)
         process_time = (time.time() - request.state.start) * 1000
         response.headers["X-Process-Time"] = str(process_time)
     except Exception as e:
-        if current_span:
-            current_span.set_tag("memory.error", True)
-            current_span.set_tag("memory.error_message", str(e))
+        # if current_span:
+        #     current_span.set_tag("memory.error", True)
+        #     current_span.set_tag("memory.error_message", str(e))
         raise
     finally:
         __ctx_request_context.reset(token)
 
-    return response
-
-
-def anonymize(response: dict) -> dict:
-    try:
-        for idx, memory in enumerate(response.get("data", [])):
-            if (
-                memory.get("type") == "user_info"
-                and memory.get("attributes").get("category") == "name"
-            ):
-                content = memory.get("content")
-                name = content.split("은 ")[1].split("입니다")[0]
-                masked_name = name[0] + "*" + name[2:]
-                response["data"][idx]["content"] = content.replace(name, masked_name)
-
-            if (
-                memory.get("type") == "user_info"
-                and memory.get("attributes").get("category") == "age"
-            ):
-                content = memory.get("content")
-                age = content.split("는 ")[1].split("입니다")[0]
-                response["data"][idx]["content"] = content.replace(age, "**")
-    except Exception:
-        pass
     return response
 
 
@@ -143,7 +115,7 @@ async def request_response_handler(request: Request, call_next):
             "request_id": request.state.request_id,
             "status": response.status_code,
             "latency": request.state.process_time,
-            "body": anonymize(response_body),
+            "body": response_body,
         },
     )
     return response

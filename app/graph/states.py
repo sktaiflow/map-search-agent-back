@@ -2,23 +2,40 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from langgraph.graph.message import add_messages, AnyMessage
 from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime
+
+from typing import TypedDict
+from typing import NotRequired
 
 
 class InputState(BaseModel):
-    query: List[str] = Field(..., min_length=1, description="사용자 입력")
-    is_reasoning: bool = Field(default=False, description="추론 여부")
-    # conversation: List[Dict[str, Any]] = Field(default=[])
+    user_id: str = Field(..., description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
+    query: str = Field(..., description="그래프 입력")
+    query_synonym: str = Field(..., description="동의어 변환 후 쿼리")
+    search_type: Optional[bool] = Field(
+        description="검색 타입, True: 기본 검색, False: 확장 검색",
+        default=True,
+    )
+    return_type: Optional[int] = Field(
+        description="1: product_id List[str], 2: Neo4jSchema", default=1
+    )
+    transaction_id: Optional[str] = Field(description="트랜잭션 아이디")
+    user_info_yn: Optional[bool] = Field(description="사용자 정보 포함 여부", default=True)
+
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class OutputState(BaseModel):
-    raw_data: List[str] = Field(..., description="원시 데이터")
+    plan: List[Dict[str, Any]] = Field(..., description="플랜")
+    raw_data: Dict[str, Any] = Field(..., description="원시 데이터")
     summary: str = Field(..., min_length=1, description="요약 정보")
     insights: str = Field(..., min_length=1, description="인사이트")
     reasoning: str = Field(..., min_length=1, description="추론 과정")
+    updated_at: datetime = Field(..., description="업데이트 시간")
     version: str = "map-search-agent-dev"
+    fewshot_examples: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class RetryBudget(BaseModel):
@@ -55,7 +72,7 @@ class PrivateStateModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     is_reasoning: bool = Field(default=False, description="추론 여부")
     parsed: Optional[Dict] = None
-    plan: List[str] = Field(default_factory=list)
+    plan: List[Dict[str, Any]] = Field(default_factory=list)
     search_result: List[Dict] = Field(default_factory=list)
     trace: List[str] = Field(default_factory=list)
     tool_latency_ms: Optional[int] = None
@@ -69,14 +86,13 @@ class PrivateStateModel(BaseModel):
 class OverallState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     query: list[str] = Field(default=[])
-    query_synonym: Optional[str] = None
-    # conversation: List[Dict[str, Any]] = Field(default=[])
+    query_synonym: str = Field(default="")
+    query_embedding: Optional[List[float]] = None
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
     raw_data: List[str] = Field(default=[])
     summary: str = Field(default="")
     insights: str = Field(default="")
-    reasoning: str = Field(default="")
-
+    fewshot_examples: List[Dict[str, Any]] = Field(default_factory=list)
     messages: Annotated[List[AnyMessage], add_messages] = Field(default_factory=list)
     private: PrivateStateModel = Field(default_factory=PrivateStateModel)

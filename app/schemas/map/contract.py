@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ServiceInfo(BaseModel):
@@ -189,24 +189,6 @@ class ContractRemainInfo(BaseModel):
         populate_by_name = True
 
 
-class NoContractPoint(BaseModel):
-    """무약정 포인트 정보"""
-
-    tot_accum_pt: str = Field(..., alias="totAccumPt", description="총적립포인트")
-    tot_used_pt: str = Field(..., alias="totUsedPt", description="총사용포인트")
-    tot_expir_pt: str = Field(..., alias="totExpirPt", description="총소멸포인트")
-    tot_rem_pt: str = Field(..., alias="totRemPt", description="총잔여포인트")
-    nxt_schd_expir_dt: str = Field(
-        ..., alias="nxtSchdExpirDt", description="다음만료예정일YYYYMMDD"
-    )
-    nxt_schd_expir_pt: str = Field(..., alias="nxtSchdExpirPt", description="다음만료예정포인트")
-    scrb_days: str = Field(..., alias="scrbDays", description="가입경과일")
-    use_psbl_dt: str = Field(..., alias="usePsblDt", description="사용가능일자YYYYMMDD")
-
-    class Config:
-        populate_by_name = True
-
-
 class DirectPlanDetail(BaseModel):
     """다이렉트플랜 상세 정보"""
 
@@ -262,36 +244,6 @@ class DeviceContract(BaseModel):
     direct_plan_dtl_list: List[DirectPlanDetail] = Field(
         ..., alias="directPlanDtlList", description="다이렉트플랜 상세 목록"
     )
-
-    class Config:
-        populate_by_name = True
-
-
-class MobileService(BaseModel):
-    """모바일 서비스 정보"""
-
-    svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
-    svc_num: str = Field(..., alias="svcNum", description="서비스번호")
-    svc_cd: str = Field(..., alias="svcCd", description="서비스구분코드")
-    svc_st_cd: str = Field(..., alias="svcStCd", description="서비스상태코드")
-    svc_st_chg_cd: str = Field(..., alias="svcStChgCd", description="서비스상태변경코드")
-    svc_chg_rsn_cd: str = Field(..., alias="svcChgRsnCd", description="서비스변경사유코드")
-    svc_typ_cd: str = Field(..., alias="svcTypCd", description="서비스이용종류코드")
-    svc_scrb_dtm: str = Field(..., alias="svcScrbDtm", description="서비스가입일자")
-    scrb_req_rsn_cd: str = Field(..., alias="scrbReqRsnCd", description="가입신청사유코드")
-    wlf_dc_cd: str = Field(..., alias="wlfDcCd", description="복지할인유형코드")
-    estation_agree_yn: str = Field(..., alias="estationAgreeYn", description="웹회원신청동의여부")
-    fee_prod_id: str = Field(..., alias="feeProdId", description="요금상품ID")
-    fee_prod_nm: str = Field(..., alias="feeProdNm", description="요금상품명")
-    fee_prod_chg_dt: str = Field(..., alias="feeProdChgDt", description="요금제변경일자")
-    eqp_mdl_cd: str = Field(..., alias="eqpMdlCd", description="단말기모델코드")
-    eqp_mdl_nm: str = Field(..., alias="eqpMdlNm", description="단말기모델명")
-    eqp_ser_num: str = Field(..., alias="eqpSerNum", description="단말기일련번호")
-    eqp_usg_cd: str = Field(..., alias="eqpUsgCd", description="단말기용도코드")
-    eqp_mthd_cd: str = Field(..., alias="eqpMthdCd", description="단말기방식코드")
-    eqp_mktg_dt: str = Field(..., alias="eqpMktgDt", description="단말기출시일자")
-    nw_mthd_cd: str = Field(..., alias="nwMthdCd", description="네트워크방식코드")
-    cust_num: str = Field(..., alias="custNum", description="고객번호")
 
     class Config:
         populate_by_name = True
@@ -445,3 +397,53 @@ class DeviceInfo(BaseModel):
 
     class Config:
         populate_by_name = True
+
+
+class NoContractPoint(BaseModel):
+    """무약정 포인트 정보"""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
+    tot_accum_pt: str = Field(..., alias="totAccumPt", description="총적립포인트")
+    tot_used_pt: str = Field(..., alias="totUsedPt", description="총사용포인트")
+    tot_expir_pt: str = Field(..., alias="totExpirPt", description="총소멸포인트")
+    tot_rem_pt: str = Field(..., alias="totRemPt", description="총잔여포인트")
+    nxt_schd_expir_dt: str = Field(
+        ..., alias="nxtSchdExpirDt", description="다음만료예정일YYYYMMDD"
+    )
+    nxt_schd_expir_pt: str = Field(..., alias="nxtSchdExpirPt", description="다음만료예정포인트")
+    scrb_days: str = Field(..., alias="scrbDays", description="가입경과일")
+    use_psbl_dt: str = Field(..., alias="usePsblDt", description="사용가능일자YYYYMMDD")
+
+
+class MobileService(BaseModel):
+    """모바일 서비스 정보"""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
+    svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
+    svc_num: str = Field(..., alias="svcNum", description="서비스번호")
+    svc_cd: str = Field(..., alias="svcCd", description="서비스구분코드")
+    svc_st_cd: str = Field(..., alias="svcStCd", description="서비스상태코드")
+    svc_st_chg_cd: str = Field(..., alias="svcStChgCd", description="서비스상태변경코드")
+    svc_chg_rsn_cd: str = Field(..., alias="svcChgRsnCd", description="서비스변경사유코드")
+    svc_typ_cd: str = Field(..., alias="svcTypCd", description="서비스이용종류코드")
+    svc_scrb_dtm: str = Field(..., alias="svcScrbDtm", description="서비스가입일자")
+    scrb_req_rsn_cd: str = Field(..., alias="scrbReqRsnCd", description="가입신청사유코드")
+    wlf_dc_cd: str = Field(..., alias="wlfDcCd", description="복지할인유형코드")
+    estation_agree_yn: str = Field(..., alias="estationAgreeYn", description="웹회원신청동의여부")
+    fee_prod_id: str = Field(..., alias="feeProdId", description="요금상품ID")
+    fee_prod_nm: str = Field(..., alias="feeProdNm", description="요금상품명")
+    fee_prod_chg_dt: str = Field(..., alias="feeProdChgDt", description="요금제변경일자")
+    eqp_mdl_cd: str = Field(..., alias="eqpMdlCd", description="단말기모델코드")
+    eqp_mdl_nm: str = Field(..., alias="eqpMdlNm", description="단말기모델명")
+    eqp_ser_num: str = Field(..., alias="eqpSerNum", description="단말기일련번호")
+    eqp_usg_cd: str = Field(..., alias="eqpUsgCd", description="단말기용도코드")
+    eqp_mthd_cd: str = Field(..., alias="eqpMthdCd", description="단말기방식코드")
+    eqp_mktg_dt: str = Field(..., alias="eqpMktgDt", description="단말기출시일자")
+    nw_mthd_cd: str = Field(..., alias="nwMthdCd", description="네트워크방식코드")
+    cust_num: str = Field(..., alias="custNum", description="고객번호")
