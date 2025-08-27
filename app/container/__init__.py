@@ -31,7 +31,5 @@ class Container(containers.DeclarativeContainer):
         toolkit_container=toolkit,
         pgvector_container=pgvector_db,
     )
-    agents = providers.Container(
-        AgentContainer, graphs=graphs, http_client=clients, pgvector_models=pgvector_db
-    )
+    agents = providers.Container(AgentContainer, graphs=graphs, http_client=clients)
     wiring_config = containers.WiringConfiguration(packages=["app"])
