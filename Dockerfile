@@ -43,4 +43,4 @@ ENV STACK_TYPE=$STACK_TYPE
 #COPY ./entrypoint.sh ./entrypoint.sh
 #RUN chmod +x ./entrypoint.sh
 
-CMD ["uv", "run", "--frozen", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/.venv/bin/python", "-m", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]
