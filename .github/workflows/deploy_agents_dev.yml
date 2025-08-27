@@ -23,7 +23,7 @@ jobs:
       ECR_REPOSITORY: dev/map-agent
       IMAGE_TAG: ${{ github.sha }}
       ECS_CLUSTER_NAME: map-agents-ecs-cluster-dev
-      ECS_SERVICE_NAME: map-agents-service-dev
+      ECS_SERVICE_NAME: map-agents-ecs-service-dev
 
     steps:
         - name: Checkout code
