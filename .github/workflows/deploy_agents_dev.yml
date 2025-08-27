@@ -23,7 +23,7 @@ jobs:
       ECR_REPOSITORY: dev/map-agent
       IMAGE_TAG: ${{ github.sha }}
       ECS_CLUSTER_NAME: map-agents-ecs-cluster-dev
-      ECS_SERVICE_NAME: map-agents-service
+      ECS_SERVICE_NAME: map-agents-service-dev
 
     steps:
         - name: Checkout code
@@ -76,24 +76,11 @@ jobs:
           run: |
             aws ecs update-service \
             --cluster $ECS_CLUSTER_NAME \
-            --service $ECS_MASTER_SERVICE_NAME \
+            --service $ECS_SERVICE_NAME \
             --force-new-deployment
 
         - name: Wait for deployment
           run: |
             aws ecs wait services-stable \
             --cluster $ECS_CLUSTER_NAME \
-            --services $ECS_MASTER_SERVICE_NAME
-
-        - name: Deploy to SECONDARY ECS
-          run: |
-            aws ecs update-service \
-            --cluster $ECS_CLUSTER_NAME \
-            --service $ECS_WORKER_SERVICE_NAME \
-            --force-new-deployment
-
-        - name: Wait for deployment
-          run: |
-            aws ecs wait services-stable \
-            --cluster $ECS_CLUSTER_NAME \
-            --services $ECS_WORKER_SERVICE_NAME
+            --services $ECS_SERVICE_NAME
