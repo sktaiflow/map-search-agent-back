@@ -12,7 +12,7 @@ from configs import config as global_config
 from app import logger
 
 postgresql_engine_config = PostgreSQLEngineConfig(
-    url=f"postgresql+asyncpg://{global_config.vector_store_user}:{global_config.vector_store_password}@{global_config.vector_store_host}:{global_config.vector_store_port}/{global_config.vector_store_dbname}",
+    url=f"postgresql+asyncpg://{global_config.postgres_db_username}:{global_config.postgres_db_password}@{global_config.postgres_db_host}:{global_config.postgres_db_port}/{global_config.vector_store_dbname}",
     echo=False,
     pool_size=50,  # 기본 연결 풀 크기 (CPU 코어 수 * 2-4배)
     max_overflow=100,  # 최대 추가 연결 수 (pool_size의 2배)

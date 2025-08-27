@@ -63,17 +63,24 @@ class BaseConfig(BaseSettings):
     synonym_api_key: str = ""
 
     # postgres config
-    vector_store_host: str
-    vector_store_port: int = 5432
+    # vector_store_host: str
+    # vector_store_port: int = 5432
+    # vector_store_user: str
+    # vector_store_password: str
+
+    # pg vector store config
     vector_store_collection_name: str = "map-vector-store"
     vector_store_provider: str = "pgvector"
     vector_store_dbname: str = "map_db_vector_store"
-    vector_store_user: str
-    vector_store_password: str
     vector_store_embedding_model_name: str = "openai/text-embedding-3-small"
     vector_store_embedding_model_dims: int = 1536
     vector_store_diskann: bool = False
     vector_store_hnsw: bool = True
+
+    postgres_db_host: str
+    postgres_db_port: int = 5432
+    postgres_db_username: str
+    postgres_db_password: str
 
     # pg vector
     m: int = 16
