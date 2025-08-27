@@ -18,11 +18,11 @@ jobs:
 
     env:
       AWS_REGION: ap-northeast-2
-      ECR_REGISTRY: ${{ secrets.AWS_DEV_ACCOUNT }}.dkr.ecr.ap-northeast-2.amazonaws.com
-      ECR_REPOSITORY: dev/map-agent
+      ECR_REGISTRY: ${{ secrets.AWS_STG_ACCOUNT }}.dkr.ecr.ap-northeast-2.amazonaws.com
+      ECR_REPOSITORY: stg/map-agent
       IMAGE_TAG: ${{ github.sha }}
-      ECS_CLUSTER_NAME: map-agents-ecs-cluster-dev
-      ECS_SERVICE_NAME: map-agents-ecs-service-dev
+      ECS_CLUSTER_NAME: map-agents-ecs-cluster-stg
+      ECS_SERVICE_NAME: map-agents-ecs-service-stg
 
     steps:
         - name: Checkout code
@@ -41,7 +41,7 @@ jobs:
           uses: aws-actions/configure-aws-credentials@v4
           with:
             aws-region: ${{ env.AWS_REGION }}
-            role-to-assume: ${{ secrets.AWS_DEV_ASSUME_ROLE }}
+            role-to-assume: ${{ secrets.AWS_STG_ASSUME_ROLE }}
             role-session-name: GitActionOIDCSession
             role-duration-seconds: 3600
 
@@ -67,7 +67,7 @@ jobs:
             platforms: linux/amd64
             build-args: |
                 VERSION=${{ env.IMAGE_TAG }}
-                STACK_TYPE=dev
+                STACK_TYPE=stg
                 BUILDKIT_INLINE_CACHE=1
             provenance: false
 
