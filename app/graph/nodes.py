@@ -32,31 +32,32 @@ async def apreprocess_node(state: InputState, config: RunnableConfig) -> Overall
 async def retrieve_node(state: OverallState, deps: Deps, config: RunnableConfig) -> dict:
     cfg = Config.from_runnable_config(config)
     query = state.query_synonym
-    query_embedding = state.query_embedding
+    query_embedding = state.query_embedding[0]
     from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
 
     async with deps.postgres_db.get_async_session() as session:
-        existing_memories: list[tuple[SemanticSearchModel, float]] = await deps.pgvector_models[
+        retrieved_examples: list[tuple[SemanticSearchModel, float]] = await deps.pgvector_models[
             0
         ].asearch_by_vector(session=session, embedding=query_embedding, similarity_cutoff=0.0)
-    final_list = []
-    for memory, score in existing_memories:
-        final_list.append(
+
+    retrived_examples = []
+    for few_shot_example, score in retrieved_examples:
+        retrived_examples.append(
             {
-                "query": memory.query,
-                "cypher_query": memory.cypher_query,
+                "query": few_shot_example.query,
+                "cypher_query": few_shot_example.cypher_query,
+                "score": score,
             }
         )
-    print(">>>>>>> final_list", final_list)
-    return {"fewshot_examples": final_list}
+    return {"fewshot_examples": retrived_examples}
 
 
 async def embedding_node(state: OverallState, deps: Deps, config: RunnableConfig) -> dict:
     cfg = Config.from_runnable_config(config)
 
     embedding_client = deps.embed_client
-    query_embedding = await embedding_client.aembed(text=state.query_synonym)
-    return {"query_embedding": query_embedding}
+    query_embedding_obj = await embedding_client.aembed(text=state.query_synonym)
+    return {"query_embedding": query_embedding_obj.embeddings}
 
 
 async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> dict:
@@ -83,7 +84,6 @@ async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> 
         seed=cfg.seed,
     )
     plan = json.loads(llm_response.choices[0].message.content)
-    print(">>>>>>> plan", plan)
     plan = plan.get("plan", [])
 
     private_dict = state.private.model_dump()
