@@ -53,7 +53,6 @@ class EmbeddingClient:
 
         try:
             vector: list[float] = await self._emb_factory.aembed_query(text)
-            print(f"임베딩 성공 - 벡터 길이: {len(vector)}")
 
             if self._normalize:
                 n_vector = self._maybe_normalize([vector])

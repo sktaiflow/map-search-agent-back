@@ -20,18 +20,16 @@ __all__ = [
 
 class Container(containers.DeclarativeContainer):
     pgvector_db = providers.Container(PGVectorDBContainer)
-    neo4j_db = providers.Container(Neo4jContainer)
+    # neo4j_db = providers.Container(Neo4jContainer)
     clients = providers.Container(ClientContainer)
     llm = providers.Container(LLMContainer)
     toolkit = providers.Container(ToolkitContainer, clients=clients)
     graphs = providers.Container(
         GraphContainer,
         client_container=clients,
-        neo4j_container=neo4j_db,
+        # neo4j_container=neo4j_db,
         toolkit_container=toolkit,
         pgvector_container=pgvector_db,
     )
-    agents = providers.Container(
-        AgentContainer, graphs=graphs, http_client=clients, pgvector_container=pgvector_db
-    )
+    agents = providers.Container(AgentContainer, graphs=graphs, http_client=clients)
     wiring_config = containers.WiringConfiguration(packages=["app"])
