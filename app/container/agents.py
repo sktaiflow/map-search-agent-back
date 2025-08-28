@@ -11,7 +11,6 @@ class AgentContainer(containers.DeclarativeContainer):
     ## http client, graph 주입
     graphs = providers.DependenciesContainer()
     http_client = providers.DependenciesContainer()
-    pgvector_container = providers.DependenciesContainer()
 
     map_agent = providers.Singleton(
         MapSearchAgent,
