@@ -58,7 +58,7 @@ class ClientContainer(containers.DeclarativeContainer):
                 max_connections=2048, max_keepalive_connections=2048, keepalive_expiry=10
             ),
             timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=0.5),
-            retry=Retry(total=1, base=0.15, cap=0.25),
+            retry=Retry(total=1, base=0.25, cap=0.75),
         ),
         host=global_config.synonym_base_url,
         api_key=global_config.synonym_api_key,
@@ -66,17 +66,17 @@ class ClientContainer(containers.DeclarativeContainer):
 
     openai_chat_llm = providers.Factory(
         OpenAIChatLLM,
-        base_url=f"{global_config.openai_api_base}/compatible/openai",
+        base_url=f"{global_config.openai_api_base}",
         api_key=global_config.openai_api_key,
         model=global_config.llm_model,
         oai_client=providers.Resource(
             init_oai_client,
-            base_url=f"{global_config.openai_api_base}/compatible/openai",
+            base_url=f"{global_config.openai_api_base}",
             api_key=global_config.openai_api_key,
             limits=httpx.Limits(
                 max_keepalive_connections=2048, max_connections=2048, keepalive_expiry=10
             ),
-            timeout=httpx.Timeout(pool=1.0, connect=0.5, read=0.5, write=None),
+            timeout=httpx.Timeout(pool=1.0, connect=1.0, read=14.0, write=None),
         ),
     )
 
@@ -87,8 +87,8 @@ class ClientContainer(containers.DeclarativeContainer):
             limits=httpx.Limits(
                 max_keepalive_connections=2048, max_connections=2048, keepalive_expiry=10
             ),
-            timeout=ClientTimeout(connect=1.0, sock_connect=0.5, sock_read=0.5, ceil_threshold=1),
-            retry=Retry(total=1, base=0.15, cap=0.25),
+            timeout=ClientTimeout(connect=1.0, sock_connect=1.0, sock_read=3.5, ceil_threshold=1),
+            retry=Retry(total=1, base=0.25, cap=0.75, retry_on_read_timeout=True),
         ),
         host=global_config.openai_api_base,
         api_key=global_config.openai_api_key,
