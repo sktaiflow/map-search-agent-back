@@ -87,7 +87,7 @@ class OverallState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     query: list[str] = Field(default=[])
     query_synonym: str = Field(default="")
-    query_embedding: Optional[List[float]] = None
+    query_embedding: Optional[List[List[float]]] = Field(default=[])
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
     raw_data: List[str] = Field(default=[])
