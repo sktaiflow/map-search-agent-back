@@ -252,7 +252,6 @@ class BaseModel(Base):
             LIMIT :limit
             """
         )
-        print(">>>>>>> stmt", stmt)
         # Execute the query
         params = {
             "embedding": f"[{', '.join(map(str, embedding))}]",
@@ -261,11 +260,13 @@ class BaseModel(Base):
             "similarity_cutoff": similarity_cutoff,
         }
         result = await session.execute(stmt, params)
-        print(">>>>>>> result", result)
         rows = result.mappings().all()  # 컬럼 이름으로 안전하게 가져옴
 
         objects_and_scores = [
-            (cls(**{col.name: row[col.name] for col in cls.__table__.columns}), row["score"])
+            (
+                cls(**{col.name: row[col.name] for col in cls.__table__.columns}),
+                round(row["score"], 3),
+            )
             for row in rows
         ]
 
@@ -276,19 +277,18 @@ class BaseModel(Base):
     async def asearch_by_vectors(
         cls,
         session: AsyncSession,
-        filters: dict,
         embeddings: list[float] | list[list[float]],
-        limit: int = 100,
+        limit: int = 3,
         similarity_cutoff: float = 0.35,
+        filters: dict = {},
     ):
         """
         여러개의 Embedding 벡터를 기반으로 검색을 수행합니다.
 
         Args:
             session (AsyncSession): DB 세션
-            filters (dict): 필터 조건 (예: user_id 등)
             embeddings (list[float] | list[list[float]]): 검색할 벡터 또는 벡터 리스트
-            limit (int): 검색 결과 제한 (기본: 100)
+            limit (int): 검색 결과 제한 (기본: 3)
             similarity_cutoff (float): 최소 유사도 점수 (0.0 ~ 1.0, 기본: 0.35)
 
         Returns:
@@ -296,14 +296,14 @@ class BaseModel(Base):
         """
         vector_column = getattr(cls, "VECTOR_COLUMN", "query_embedding")
 
-        # 필터 조건 구성
-        filter_conditions = []
-        for key, value in filters.items():
-            filter_conditions.append(f"{key} = :{key}")
+        if filters:
+            filter_conditions = []
+            for key, value in filters.items():
+                filter_conditions.append(f"{key} = :{key}")
 
-        filter_sql = " AND ".join(filter_conditions) if filter_conditions else ""
-        if filter_sql:
-            filter_sql = f"AND {filter_sql}"
+            filter_sql = " AND ".join(filter_conditions) if filter_conditions else ""
+            if filter_sql:
+                filter_sql = f"AND {filter_sql}"
 
         # If a single vector is provided as a flat list, wrap it in another list
         if embeddings and (not isinstance(embeddings[0], list)):
@@ -357,7 +357,7 @@ class BaseModel(Base):
             if obj_id not in seen:
                 seen.add(obj_id)
                 obj = cls(**{col.name: row[idx] for idx, col in enumerate(cls.__table__.columns)})
-                objects_and_scores.append((obj, row[-1]))
+                objects_and_scores.append((obj, round(row[-1], 3)))
             if len(objects_and_scores) >= int(limit):
                 break
 
@@ -422,7 +422,7 @@ class BaseModel(Base):
             await session.execute(stmt)
             await session.commit()
         except Exception as e:
-            print("Error: ", e)
+            logger.error("Error: ", e)
             await session.rollback()
             raise
         return await cls.aselect(session=session, id_=values["id"])
