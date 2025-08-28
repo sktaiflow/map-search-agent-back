@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 from .states import OverallState, OutputState, InputState
-from graph.configuration import Configuration as Config
+from app.graph.configuration import Configuration as Config
 from app.core.prompts import PLANNING_TEMPLATE, PLANNING_PROMPT
 from app.graph.schema import Deps
 import utils.json as json

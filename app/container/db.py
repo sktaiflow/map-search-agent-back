@@ -51,9 +51,9 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
 
 
 from neo4j import AsyncGraphDatabase, READ_ACCESS, WRITE_ACCESS
-from app.database.neo4j import Neo4jClientConfig, AsyncNeo4jClient
+from app.database.neo4j import Neo4jEngineConfig#, AsyncNeo4jClient
 
-neo4jclientconfig = Neo4jClientConfig(
+neo4jclientconfig = Neo4jEngineConfig(
     uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
     user=global_config.neo4j_username,
     password=global_config.neo4j_password,

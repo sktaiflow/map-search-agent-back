@@ -32,6 +32,6 @@ class Container(containers.DeclarativeContainer):
         pgvector_container=pgvector_db,
     )
     agents = providers.Container(
-        AgentContainer, graphs=graphs, http_client=clients, pgvector_models=pgvector_db
+        AgentContainer, graphs=graphs, http_client=clients, pgvector_container=pgvector_db
     )
     wiring_config = containers.WiringConfiguration(packages=["app"])

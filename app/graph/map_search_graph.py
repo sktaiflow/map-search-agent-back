@@ -4,7 +4,7 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 
 import os
 
-from graph.configuration import Configuration as Config
+from app.graph.configuration import Configuration as Config
 from app.graph.base import BaseGraph
 from configs import StackType, config
 from app import logger
