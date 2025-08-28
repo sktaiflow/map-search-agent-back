@@ -72,7 +72,7 @@ class BaseConfig(BaseSettings):
     vector_store_collection_name: str = "map-vector-store"
     vector_store_provider: str = "pgvector"
     vector_store_dbname: str = "map_db_vector_store"
-    vector_store_embedding_model_name: str = "openai/text-embedding-3-small"
+    vector_store_embedding_model_name: str = "text-embedding-3-small"
     vector_store_embedding_model_dims: int = 1536
     vector_store_diskann: bool = False
     vector_store_hnsw: bool = True
