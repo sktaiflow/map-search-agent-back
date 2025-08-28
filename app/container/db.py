@@ -12,7 +12,7 @@ from configs import config as global_config
 from app import logger
 
 postgresql_engine_config = PostgreSQLEngineConfig(
-    url=f"postgresql+asyncpg://{global_config.vector_store_user}:{global_config.vector_store_password}@{global_config.vector_store_host}:{global_config.vector_store_port}/{global_config.vector_store_dbname}",
+    url=f"postgresql+asyncpg://{global_config.postgres_db_username}:{global_config.postgres_db_password}@{global_config.postgres_db_host}:{global_config.postgres_db_port}/{global_config.vector_store_dbname}",
     echo=False,
     pool_size=50,  # 기본 연결 풀 크기 (CPU 코어 수 * 2-4배)
     max_overflow=100,  # 최대 추가 연결 수 (pool_size의 2배)
@@ -51,9 +51,9 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
 
 
 from neo4j import AsyncGraphDatabase, READ_ACCESS, WRITE_ACCESS
-from app.database.neo4j import Neo4jClientConfig, AsyncNeo4jClient
+from app.database.neo4j import Neo4jEngineConfig
 
-neo4jclientconfig = Neo4jClientConfig(
+neo4jclientconfig = Neo4jEngineConfig(
     uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
     user=global_config.neo4j_username,
     password=global_config.neo4j_password,

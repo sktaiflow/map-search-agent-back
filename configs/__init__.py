@@ -7,6 +7,7 @@ from configs.default import BaseConfig, StackType
 import utils.json as json
 
 DEFAULT_SECRET_ID = "map_secrete"
+DEFAULT_REGION = "ap-northeast-2"
 
 
 def get_config(stack_type: str) -> BaseConfig:
@@ -21,9 +22,11 @@ def get_config(stack_type: str) -> BaseConfig:
         load_dotenv(dotenv_path=env_file)
         return LocalConfig(_env_file=str(env_file), _env_file_encoding="utf-8")
 
-    secrets_manager = boto3.client("secretsmanager")
+    secrets_manager = boto3.client("secretsmanager", region_name=DEFAULT_REGION)
 
-    response = secrets_manager.get_secret_value(SecretId=DEFAULT_SECRET_ID)
+    response = secrets_manager.get_secret_value(
+        SecretId=DEFAULT_SECRET_ID,
+    )
     secret = json.loads(response["SecretString"])
 
     # 환경 변수 설정

@@ -1,9 +1,10 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 from openai import AsyncOpenAI
 
 from openai.types.chat.chat_completion import ChatCompletion
+from langchain_core.runnables import Runnable
 
 from configs import config as global_config
 
@@ -13,11 +14,11 @@ class OpenAIChatLLM:
         self, base_url: str, api_key: str, model: str, oai_client: Optional[AsyncOpenAI] = None
     ):
         # TODO: remove base_url, api_key
-        self.base_url = base_url or f"{global_config.openai_api_base}/compatible/openai"
+        self.base_url = base_url or f"{global_config.openai_api_base}"
         self.api_key = api_key or global_config.openai_api_key
 
         self.model = model
-        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        self.client = ChatOpenAI(api_key=api_key, base_url=base_url, model=model)
         self.async_client = oai_client
 
     async def agenerate_response(
@@ -54,54 +55,6 @@ class OpenAIChatLLM:
                 }
             )
         return await self.async_client.chat.completions.create(**params)
-
-    def generate_response(
-        self,
-        messages: List[Dict[str, str]],
-        response_format=None,
-        tools: Optional[List[Dict]] = None,
-        tool_choice: str = "auto",
-        max_tokens: int = 100,
-        model: Optional[int] = None,
-        seed: int = 10,
-        temperature: Optional[float] = 0.1,
-        top_p: Optional[float] = 0.1,
-        strict_messages_only: bool = False,
-    ) -> ChatCompletion:
-        """
-        Generate a response based on the given messages using OpenAI.
-
-        Args:
-            messages (list): List of message dicts containing 'role' and 'content'.
-            response_format (str or object, optional): Format of the response. Defaults to "text".
-            tools (list, optional): List of tools that the model can call. Defaults to None.
-            tool_choice (str, optional): Tool choice method. Defaults to "auto".
-            max_tokens (int, optional): Maximum number of tokens to generate. Defaults to 100.
-            model (int, optional): The model to use. Defaults to None.
-            strict_messages_only (bool, optional): If true, other parameters except messages are ignored. Defaults to False.
-
-        Returns:
-            str: The generated response.
-        """
-
-        params = {
-            "model": global_config.llm_model if model is None else model,
-            "messages": messages,
-        }
-
-        if strict_messages_only is False:
-            params.update(
-                {
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
-                    "top_p": top_p,
-                    **({"response_format": response_format} if response_format else {}),
-                    **({"tools": tools} if tools else {}),
-                    **({"tool_choice": tool_choice} if tools else {}),
-                    **({"seed": seed} if seed else {}),
-                }
-            )
-        return self.client.chat.completions.create(**params)
 
 
 # import json
