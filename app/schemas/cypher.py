@@ -40,10 +40,6 @@ class CypherResponse(BaseModel):
         default=None,
         description="추가 메시지 (에러 메시지 등)"
     )
-    query_time_ms: Optional[float] = Field(
-        default=None,
-        description="쿼리 실행 시간 (밀리초)"
-    )
     record_count: int = Field(
         default=0,
         description="반환된 레코드 수"

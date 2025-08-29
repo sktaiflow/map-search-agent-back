@@ -16,20 +16,8 @@ async def test_cypher_api():
         
         print("=== Cypher API 테스트 시작 ===\n")
         
-        # 1. 헬스체크 테스트
-        print("1. 헬스체크 테스트")
-        try:
-            async with session.get(f"{base_url}/v1/cypher/health") as response:
-                result = await response.json()
-                print(f"Status: {response.status}")
-                print(f"Response: {json.dumps(result, indent=2)}")
-        except Exception as e:
-            print(f"헬스체크 실패: {e}")
-        
-        print("\n" + "="*50 + "\n")
-        
-        # 2. 간단한 Cypher 쿼리 테스트
-        print("2. 간단한 Cypher 쿼리 테스트")
+        # 간단한 Cypher 쿼리 테스트
+        print("간단한 Cypher 쿼리 테스트")
         simple_query = {
             "query": "RETURN 'Hello, Neo4j!' as greeting, 42 as answer"
         }
