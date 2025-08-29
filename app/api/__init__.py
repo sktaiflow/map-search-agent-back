@@ -1,3 +1,3 @@
-from . import agents
+from . import agents, cypher
 
-__all__ = ["agents"]
+__all__ = ["agents", "cypher"]
