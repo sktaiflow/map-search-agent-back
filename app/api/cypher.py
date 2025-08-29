@@ -13,6 +13,10 @@ from neo4j.exceptions import Neo4jError
 from app.container import Container
 from app.schemas.cypher import CypherRequest, CypherResponse
 from app import logger
+from configs.default import BaseConfig
+
+# 환경 설정 로드
+config = BaseConfig()
 
 # API 라우터 생성
 router = APIRouter(tags=["Cypher Query"])
@@ -22,7 +26,8 @@ router = APIRouter(tags=["Cypher Query"])
     "/v1/cypher/execute",
     response_model=CypherResponse,
     summary="Cypher 쿼리 실행",
-    description="Neo4j 데이터베이스에서 Cypher 쿼리를 실행합니다."
+    description="Neo4j 데이터베이스에서 Cypher 쿼리를 실행합니다.",
+    include_in_schema=config.stack_type not in ["prd", "stg"]
 )
 @inject
 async def execute_cypher_query(
