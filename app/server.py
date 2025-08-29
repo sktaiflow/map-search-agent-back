@@ -43,7 +43,13 @@ async def lifespan(app: FastAPI):
         print(f"Error during app shutdown: {e}")
 
 
-async def healthcheck(request: Request):
+async def healthz():
+    """liveness health check"""
+    return Response(media_type="text/plain", content="OK")
+
+
+async def readyz(request: Request):
+    # readiness health check
     if not getattr(request.app.state, "ready", False):
         return Response(status_code=503, media_type="text/plain", content="NOT READY")
     return Response(media_type="text/plain", content="OK")
@@ -58,7 +64,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_api_route(path="/api/healthcheck", endpoint=healthcheck)
+app.add_api_route(path="/api/healthz", endpoint=healthz)
+app.add_api_route(path="/api/healthcheck", endpoint=readyz)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
