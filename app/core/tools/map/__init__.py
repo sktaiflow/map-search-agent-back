@@ -4,6 +4,7 @@ from app.core.tools.map.plan import PlanToolKit
 from typing import Any, Dict, List
 from langchain.tools import BaseTool  # 가정
 from app.core.tools.map.base import BaseToolKit
+from langchain_core.utils.function_calling import convert_to_openai_function
 
 
 class MAPTools:
@@ -26,6 +27,10 @@ class MAPTools:
         for toolkit in self.get_toolkit():  # 오타 수정
             all_tools.extend(toolkit.get_tools())
         return [tool for tool in all_tools if tool.status]
+
+    def get_valid_tools_with_openai_function(self) -> List[dict]:
+        """toolkit_classes 안 모든 tool을 openai function 형식으로 반환"""
+        return [convert_to_openai_function(tool) for tool in self.get_valid_tools()]
 
     def __len__(self) -> int:
         return len(self.get_valid_tools())
