@@ -35,6 +35,8 @@ class BaseConfig(BaseSettings):
 
     # llm
     llm_model: str = "gpt-4o"
+    llm_temperature: float = 0.0
+    llm_seed: int = 10
 
     # map api config
     map_base_url: str = ""

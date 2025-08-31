@@ -53,8 +53,16 @@ async def invoke_agent(
         "stream": False,
     }
 
-    # TODO: runnable_config 에 대한 처리 필요
-    runnable_config = RunnableConfig()
+    # runnable_config 설정
+    from configs import config as global_config
+    from app.graph.configuration import Configuration
+    default_cfg = Configuration()
+    runnable_config = RunnableConfig(configurable={
+        "llm_model": global_config.llm_model,
+        "temperature": global_config.llm_temperature,
+        "seed": global_config.llm_seed,
+        "streaming": graph_input_data["stream"]
+    })
     graph_result = await agent.ainvoke(input_data=graph_input_data, runnable_config=runnable_config)
     
     # return_type에 따른 응답 분기
