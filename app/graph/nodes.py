@@ -443,19 +443,6 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
         
         trace.append(f"Generated new plan with {len(new_plan)} steps")
         
-        # best_so_far 업데이트 (현재 결과가 이전보다 나으면 보존)
-        current_score = eval_status.get("score", 0.0)
-        best_so_far = state.private.best_so_far.model_dump()
-        
-        if current_score > best_so_far.get("score", -1.0):
-            best_so_far.update({
-                "score": current_score,
-                "output": {"search_results": search_results},
-                "reason": f"Better score: {current_score:.2f}",
-                "plan_snapshot": state.private.plan
-            })
-            trace.append(f"Updated best result with score: {current_score:.2f}")
-        
         # 새 계획으로 상태 재설정 (map-search-agent의 state reset)
         private_dict = state.private.model_dump()
         private_dict.update({
@@ -463,7 +450,6 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
             "search_result": [],  # 실행 결과 초기화
             "trace": trace,
             "loop_telemetry": loop_telemetry,
-            "best_so_far": best_so_far,
             "eval_status": {  # 평가 상태 초기화
                 "accepted": False,
                 "score": -1.0,
@@ -581,9 +567,6 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
                 }
             }
             
-            if best_so_far.score > 0.5:
-                raw_data["best_result"] = best_so_far.output or {}
-                raw_data["best_score"] = best_so_far.score
         else:
             raw_data = {
                 "search_results": [],
