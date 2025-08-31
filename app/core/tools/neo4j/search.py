@@ -3,6 +3,7 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 from app.core.tools.map.base import BaseToolKit, SafeValidationTool
 from app.models.graphmodel.graph import AsyncGraphCypherQAChain
+from app.core.tools.neo4j.cypher_analyzer import CypherDecomposer
 import asyncio
 import time
 import json
@@ -26,122 +27,121 @@ class Neo4jSearchTool(SafeValidationTool):
     description = "Neo4j 데이터베이스에서 상품 정보 검색 (case1: 정확매치, case2: 조건완화)"
     response_model: Type[BaseModel] = Neo4jSearchOutput
     
-    def __init__(self, cypher_qa_chain: AsyncGraphCypherQAChain):
+    def __init__(self, cypher_qa_chain: AsyncGraphCypherQAChain, llm_model=None):
         super().__init__()
         self.cypher_qa_chain = cypher_qa_chain
+        self.llm_model = llm_model or cypher_qa_chain.llm  # AsyncGraphCypherQAChain에서 LLM 추출
     
-    async def _decompose_query_for_case2(self, user_query: str) -> List[Dict[str, str]]:
-        """case2용 쿼리 분해 전략"""
-        strategies = [
-            {"type": "exact_match", "query": user_query},
-        ]
-        
-        # 가격 조건 완화
-        price_keywords = ["저렴한", "비싼", "싼", "고가", "프리미엄"]
-        if any(keyword in user_query for keyword in price_keywords):
-            relaxed_query = user_query
-            for keyword in price_keywords:
-                relaxed_query = relaxed_query.replace(keyword, "")
-            strategies.append({"type": "relaxed_price", "query": relaxed_query.strip()})
-        
-        # 카테고리 완화 (첫 번째 키워드만)
-        words = user_query.split()
-        if len(words) > 1:
-            strategies.append({"type": "relaxed_category", "query": words[0]})
-        
-        # 키워드 추출 (2글자 이상만)
-        keywords = [w for w in words if len(w) > 1]
-        if len(keywords) > 1:
-            strategies.append({"type": "keyword_based", "query": " ".join(keywords)})
-        
-        return strategies
     
-    async def _execute_single_query(self, query_config: Dict[str, str]) -> Dict[str, Any]:
-        """단일 쿼리 실행"""
+    async def _arun(self, query: str, expand_search: bool = True) -> str:
+        """툴 실행 메인 함수 - 원본 map-search-agent 로직"""
         start_time = time.time()
         
         try:
+            # 1. 기본 검색 실행 (case1 시도)
             result = await self.cypher_qa_chain.ainvoke(
                 prompt="사용자 질의에 맞는 상품 정보를 Neo4j에서 검색하세요.",
-                question=query_config["query"]
+                question=query
             )
             
             execution_time = int((time.time() - start_time) * 1000)
+            raw_data = result.get("result", [])
+            cypher_query = result.get("cypher", "")
             
-            return {
-                "query_type": query_config["type"],
-                "cypher": result.get("cypher", ""),
-                "results": result.get("records", []),
-                "result_count": len(result.get("records", [])),
-                "execution_time_ms": execution_time,
-                "success": True,
-                "error": None
-            }
+            # Case 1: 기본 검색 성공
+            if raw_data and result.get("result") != "I don't know the answer.":
+                return json.dumps({
+                    "case": "1",
+                    "cypher": cypher_query,
+                    "result": result.get("result", ""),
+                    "raw_data": raw_data,
+                    "execution_time_ms": execution_time,
+                    "result_metadata": {
+                        "validated": True,
+                        "search_strategy": "exact_match"
+                    }
+                }, ensure_ascii=False)
             
+            # Case 2: 검색 실패시 조건 완화 검색 적용 (expand_search=True인 경우만)
+            if expand_search:
+                # CypherDecomposer를 사용하여 조건 분해
+                decomposer = CypherDecomposer(llm_model=self.llm_model)
+                sub_queries = decomposer.decompose(
+                    base_cypher=cypher_query,
+                    original_question=query
+                )
+                
+                # sub_queries에 있는 cypher들을 각각 실행해보고 결과 수집
+                cypher_results = []
+                for sub_cypher in sub_queries:
+                    try:
+                        # AsyncGraphCypherQAChain으로 각 서브쿼리 실행
+                        sub_result = await self.cypher_qa_chain.ainvoke(
+                            prompt="조건을 완화한 상품 검색을 수행하세요.",
+                            question="", # 이미 cypher가 생성된 상태
+                            return_cypher_only=False
+                        )
+                        sub_data = sub_result.get("records", [])
+                        cypher_results.append(sub_data)
+                    except Exception as e:
+                        print(f"서브쿼리 실행 실패: {e}")
+                        cypher_results.append([])
+                
+                total_execution_time = int((time.time() - start_time) * 1000)
+                
+                return json.dumps({
+                    "case": "2",
+                    "cypher": sub_queries,  # 리스트!
+                    "result": "",
+                    "raw_data": cypher_results,  # 리스트의 리스트!
+                    "execution_time_ms": total_execution_time,
+                    "result_metadata": {
+                        "validated": True,
+                        "search_strategy": "condition_relaxation",
+                        "sub_queries_count": len(sub_queries)
+                    }
+                }, ensure_ascii=False)
+            
+            # expand_search=False인데 실패한 경우
+            else:
+                return json.dumps({
+                    "case": "1",
+                    "cypher": cypher_query,
+                    "result": "검색 결과가 없습니다.",
+                    "raw_data": [],
+                    "execution_time_ms": execution_time,
+                    "result_metadata": {
+                        "validated": True,
+                        "search_strategy": "exact_match_only",
+                        "no_results": True
+                    }
+                }, ensure_ascii=False)
+                
         except Exception as e:
             execution_time = int((time.time() - start_time) * 1000)
-            return {
-                "query_type": query_config["type"],
+            return json.dumps({
+                "case": "1",
                 "cypher": "",
-                "results": [],
-                "result_count": 0,
+                "result": f"검색 실행 중 오류 발생: {str(e)}",
+                "raw_data": [],
                 "execution_time_ms": execution_time,
-                "success": False,
-                "error": str(e)
-            }
-    
-    async def _arun(self, query: str, expand_search: bool = True) -> str:
-        """툴 실행 메인 함수"""
-        if expand_search:
-            # case2: 다중 쿼리 실행
-            query_configs = await self._decompose_query_for_case2(query)
-            results = await asyncio.gather(*[
-                self._execute_single_query(config) for config in query_configs
-            ])
-            
-            # 결과 집계 및 중복 제거
-            all_products = []
-            seen_ids = set()
-            
-            for result in results:
-                for product in result["results"]:
-                    product_id = product.get("id") or product.get("product_id") or str(product)
-                    if product_id and product_id not in seen_ids:
-                        all_products.append(product)
-                        seen_ids.add(product_id)
-            
-            search_result = {
-                "search_strategy": "case_2",
-                "total_queries": len(results),
-                "query_results": results,
-                "aggregated_products": all_products,
-                "total_products": len(all_products)
-            }
-        else:
-            # case1: 단일 쿼리 실행
-            query_config = {"type": "exact_match", "query": query}
-            result = await self._execute_single_query(query_config)
-            
-            search_result = {
-                "search_strategy": "case_1",
-                "total_queries": 1,
-                "query_results": [result],
-                "aggregated_products": result["results"],
-                "total_products": result["result_count"]
-            }
-        
-        return json.dumps(search_result, ensure_ascii=False)
+                "result_metadata": {
+                    "validated": False,
+                    "error": str(e)
+                }
+            }, ensure_ascii=False)
 
 
 class Neo4jToolKit(BaseToolKit):
     """Neo4j 검색 툴킷"""
     
-    def __init__(self, cypher_qa_chain: AsyncGraphCypherQAChain, status: bool = True):
+    def __init__(self, cypher_qa_chain: AsyncGraphCypherQAChain, llm_model=None, status: bool = True):
         self.cypher_qa_chain = cypher_qa_chain
+        self.llm_model = llm_model
         self.status = status
     
     def get_tools(self) -> List[BaseTool]:
         """Neo4j 검색 툴 반환"""
-        neo4j_tool = Neo4jSearchTool(self.cypher_qa_chain)
+        neo4j_tool = Neo4jSearchTool(self.cypher_qa_chain, self.llm_model)
         neo4j_tool.status = self.status
         return [neo4j_tool]
