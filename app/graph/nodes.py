@@ -302,73 +302,41 @@ async def evaluate_node(state: OverallState, deps: Deps, config: RunnableConfig)
             "detail": {"reason": "no_results", "message": "No execution results found"}
         }
     else:
-        # map-search-agent의 결과 검증 로직 참고
+        # 단순한 성공/실패 평가
         successful_steps = [r for r in search_results if r.get("success", False)]
-        failed_steps = [r for r in search_results if not r.get("success", True)]
         
-        total_steps = len(search_results)
-        success_rate = len(successful_steps) / total_steps if total_steps > 0 else 0.0
-        
-        # 결과 데이터 품질 검사
-        meaningful_results = []
+        # 의미있는 데이터가 있는지 확인
+        has_meaningful_data = False
         for result in successful_steps:
             result_data = result.get("result")
-            if result_data is not None and result_data != "" and result_data != []:
-                meaningful_results.append(result)
+            if result_data and result_data != "I don't know the answer." and result_data != []:
+                has_meaningful_data = True
+                break
         
-        has_meaningful_data = len(meaningful_results) > 0
-        data_quality_score = len(meaningful_results) / len(successful_steps) if successful_steps else 0.0
-        
-        # map-search-agent 스타일 평가 기준
-        score = 0.0
-        detail = {
-            "total_steps": total_steps,
-            "successful_steps": len(successful_steps),
-            "failed_steps": len(failed_steps),
-            "meaningful_results": len(meaningful_results),
-            "success_rate": success_rate,
-            "data_quality": data_quality_score
-        }
-        
-        # 점수 계산 (map-search-agent의 scoring 로직)
-        if success_rate >= 1.0 and has_meaningful_data and data_quality_score >= 0.8:
-            # 모든 스텝 성공 + 고품질 데이터
+        # 단순 평가: 데이터 있으면 성공, 없으면 실패
+        if has_meaningful_data:
+            accepted = True
             score = 1.0
-            accepted = True
-            detail["reason"] = "excellent"
-            detail["message"] = f"All {total_steps} steps successful with high-quality data"
-        elif success_rate >= 0.8 and has_meaningful_data and data_quality_score >= 0.6:
-            # 대부분 성공 + 양질 데이터
-            score = 0.8
-            accepted = True
-            detail["reason"] = "good"
-            detail["message"] = f"High success rate with good data quality"
-        elif success_rate >= 0.5 and has_meaningful_data:
-            # 절반 이상 성공 + 데이터 있음
-            score = 0.6
-            accepted = True
-            detail["reason"] = "acceptable"
-            detail["message"] = f"Partial success with some meaningful data"
-        elif has_meaningful_data:
-            # 데이터는 있지만 성공률 낮음 - 재시도 고려
-            score = 0.3
-            accepted = False
-            detail["reason"] = "low_success_rate"
-            detail["message"] = f"Low success rate: {success_rate:.1%}, but has some data"
+            reason = "success"
+            message = f"Found meaningful data from {len(successful_steps)} successful steps"
         else:
-            # 의미있는 데이터 없음 - 재계획 필요
-            score = 0.1
             accepted = False
-            detail["reason"] = "no_meaningful_data"
-            detail["message"] = "No meaningful data returned from any step"
+            score = 0.0
+            reason = "no_data"
+            message = f"No meaningful data from {len(search_results)} total steps"
         
         eval_status = {
             "accepted": accepted,
             "score": score,
-            "detail": detail
+            "detail": {
+                "reason": reason,
+                "message": message,
+                "total_steps": len(search_results),
+                "successful_steps": len(successful_steps)
+            }
         }
         
-        trace.append(f"Evaluation: score={score:.2f}, accepted={accepted}, reason={detail['reason']}")
+        trace.append(f"Evaluation: accepted={accepted}, reason={reason}")
     
     # retry budget 관리 (map-search-agent의 retry 패턴)
     retry_budget = state.private.retry.model_dump()
