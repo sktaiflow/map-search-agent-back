@@ -8,8 +8,6 @@ from contextvars import ContextVar
 
 from neo4j import AsyncGraphDatabase, AsyncDriver
 
-# from neo4j.async_.work import AsyncSession  # type: ignore
-
 from app import logger
 
 from pydantic import BaseModel, Field
