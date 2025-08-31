@@ -19,6 +19,7 @@ from app.graph.nodes import (
     evaluate_node,
     output_node,
     replan_node,
+    should_replan,
 )
 from app.graph.schema import Deps
 from functools import partial
@@ -38,7 +39,7 @@ class MapSearchGraph(BaseGraph):
                 f.write(self.compiled_graph.get_graph().draw_mermaid_png())
             logger.info(f"Graph image saved as {filename}")
 
-    # TODO 노트 병렬쳐리 (start -> plan, embeding)
+    # Plan-Execute-Evaluate-Replan 워크플로우 (map-search-agent 패턴)
     def create_graph(self) -> StateGraph:
         workflow = StateGraph(
             OverallState,
@@ -47,13 +48,38 @@ class MapSearchGraph(BaseGraph):
             config_schema=Config,
         )
 
+        # 모든 노드 추가 (map-search-agent의 노드 구성 참고)
         workflow.add_node("embedding", partial(embedding_node, deps=self.deps))
         workflow.add_node("retrieve", partial(retrieve_node, deps=self.deps))
         workflow.add_node("plan", partial(plan_node, deps=self.deps))
-        workflow.add_node("to_output", to_output_node)
+        workflow.add_node("execute", partial(execute_node, deps=self.deps))
+        workflow.add_node("evaluate", partial(evaluate_node, deps=self.deps))
+        workflow.add_node("replan", partial(replan_node, deps=self.deps))
+        workflow.add_node("output", partial(output_node, deps=self.deps))
+
+        # 초기 플로우: 준비 단계 (map-search-agent의 preparation flow)
         workflow.add_edge(START, "embedding")
         workflow.add_edge("embedding", "retrieve")
         workflow.add_edge("retrieve", "plan")
-        workflow.add_edge("plan", "to_output")
-        workflow.add_edge("to_output", END)
+        
+        # 실행 루프: plan → execute → evaluate (map-search-agent의 main loop)
+        workflow.add_edge("plan", "execute")
+        workflow.add_edge("execute", "evaluate")
+        
+        # 조건부 분기: 평가 결과에 따른 라우팅 (map-search-agent의 conditional routing)
+        workflow.add_conditional_edges(
+            "evaluate",
+            should_replan,
+            {
+                "replan": "replan",    # 재계획 후 재실행
+                "output": "output"     # 성공 또는 재시도 한계시 종료
+            }
+        )
+        
+        # 재계획 루프: replan → execute (map-search-agent의 retry loop)
+        workflow.add_edge("replan", "execute")
+        
+        # 최종 종료
+        workflow.add_edge("output", END)
+        
         return workflow
