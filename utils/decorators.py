@@ -13,10 +13,12 @@ def session_required(fn):
     return wrapper
 
 
-def neo4j_session_required(*, access_mode: str = "r"):
+def neo4j_session_required(
+    _fn: Callable[..., Awaitable[Any]] | None = None, *, access_mode: str = "r"
+):
     """
     사용법:
-      @session_required(access_mode="r")
+      @session_required(access_mode="r") : access_mode 기본값은 "r": READ 나머진 Write 모드
       async def foo(self, ..., session: AsyncSession | None = None): ...
 
     동작:
@@ -26,48 +28,47 @@ def neo4j_session_required(*, access_mode: str = "r"):
 
     def decorator(fn: Callable[..., Awaitable[Any]]):
         @wraps(fn)
-        async def wrapper(self, *args, **kwargs):
+        async def wrapper(self_or_cls, *args, **kwargs):
             session: Optional[AsyncSession] = kwargs.get("session")
             if session is not None:
-                return await fn(self, *args, **kwargs)
+                return await fn(self_or_cls, *args, **kwargs)
 
-            if not hasattr(self, "get_session"):
+            if not hasattr(self_or_cls, "get_session"):
                 raise RuntimeError("get_session(mode) 메서드를 self에 구현해야 합니다.")
 
-            async with self.get_session(mode=access_mode) as s:
-                kwargs["session"] = s
-                return await fn(self, *args, **kwargs)
+            session = self_or_cls.get_session(access_mode)
+            kwargs["session"] = session
+            return await fn(self_or_cls, *args, **kwargs)
 
         return wrapper
 
-    return decorator
+    return decorator if _fn is None else decorator(_fn)
 
 
-def neo4j_tx_required(*, access_mode: str = "r"):
+def neo4j_tx_required(_fn: Callable[..., Awaitable[Any]] | None = None, *, access_mode: str = "r"):
     """
     사용법:
-      @tx_required(access_mode="r")
+      @tx_required(access_mode="r") Transaction 처리의 경우 session.execute_read 혹은 session.execute_write로 사용
       async def get_user(self, user_id: str, *, tx=None): ...
     """
 
     def decorator(fn: Callable[..., Awaitable[Any]]):
         @wraps(fn)
-        async def wrapper(self, *args, **kwargs):
-            # 외부에서 tx를 넘겨주면 그대로 사용 (닫지 않음)
+        async def wrapper(self_or_cls, *args, **kwargs):
             if kwargs.get("tx") is not None:
-                return await fn(self, *args, **kwargs)
+                return await fn(self_or_cls, *args, **kwargs)
 
-            if not hasattr(self, "get_session"):
+            if not hasattr(self_or_cls, "get_session"):
                 raise RuntimeError("get_session(mode) 메서드를 self에 구현하세요.")
 
-            async with self.get_session(mode=access_mode) as session:  # 우리가 열었으니 여기서 닫힘
+            async with self_or_cls.get_session() as session:
                 executor = session.execute_read if access_mode == "r" else session.execute_write
 
                 async def work(tx):
-                    return await fn(self, *args, **{**kwargs, "tx": tx})
+                    return await fn(self_or_cls, *args, **{**kwargs, "tx": tx})
 
                 return await executor(work)
 
         return wrapper
 
-    return decorator
+    return decorator if _fn is None else decorator(_fn)
