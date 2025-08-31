@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 
 from app.schemas.map.plan import AddOnSubscriptions, AddOnDetailSubscriptions, AddOnHistory
 from app.clients.map import MAPClient
-from app.core.tools.map.base import SafeValidationTool
-from app.core.tools.map.base import BaseToolKit
+from app.core.tools.utils import SafeValidationTool
+from app.core.tools.map.base import MAPBaseToolKit
 
 
 class UserIdInput(BaseModel):
@@ -71,26 +71,31 @@ class GetPlanAddOnHistoriesTool(SafeValidationTool):
         return self._validate_response(response)
 
 
-class PlanToolKit(BaseToolKit):
+class PlanToolKit(MAPBaseToolKit):
     """요금제 관련 도구들을 관리하는 툴킷 -> method_api_key 공유하는 도구만 모아둬야함"""
 
-    def get_tool_class(self) -> List[Type[BaseTool]]:
+    def get_tool_class(self) -> List[Type[SafeValidationTool]]:
         return [
             GetPlanAddOnAddOnSubscriptionsTool,
             GetPlanAddOnSubscriptionsTool,
             GetPlanAddOnHistoriesTool,
         ]
 
-    def get_tools(self) -> List[BaseTool]:
+    def get_valid_tools(self) -> List[SafeValidationTool]:
+        """사용 가능한 tool 반환"""
+        tools = self.get_tools()
+        return [tool for tool in tools if tool.status]
+
+    def get_tools(self) -> List[SafeValidationTool]:
         """요금제 관련 도구들을 반환합니다."""
         return [
             GetPlanAddOnAddOnSubscriptionsTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=True
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetPlanAddOnSubscriptionsTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetPlanAddOnHistoriesTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
         ]

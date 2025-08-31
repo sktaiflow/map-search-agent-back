@@ -5,24 +5,21 @@ from app.schemas.map.contract import (
     DeviceContract,
     MobileService,
 )
-from app.schemas.map.plan import AddOnSubscriptions
 from app.clients.map import MAPClient
-from langchain_core.tools import ArgsSchema, BaseTool
-from app.core.tools.map.base import SafeValidationTool
+from langchain_core.tools import ArgsSchema
+from app.core.tools.utils import SafeValidationTool
 from pydantic import BaseModel, Field
 from typing import Type
 from typing import List
 
-from app.core.tools.map.base import BaseToolKit
+from app.core.tools.map.base import MAPBaseToolKit
 
 
 class UserIdInput(BaseModel):
     user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
 
 
-# TODO: respone HttpBaseClientResponse 로 변경
-
-
+# TODO: 필요시 responeFormat -> HttpBaseClientResponse 로 변경
 class GetContractMobileContractDevicesTool(SafeValidationTool):
     name: str = "get_contract_mobile_contract_devices"
     description: str = "무선 회선에 대한 기본 가입정보를 조회한다."
@@ -123,10 +120,10 @@ class GetContractMobileContractServicesTool(SafeValidationTool):
         return self._validate_response(response)
 
 
-class ContractToolKit(BaseToolKit):
+class ContractToolKit(MAPBaseToolKit):
     """contract 관련 도구들을 관리하는 툴킷 method_api_key 공유하는 도구만 모아둬야함"""
 
-    def get_tool_class(self) -> List[Type[BaseTool]]:
+    def get_tool_class(self) -> List[Type[SafeValidationTool]]:
         return [
             GetContractMobileContractDevicesTool,
             GetContractMobileContractRemainedContractsTool,
@@ -135,22 +132,26 @@ class ContractToolKit(BaseToolKit):
             GetContractMobileContractServicesTool,
         ]
 
-    def get_tools(self) -> List[BaseTool]:
+    def get_valid_tools(self) -> List[SafeValidationTool]:
+        """사용 가능한 tool 반환"""
+        tools = self.get_tools()
+        return [tool for tool in tools if tool.status]
+
+    def get_tools(self) -> List[SafeValidationTool]:
         """contract 관련 도구들을 반환합니다."""
         return [
             GetContractMobileContractDevicesTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=True
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetContractMobileContractRemainedContractsTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetContractMobileContractNoContractPointsTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetContractMobileContractDeviceContractsTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetContractMobileContractServicesTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
-            ),
+                map_client=self.map_client, method_api_key=self.method_api_key
         ]
