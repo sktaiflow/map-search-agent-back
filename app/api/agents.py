@@ -38,9 +38,8 @@ async def invoke_agent(
     agent: BaseAgent = Depends(Provide[Container.agents.map_agent]),
 ) -> JSONResponse:
 
-    # preprocess_input = await agent.apreprocess_input(input_data, request_params={})
-
-    preprocess_input = await agent.apreprocess_input_mock(input_data)
+    # 쿼리 전처리 - List[str] -> str 변환
+    preprocess_input = " ".join(input_data.query) if isinstance(input_data.query, list) else input_data.query
 
     logger.info(f"preprocess_input: {preprocess_input}")
 
@@ -48,23 +47,37 @@ async def invoke_agent(
         "user_id": input_data.user_id,
         "query": input_data.query,
         "query_synonym": preprocess_input,
-        "search_type": input_data.search_type,
+        "expand_search": input_data.expand_search,
         "return_type": input_data.return_type,
-        "transaction_id": "",
-        "user_info_yn": input_data.user_info_yn,
+        "user_info": input_data.user_info,
         "stream": False,
     }
 
     # TODO: runnable_config 에 대한 처리 필요
     runnable_config = RunnableConfig()
-    response = InvokeResponse(
-        code=200,
-        data=dict(
-            await agent.ainvoke(input_data=graph_input_data, runnable_config=runnable_config)
-        ),
-    )
-    print("#######")
-    print(response)
-    print("#######")
-    # TODO: postprocess_messages 처리
+    graph_result = await agent.ainvoke(input_data=graph_input_data, runnable_config=runnable_config)
+    
+    # return_type에 따른 응답 분기
+    if input_data.return_type == 1:
+        # return_type=1: product_id만 반환 (LLM 호출 최소화)
+        response_data = {
+            "raw_result": graph_result.get("raw_data", {}),
+            "product_meta": graph_result.get("product_meta", []),  # 이미 ID 리스트로 처리됨
+            "user_info": graph_result.get("user_info_data", [])
+        }
+    else:
+        # return_type=0: 전체 응답 (insights, summary, reasoning 포함)
+        response_data = {
+            "insights": graph_result.get("insights", ""),
+            "summary": graph_result.get("summary", ""),
+            "reasoning": graph_result.get("reasoning", ""),
+            "raw_result": graph_result.get("raw_data", {}),
+            "product_meta": graph_result.get("product_meta", []),
+            "user_info": graph_result.get("user_info_data", []),
+            "updated_at": graph_result.get("updated_at", "")
+        }
+    
+    response = InvokeResponse(code=200, data=response_data)
+    
+    logger.info(f"Response type: {input_data.return_type}, Data keys: {list(response_data.keys())}")
     return JSONResponse(content=response.model_dump())

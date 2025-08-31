@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 from app.graph.states import OverallState, OutputState, InputState
 from app.graph.configuration import Configuration as Config
-from app.core.prompts import PLANNING_TEMPLATE, PLANNING_PROMPT
+from app.core.prompts import PLANNING_TEMPLATE, PLANNING_PROMPT, INSIGHTS_PROMPT, SUMMARY_PROMPT, REASONING_PROMPT
 from app.graph.schema import Deps
 import utils.json as json
 from utils.timezone import KST
@@ -34,23 +34,47 @@ async def retrieve_node(state: OverallState, deps: Deps, config: RunnableConfig)
     cfg = Config.from_runnable_config(config)
     query = state.query_synonym
     query_embedding = state.query_embedding[0]
+    trace = state.private.trace or []
+    
     from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
+
+    # expand_search에 따른 검색 전략 설정 (case1/case2)
+    search_case = "case_1" if not state.expand_search else "case_2"
+    trace.append(f"Few-shot retrieval with {search_case}")
 
     async with deps.postgres_db.get_async_session() as session:
         retrieved_examples: list[tuple[SemanticSearchModel, float]] = await deps.pgvector_models[
             0
         ].asearch_by_vector(session=session, embedding=query_embedding, similarity_cutoff=0.0)
 
-    retrived_examples = []
+    # case1/case2에 따른 예제 필터링
+    filtered_examples = []
     for few_shot_example, score in retrieved_examples:
-        retrived_examples.append(
-            {
-                "query": few_shot_example.query,
-                "cypher_query": few_shot_example.cypher_query,
-                "score": score,
-            }
-        )
-    return {"fewshot_examples": retrived_examples}
+        cypher_query = few_shot_example.cypher_query
+        
+        # case1 (정확 매치): 단순한 MATCH 패턴만
+        if not state.expand_search:
+            # 복잡한 쿼리 패턴 제외 (집계, 다중 조인, 옵셔널 매치 등)
+            if any(pattern in cypher_query.upper() for pattern in 
+                   ["COUNT(", "SUM(", "AVG(", "GROUP BY", "OPTIONAL MATCH", "UNION", "WITH"]):
+                continue  # case1에서는 제외
+        
+        filtered_examples.append({
+            "query": few_shot_example.query,
+            "cypher_query": cypher_query,
+            "score": score,
+        })
+    
+    trace.append(f"Retrieved {len(filtered_examples)} examples for {search_case} (from {len(retrieved_examples)} total)")
+    
+    # trace 업데이트
+    private_dict = state.private.model_dump()
+    private_dict["trace"] = trace
+    
+    return {
+        "fewshot_examples": filtered_examples,
+        "private": private_dict
+    }
 
 
 async def embedding_node(state: OverallState, deps: Deps, config: RunnableConfig) -> dict:
@@ -491,121 +515,204 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
 
 
 async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -> dict:
-    """최종 결과물 생성 (map-search-agent의 final response 로직 참고)"""
+    """최종 결과물 생성 - return_type에 따른 분기 처리"""
     cfg = Config.from_runnable_config(config)
     now = datetime.now(KST)
     
     search_results = state.private.search_result or []
     trace = state.private.trace or []
-    best_so_far = state.private.best_so_far
     
-    trace.append("Generating final output")
+    trace.append(f"Generating final output for return_type={state.return_type}")
     
-    # 성공한 결과들만 필터링
+    # 성공한 결과들에서 데이터 추출
     successful_results = [r for r in search_results if r.get("success", False)]
     
-    # raw_data 구성 - map-search-agent의 결과 구조화 방식
-    raw_data = {}
-    if successful_results:
-        raw_data = {
-            "search_results": successful_results,
-            "execution_summary": {
-                "total_steps": len(search_results),
-                "successful_steps": len(successful_results),
-                "failed_steps": len(search_results) - len(successful_results),
-                "total_execution_time_ms": state.private.tool_latency_ms,
-                "retry_count": state.private.retry.retry_count
-            },
-            "telemetry": {
-                "failure_history": state.private.loop_telemetry.failure_mode_hist,
-                "last_error": state.private.loop_telemetry.last_error
-            }
+    # 공통 데이터 추출
+    product_meta = []
+    user_info_data = []
+    
+    # 검색 결과에서 상품 정보 추출
+    for result in successful_results:
+        result_data = result.get("result", {})
+        if isinstance(result_data, dict):
+            if "products" in result_data:
+                product_meta.extend(result_data["products"])
+            elif "product_meta" in result_data:
+                product_meta.extend(result_data["product_meta"])
+        elif isinstance(result_data, list):
+            product_meta.extend(result_data)
+    
+    # user_info 처리
+    if state.user_info:
+        user_info_results = [r for r in successful_results if "user" in r.get("tool", "").lower()]
+        for result in user_info_results:
+            user_data = result.get("result", {})
+            if user_data:
+                user_info_data.append(user_data)
+    
+    # raw_result 구성
+    raw_result = {
+        "search_results": successful_results,
+        "execution_summary": {
+            "total_steps": len(search_results),
+            "successful_steps": len(successful_results),
+            "search_case": "case_1" if not state.expand_search else "case_2"
         }
-        
-        # 최고 결과가 있다면 포함 (map-search-agent의 best result tracking)
-        if best_so_far.score > 0.5:
-            raw_data["best_result"] = best_so_far.output or {}
-            raw_data["best_score"] = best_so_far.score
-    else:
-        # 실행 결과가 없거나 모두 실패한 경우
-        raw_data = {
-            "search_results": [],
-            "execution_summary": {
-                "total_steps": len(search_results),
-                "successful_steps": 0,
-                "failed_steps": len(search_results),
-                "total_execution_time_ms": state.private.tool_latency_ms or 0,
-                "retry_count": state.private.retry.retry_count
-            },
-            "error_analysis": {
-                "failure_history": state.private.loop_telemetry.failure_mode_hist,
-                "last_error": state.private.loop_telemetry.last_error
-            }
-        }
-    
-    # summary 생성 (map-search-agent의 요약 생성 로직)
-    if successful_results:
-        total_data_size = sum(len(str(r.get("result", ""))) for r in successful_results)
-        unique_tools = set(r.get("tool", "unknown") for r in successful_results)
-        
-        summary = f"검색 완료: {len(successful_results)}개 도구로 {total_data_size:,}자의 데이터를 수집했습니다."
-        if len(unique_tools) > 1:
-            summary += f" 사용된 도구: {', '.join(unique_tools)}"
-        
-        if state.private.retry.retry_count > 0:
-            summary += f" (재시도 {state.private.retry.retry_count}회 후 성공)"
-    else:
-        summary = "검색 실패: 유효한 결과를 얻지 못했습니다."
-        if state.private.retry.retry_count > 0:
-            summary += f" {state.private.retry.retry_count}회 재시도했으나 실패했습니다."
-    
-    # insights 생성 (map-search-agent의 통찰 생성)
-    insights = ""
-    if search_results:
-        success_rate = len(successful_results) / len(search_results)
-        avg_time = sum(r.get("execution_time_ms", 0) for r in search_results) / len(search_results)
-        
-        insights = f"성능 분석: 성공률 {success_rate:.0%}, 평균 응답시간 {avg_time:.0f}ms"
-        
-        # 주요 실패 원인 분석
-        if len(search_results) > len(successful_results):
-            failure_reasons = [r.get("error", "") for r in search_results if not r.get("success")]
-            if failure_reasons:
-                from collections import Counter
-                common_errors = Counter(failure_reasons).most_common(1)
-                if common_errors:
-                    insights += f", 주요 실패원인: {common_errors[0][0][:50]}..."
-        
-        # 최고 성과 추적
-        if best_so_far.score > 0:
-            insights += f", 최고점수: {best_so_far.score:.2f}"
-    else:
-        insights = "실행 데이터 없음"
-    
-    # reasoning 생성 (map-search-agent의 추론 과정 설명)
-    reasoning_parts = []
-    if trace:
-        reasoning_parts.append("실행 과정:")
-        # 주요 단계들만 포함
-        important_traces = [t for t in trace if any(keyword in t for keyword in 
-                          ["Starting", "Generated", "Executing", "Evaluation", "completed"])]
-        reasoning_parts.extend([f"• {t}" for t in important_traces[-8:]])  # 최근 8개
-    
-    if state.private.retry.retry_count > 0:
-        reasoning_parts.append(f"• 총 {state.private.retry.retry_count}회 재시도 수행")
-    
-    reasoning = "\n".join(reasoning_parts) if reasoning_parts else "기본 실행 완료"
-    
-    return {
-        "plan": state.private.plan or [],
-        "raw_data": raw_data,
-        "summary": summary,
-        "insights": insights,
-        "reasoning": reasoning,
-        "updated_at": now.strftime("%Y-%m-%dT%H:%M"),
-        "version": "map-search-agent-dev",
-        "fewshot_examples": state.fewshot_examples or []
     }
+    
+    # return_type=1: product_id만 반환 (LLM 호출 생략)
+    if state.return_type == 1:
+        # product_meta에서 ID만 추출
+        product_ids = []
+        for product in product_meta:
+            if isinstance(product, dict) and "id" in product:
+                product_ids.append(product["id"])
+            elif isinstance(product, str):
+                product_ids.append(product)
+        
+        return {
+            "raw_data": raw_result,
+            "product_meta": product_ids,  # List[str] 형태
+            "user_info_data": user_info_data,
+        }
+    
+    # return_type=0: 전체 응답 (LLM 기반 콘텐츠 생성)
+    else:
+        search_results = state.private.search_result or []
+        best_so_far = state.private.best_so_far
+        
+        # raw_data 구성 로직
+        raw_data = {}
+        if successful_results:
+            raw_data = {
+                "search_results": successful_results,
+                "execution_summary": {
+                    "total_steps": len(search_results),
+                    "successful_steps": len(successful_results),
+                    "failed_steps": len(search_results) - len(successful_results),
+                    "total_execution_time_ms": state.private.tool_latency_ms,
+                    "retry_count": state.private.retry.retry_count,
+                    "search_case": "case_1" if not state.expand_search else "case_2"
+                },
+                "telemetry": {
+                    "failure_history": state.private.loop_telemetry.failure_mode_hist,
+                    "last_error": state.private.loop_telemetry.last_error
+                }
+            }
+            
+            if best_so_far.score > 0.5:
+                raw_data["best_result"] = best_so_far.output or {}
+                raw_data["best_score"] = best_so_far.score
+        else:
+            raw_data = {
+                "search_results": [],
+                "execution_summary": {
+                    "total_steps": len(search_results),
+                    "successful_steps": 0,
+                    "failed_steps": len(search_results),
+                    "total_execution_time_ms": state.private.tool_latency_ms or 0,
+                    "retry_count": state.private.retry.retry_count,
+                    "search_case": "case_1" if not state.expand_search else "case_2"
+                },
+                "error_analysis": {
+                    "failure_history": state.private.loop_telemetry.failure_mode_hist,
+                    "last_error": state.private.loop_telemetry.last_error
+                }
+            }
+        
+        # LLM 기반 콘텐츠 생성 (return_type=0만)
+        trace.append("Generating LLM-based insights, summary, and reasoning")
+        
+        # 공통 데이터 준비
+        user_query = " ".join(state.query) if isinstance(state.query, list) else str(state.query)
+        search_results_summary = json.dumps(successful_results, ensure_ascii=False, indent=2)
+        
+        # Insights 생성
+        execution_summary = f"총 {len(search_results)}단계 중 {len(successful_results)}개 성공"
+        if state.private.retry.retry_count > 0:
+            execution_summary += f", {state.private.retry.retry_count}회 재시도"
+        
+        insights_prompt = INSIGHTS_PROMPT.format(
+            user_query=user_query,
+            search_results=search_results_summary,
+            execution_summary=execution_summary
+        )
+        
+        insights_response = await deps.llm_client.agenerate_response(
+            messages=[
+                {"role": "system", "content": insights_prompt},
+                {"role": "user", "content": "사용자의 검색 의도를 분석하고 가성비 관점에서 적절한 답변을 제공해주세요."}
+            ],
+            model=cfg.llm_model,
+            temperature=0.3,
+            max_tokens=500,
+            response_format={"type": "text"},
+            seed=cfg.seed,
+        )
+        insights = insights_response.choices[0].message.content
+        
+        # Summary 생성  
+        execution_stats = f"성공률: {len(successful_results)}/{len(search_results)}"
+        if search_results:
+            avg_time = sum(r.get("execution_time_ms", 0) for r in search_results) / len(search_results)
+            execution_stats += f", 평균 응답시간: {avg_time:.0f}ms"
+        
+        summary_prompt = SUMMARY_PROMPT.format(
+            user_query=user_query,
+            search_results=search_results_summary,
+            execution_stats=execution_stats
+        )
+        
+        summary_response = await deps.llm_client.agenerate_response(
+            messages=[
+                {"role": "system", "content": summary_prompt},
+                {"role": "user", "content": "검색 결과의 주요 특징과 제한사항을 요약해주세요."}
+            ],
+            model=cfg.llm_model,
+            temperature=0.2,
+            max_tokens=300,
+            response_format={"type": "text"},
+            seed=cfg.seed,
+        )
+        summary = summary_response.choices[0].message.content
+        
+        # Reasoning 생성
+        search_case = "Case 1 (정확 매치)" if not state.expand_search else "Case 2 (조건 완화)"
+        execution_steps = "\n".join([f"• {t}" for t in trace[-8:]])  # 최근 8개 단계
+        retry_info = f"{state.private.retry.retry_count}회 재시도" if state.private.retry.retry_count > 0 else "재시도 없음"
+        
+        reasoning_prompt = REASONING_PROMPT.format(
+            user_query=user_query,
+            search_case=search_case,
+            execution_steps=execution_steps,
+            retry_info=retry_info
+        )
+        
+        reasoning_response = await deps.llm_client.agenerate_response(
+            messages=[
+                {"role": "system", "content": reasoning_prompt},
+                {"role": "user", "content": "검색 과정의 추론 근거와 실행 과정을 설명해주세요."}
+            ],
+            model=cfg.llm_model,
+            temperature=0.1,
+            max_tokens=400,
+            response_format={"type": "text"},
+            seed=cfg.seed,
+        )
+        reasoning = reasoning_response.choices[0].message.content
+        
+        trace.append("Completed LLM-based content generation")
+        
+        # return_type=0: LLM 생성 콘텐츠로 응답
+        return {
+            "insights": insights,
+            "summary": summary,
+            "reasoning": reasoning,
+            "raw_data": raw_data,
+            "product_meta": product_meta,  # List[Dict] 형태
+            "user_info_data": user_info_data,
+            "updated_at": now.strftime("%Y-%m-%dT%H:%M"),
+        }
 
 
 def should_replan(state: OverallState) -> str:

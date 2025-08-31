@@ -9,18 +9,18 @@ from typing import NotRequired
 
 
 class InputState(BaseModel):
-    user_id: str = Field(..., description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
-    query: str = Field(..., description="그래프 입력")
+    user_id: str = Field(..., description="유저의 서비스 관리번호 또는 유저ID")
+    query: List[str] = Field(..., description="사용자 발화")
     query_synonym: str = Field(..., description="동의어 변환 후 쿼리")
-    search_type: Optional[bool] = Field(
-        description="검색 타입, True: 기본 검색, False: 확장 검색",
+    expand_search: bool = Field(
+        description="case_1: 정확 일치만, case_2: 확장 검색 허용",
         default=True,
     )
     return_type: Optional[int] = Field(
-        description="1: product_id List[str], 2: Neo4jSchema", default=1
+        description="0: neo4j schema 검색결과, 1: product id list만", 
+        default=0
     )
-    transaction_id: Optional[str] = Field(description="트랜잭션 아이디")
-    user_info_yn: Optional[bool] = Field(description="사용자 정보 포함 여부", default=True)
+    user_info: bool = Field(description="user 정보 조회 tool 사용 여부", default=True)
 
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
@@ -85,14 +85,21 @@ class PrivateStateModel(BaseModel):
 
 class OverallState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    user_id: str = Field(default="")
     query: list[str] = Field(default=[])
     query_synonym: str = Field(default="")
     query_embedding: Optional[List[List[float]]] = Field(default=[])
+    expand_search: bool = Field(default=True, description="case_1: 정확 일치, case_2: 확장 검색")
+    return_type: int = Field(default=0, description="0: 전체 응답, 1: product_id만")
+    user_info: bool = Field(default=True, description="user 정보 조회 여부")
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
-    raw_data: List[str] = Field(default=[])
+    raw_data: Dict[str, Any] = Field(default_factory=dict)
     summary: str = Field(default="")
     insights: str = Field(default="")
+    reasoning: str = Field(default="")
+    product_meta: List[Dict[str, Any]] = Field(default_factory=list)
+    user_info_data: List[Dict[str, Any]] = Field(default_factory=list)
     fewshot_examples: List[Dict[str, Any]] = Field(default_factory=list)
     messages: Annotated[List[AnyMessage], add_messages] = Field(default_factory=list)
     private: PrivateStateModel = Field(default_factory=PrivateStateModel)
