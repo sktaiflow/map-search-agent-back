@@ -1,15 +1,23 @@
-import aioboto3
+import asyncio
 
-from aioboto3.resources.base import ServiceResource
-from aiobotocore.client import BaseClient
 from dependency_injector import containers, providers
 from typing import AsyncGenerator
+
+from configs import config as global_config
+from app import logger
+
+## postgres
 from app.database.postgresql import PostgreSQLEngineConfig, PostgreSQLDatabase
 from app.models.vectorstore.base import BaseModel as PGVectorModel
 from app.models.vectorstore import list_vector_store_models
 
-from configs import config as global_config
-from app import logger
+## neo4j
+from app.database.neo4j import Neo4jDatabase
+from app.models.graphmodel.base import BaseGraphModel
+from neo4j import AsyncGraphDatabase, AsyncDriver, READ_ACCESS, WRITE_ACCESS
+from app.models.graphmodel.bootstrap import bootstrap_schema
+from app.database.neo4j import Neo4jEngineConfig
+from typing import Type
 
 postgresql_engine_config = PostgreSQLEngineConfig(
     url=f"postgresql+asyncpg://{global_config.postgres_db_username}:{global_config.postgres_db_password}@{global_config.postgres_db_host}:{global_config.postgres_db_port}/{global_config.vector_store_dbname}",
@@ -34,7 +42,7 @@ async def init_pgvector_models(
             await model.create_table_and_hnsw_index(engine=engine)
         yield models
     except Exception as e:
-        logger.error(f"Error initializing PGVector models: {e}")
+        logger.error(message=f"Error initializing PGVector models", exec_info=e)
         raise
 
 
@@ -50,34 +58,75 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
     )
 
 
-from neo4j import AsyncGraphDatabase, READ_ACCESS, WRITE_ACCESS
-from app.database.neo4j import Neo4jEngineConfig
-
 neo4jclientconfig = Neo4jEngineConfig(
     uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
     user=global_config.neo4j_username,
     password=global_config.neo4j_password,
-    max_pool_size=50,
+    max_connection_pool_size=50,
     connection_timeout=0.5,
     fetch_size=1000,
+    keep_alive=True,
+    liveness_check_timeout=5.0,
+    connection_acquisition_timeout=1.0,
+    max_transaction_retry_time=5.0,
+    max_connection_lifetime=1800,
+    initial_retry_delay=0.5,
+    retry_delay_multiplier=2.0,
+    retry_delay_jitter_factor=0.3,
 )
 
 
+async def init_neo4j_database(engine_config: Neo4jEngineConfig) -> Neo4jDatabase:
+    def _ensure_bolt_scheme(uri: str) -> str:
+        if uri.startswith(("bolt://", "bolt+s://", "neo4j://", "neo4j+s://")):
+            return uri
+        return f"bolt://{uri}"
+
+    uri = _ensure_bolt_scheme(engine_config.uri)
+    pool_size = getattr(
+        engine_config, "max_connection_pool_size", getattr(engine_config, "max_pool_size", 50)
+    )
+    driver = AsyncGraphDatabase.driver(
+        uri,
+        auth=(engine_config.user, engine_config.password),
+        max_connection_pool_size=pool_size,
+        connection_timeout=engine_config.connection_timeout,
+        keep_alive=engine_config.keep_alive,
+        liveness_check_timeout=engine_config.liveness_check_timeout,
+        connection_acquisition_timeout=engine_config.connection_acquisition_timeout,
+        max_transaction_retry_time=engine_config.max_transaction_retry_time,
+        max_connection_lifetime=engine_config.max_connection_lifetime,
+        initial_retry_delay=engine_config.initial_retry_delay,
+        retry_delay_multiplier=engine_config.retry_delay_multiplier,
+        retry_delay_jitter_factor=engine_config.retry_delay_jitter_factor,
+    )
+    await driver.verify_connectivity()
+    await bootstrap_schema(driver)
+    db = Neo4jDatabase(driver=driver, engine_config=engine_config)
+    try:
+        yield db
+    finally:
+        await driver.close()
+
+
+# TODO: init 작업이 필요한 경우 사용해야함 -> 사용할 경우 singleton -> Resource 대체 필요
+# async def init_neo4j_model(
+#     neo4j_db: Neo4jDatabase, graphmodel: Type[BaseGraphModel]
+# ) -> Type[BaseGraphModel]:
+#     try:
+#         yield graphmodel
+#     except Exception as e:
+#         logger.error(message=f"Error initializing Neo4j model", exec_info=e)
+#         raise
+#     finally:
+#         pass
+
+
+# TODO: BaseGraphModel 대신 CypherAgent 구현체로 바꿔야함
 class Neo4jContainer(containers.DeclarativeContainer):
 
-    driver = providers.Singleton(
-        AsyncGraphDatabase.driver,
-        uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
-        auth=providers.Callable(
-            lambda u, p: (u, p), global_config.neo4j_username, global_config.neo4j_password
-        ),
-        max_connection_lifetime=60,
-        max_connection_pool_size=50,
-    )
+    config = providers.Object(neo4jclientconfig)
 
-    session = providers.Resource(lambda d: _neo4j_session(d), driver)
+    neo4j_db = providers.Resource(init_neo4j_database, engine_config=config)
 
-
-async def _neo4j_session(driver):
-    async with driver.session(default_access_mode=READ_ACCESS) as session:
-        yield session
+    neo4j_model = providers.Object(BaseGraphModel)
