@@ -1,10 +1,15 @@
 from string import Template
 from langchain_core.prompts.prompt import PromptTemplate
 
+
+# TODO 이렇게 쓰면 OPENAI 객체 tool calling을 전혀 이용안하는 방식입니다...
 PLANNING_TEMPLATE = """
     당신은 LangGraph 시스템에서 '계획 수립'을 담당하는 AI입니다.
     아래의 사용자 질문을 바탕으로, 순차적 또는 병렬 실행이 필요한 작업 목록을 JSON 형식으로 작성하세요. 
     
+    사용자 id: 
+    {user_id}
+
     아웃풋 포멧:
     {format_instructions}
 
@@ -41,5 +46,5 @@ PLANNING_TEMPLATE = """
 
 # PromptTemplate 객체로 생성
 PLANNING_PROMPT = PromptTemplate(
-    template=PLANNING_TEMPLATE, input_variables=["format_instructions", "tool_list_json"]
+    template=PLANNING_TEMPLATE, input_variables=["user_id", "format_instructions", "tool_list_json"]
 )
