@@ -1,5 +1,6 @@
 from app.core.tools.map.contract import ContractToolKit
 from app.core.tools.map.plan import PlanToolKit
+from app.core.tools.neo4j import Neo4jToolKit
 
 from typing import Any, Dict, List
 from langchain.tools import BaseTool  # 가정
@@ -9,9 +10,10 @@ from app.core.tools.map.base import BaseToolKit
 class MAPTools:
     _TOOLKIT_CLASSES = [ContractToolKit, PlanToolKit]
 
-    def __init__(self, map_client, method_api_key: Dict[str, str]):
+    def __init__(self, map_client, method_api_key: Dict[str, str], neo4j_toolkit=None):
         self.map_client = map_client
         self.method_api_key = method_api_key
+        self.neo4j_toolkit = neo4j_toolkit
 
     def get_toolkit(self) -> List[BaseToolKit]:
         """toolkit 클래스 반환"""
@@ -21,11 +23,16 @@ class MAPTools:
         ]
 
     def get_valid_tools(self) -> List[BaseTool]:
-        """toolkit_classes 안 모든 tool 반환"""
+        """toolkit_classes 안 모든 tool 반환 (Neo4j 툴 포함)"""
         all_tools = []
         for toolkit in self.get_toolkit():  # 오타 수정
             all_tools.extend(toolkit.get_tools())
-        return [tool for tool in all_tools if tool.status]
+        
+        # Neo4j 툴킷 추가
+        if self.neo4j_toolkit:
+            all_tools.extend(self.neo4j_toolkit.get_tools())
+            
+        return [tool for tool in all_tools if getattr(tool, 'status', True)]
 
     def __len__(self) -> int:
         return len(self.get_valid_tools())

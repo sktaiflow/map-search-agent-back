@@ -47,21 +47,21 @@ async def retrieve_node(state: OverallState, deps: Deps, config: RunnableConfig)
             0
         ].asearch_by_vector(session=session, embedding=query_embedding, similarity_cutoff=0.0)
 
-    # case1/case2에 따른 예제 필터링
+    # case1/case2에 따른 예제 필터링 (유사도 기준)
     filtered_examples = []
     for few_shot_example, score in retrieved_examples:
-        cypher_query = few_shot_example.cypher_query
-        
-        # case1 (정확 매치): 단순한 MATCH 패턴만
+        # case1 (정확 매치): 높은 유사도 임계값
         if not state.expand_search:
-            # 복잡한 쿼리 패턴 제외 (집계, 다중 조인, 옵셔널 매치 등)
-            if any(pattern in cypher_query.upper() for pattern in 
-                   ["COUNT(", "SUM(", "AVG(", "GROUP BY", "OPTIONAL MATCH", "UNION", "WITH"]):
-                continue  # case1에서는 제외
+            if score < 0.8:  # 정확 매치를 위한 높은 임계값
+                continue
+        # case2 (조건 완화): 낮은 유사도 임계값  
+        else:
+            if score < 0.5:  # 확장 검색을 위한 낮은 임계값
+                continue
         
         filtered_examples.append({
             "query": few_shot_example.query,
-            "cypher_query": cypher_query,
+            "cypher_query": few_shot_example.cypher_query,
             "score": score,
         })
     
@@ -86,15 +86,28 @@ async def embedding_node(state: OverallState, deps: Deps, config: RunnableConfig
 
 
 async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> dict:
-    """쿼리를 브레이크다운하여 subtasks 생성"""
+    """쿼리를 브레이크다운하여 subtasks 생성 (few-shot 예제 활용)"""
     cfg = Config.from_runnable_config(config)
 
     tools_description = deps.toolkit.get_tools_description()
     query = state.query_synonym
+    
+    # few-shot 예제들을 포맷팅
+    fewshot_examples = state.fewshot_examples or []
+    examples_text = ""
+    if fewshot_examples:
+        examples_text = "\n".join([
+            f"예제 {i+1}: 질의='{ex['query']}' → 쿼리='{ex['cypher_query']}' (유사도: {ex['score']:.3f})"
+            for i, ex in enumerate(fewshot_examples[:3])  # 상위 3개만 사용
+        ])
+    else:
+        examples_text = "참고할 유사 예제 없음"
+    
     parser = PydanticOutputParser(pydantic_object=Plan)
     prompt = PLANNING_PROMPT.partial(
         format_instructions=parser.get_format_instructions(),
         tool_list_json=json.dumps(tools_description),
+        fewshot_examples=examples_text,
     )
     system_message = prompt.format()
     llm_response = await deps.llm_client.agenerate_response(

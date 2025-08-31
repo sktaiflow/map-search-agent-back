@@ -11,6 +11,9 @@ PLANNING_TEMPLATE = """
     도구 목록:
     {tool_list_json}
 
+    유사한 예제들 (참고용):
+    {fewshot_examples}
+
     각 작업에는 'mode' 필드를 포함하세요:
     - "sequential": 이전 step이 끝난 후 실행해야 함
     - "parallel": 병렬로 실행 가능함
@@ -18,6 +21,8 @@ PLANNING_TEMPLATE = """
     각 도구는 필요 시 다음 인자를 갖습니다:
     - get_service_info, get_subscribed_products → {{ "svc_mgmt_num": "7022044239" }}
     - prod_meta_search → {{ "query": "..." }}
+
+    위의 유사한 예제들을 참고하여 현재 사용자 질문에 맞는 최적의 계획을 수립하세요.
 
     출력 예시:
     {{
@@ -41,7 +46,7 @@ PLANNING_TEMPLATE = """
 
 # PromptTemplate 객체로 생성
 PLANNING_PROMPT = PromptTemplate(
-    template=PLANNING_TEMPLATE, input_variables=["format_instructions", "tool_list_json"]
+    template=PLANNING_TEMPLATE, input_variables=["format_instructions", "tool_list_json", "fewshot_examples"]
 )
 
 # LLM 기반 콘텐츠 생성용 프롬프트 템플릿들
