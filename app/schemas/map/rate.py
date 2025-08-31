@@ -1,10 +1,12 @@
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class DataUsage(BaseModel):
     """데이터 사용량 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     tot_data_usg_qty: str = Field(..., alias="totDataUsgQty", description="총데이터사용량MB")
     bas_ofr_data_qty: str = Field(..., alias="basOfrDataQty", description="기본제공데이터량MB")
@@ -12,21 +14,19 @@ class DataUsage(BaseModel):
         ..., alias="basOfrDataUsgQty", description="기본제공데이터사용량MB"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class RecentUsage(BaseModel):
     """최근 사용량 정보"""
 
-    data_usg: DataUsage = Field(..., alias="dataUsg", description="데이터사용정보")
+    model_config = ConfigDict(populate_by_name=True)
 
-    class Config:
-        populate_by_name = True
+    data_usg: DataUsage = Field(..., alias="dataUsg", description="데이터사용정보")
 
 
 class DataLimitItem(BaseModel):
     """데이터 한도 항목"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     tot_ofr_data_qty: str = Field(..., alias="totOfrDataQty", description="총제공데이터량MB")
     usg_data_qty: str = Field(..., alias="usgDataQty", description="사용데이터량MB")
@@ -34,12 +34,11 @@ class DataLimitItem(BaseModel):
     data_typ_cd: str = Field(..., alias="dataTypCd", description="데이터유형코드")
     data_typ_nm: str = Field(..., alias="dataTypNm", description="데이터유형명")
 
-    class Config:
-        populate_by_name = True
-
 
 class DataLimit(BaseModel):
     """데이터 한도 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     pps_yn: str = Field(..., alias="ppsYn", description="선불요금제여부")
     spcl_plan_yn: str = Field(..., alias="spclPlanYn", description="특수요금제여부")
@@ -72,12 +71,11 @@ class DataLimit(BaseModel):
     fee_prod_chg_dt: str = Field(..., alias="feeProdChgDt", description="기본요금제변경일자")
     data_list: List[DataLimitItem] = Field(default=[], alias="dataList", description="데이터목록")
 
-    class Config:
-        populate_by_name = True
-
 
 class ChildDataLimitItem(BaseModel):
     """자녀 데이터 한도 항목"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     tot_ofr_data_qty: str = Field(..., alias="totOfrDataQty", description="총제공데이터량MB")
     usg_data_qty: str = Field(..., alias="usgDataQty", description="사용데이터량MB")
@@ -87,12 +85,11 @@ class ChildDataLimitItem(BaseModel):
     skip_id: str = Field(..., alias="skipId", description="공제항목ID")
     skip_nm: str = Field(..., alias="skipNm", description="공제항목명")
 
-    class Config:
-        populate_by_name = True
-
 
 class ChildDataLimit(BaseModel):
     """자녀 데이터 한도 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
@@ -106,33 +103,30 @@ class ChildDataLimit(BaseModel):
         default=[], alias="shrDataList", description="공유데이터목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class DataLimitChildren(BaseModel):
     """자녀 데이터 한도 정보"""
 
-    chld_list: List[ChildDataLimit] = Field(default=[], alias="chldList", description="자녀목록")
+    model_config = ConfigDict(populate_by_name=True)
 
-    class Config:
-        populate_by_name = True
+    chld_list: List[ChildDataLimit] = Field(default=[], alias="chldList", description="자녀목록")
 
 
 class DataSharingService(BaseModel):
     """데이터 공유 서비스 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_num: str = Field(..., alias="svcNum", description="(자)서비스번호")
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="(자)서비스관리번호")
     fee_prod_id: str = Field(..., alias="feeProdId", description="(자)상품ID")
     fee_prod_nm: str = Field(..., alias="feeProdNm", description="(자)상품명")
 
-    class Config:
-        populate_by_name = True
-
 
 class DataSharingLimit(BaseModel):
     """데이터 공유 한도 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     data_shr_scrb_yn: str = Field(..., alias="dataShrScrbYn", description="데이터함께쓰기가입여부")
     data_shr_usg_data_qty: str = Field(
@@ -142,12 +136,11 @@ class DataSharingLimit(BaseModel):
         default=[], alias="dataShrSvcList", description="데이터함께쓰기서비스목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class VoiceLimitItem(BaseModel):
     """음성 한도 항목"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     tot_ofr_voice_qty: str = Field(..., alias="totOfrVoiceQty", description="총제공음성량분")
     usg_voice_qty: str = Field(..., alias="usgVoiceQty", description="사용음성량분")
@@ -157,12 +150,11 @@ class VoiceLimitItem(BaseModel):
     skip_id: str = Field(..., alias="skipId", description="공제항목ID")
     skip_nm: str = Field(..., alias="skipNm", description="공제항목명")
 
-    class Config:
-        populate_by_name = True
-
 
 class VoiceLimit(BaseModel):
     """음성 한도 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     voice_rfil_psbl_yn: str = Field(..., alias="voiceRfilPsblYn", description="음성리필가능여부")
     chld_reg_yn: str = Field(..., alias="chldRegYn", description="자녀등록여부")
@@ -171,17 +163,18 @@ class VoiceLimit(BaseModel):
     rem_voice_qty_sum: str = Field(..., alias="remVoiceQtySum", description="잔여음성량분")
     voice_list: List[VoiceLimitItem] = Field(default=[], alias="voiceList", description="음성목록")
 
-    class Config:
-        populate_by_name = True
-
 
 class VoiceLimitChildren(BaseModel):
     """자녀 음성 한도 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     pass  # docstring에서 구체적인 필드 정보를 찾지 못했습니다
 
 
 class TFamilySharingDataLimit(BaseModel):
     """T가족 공유 데이터 한도 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     pass  # docstring에서 구체적인 필드 정보를 찾지 못했습니다

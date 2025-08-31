@@ -1,32 +1,32 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class AddOnProduct(BaseModel):
     """부가서비스 상품 정보"""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
     fix_amt_amt: str = Field(..., alias="fixAmtAmt", description="정액료금액")
-
-    class Config:
-        populate_by_name = True
 
 
 class SupplementaryPlan(BaseModel):
     """보조요금제 정보"""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
     bas_fee_amt: str = Field(..., alias="basFeeAmt", description="기본료금액")
 
-    class Config:
-        populate_by_name = True
-
 
 class AddOnSubscriptions(BaseModel):
     """부가서비스 가입정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     add_on_cnt: str = Field(..., alias="addOnCnt", description="가입중부가서비스갯수")
     free_add_on_cnt: str = Field(..., alias="freeAddOnCnt", description="가입중무료부가서비스갯수")
@@ -44,23 +44,21 @@ class AddOnSubscriptions(BaseModel):
         default=[], alias="smartCallPickList", description="스마트콜픽목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class DiscountInfo(BaseModel):
     """할인 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     dc_id: str = Field(..., alias="dcId", description="할인ID")
     dc_nm: str = Field(..., alias="dcNm", description="할인명")
     eff_sta_dtm: str = Field(..., alias="effStaDtm", description="할인적용일시")
 
-    class Config:
-        populate_by_name = True
-
 
 class AddOnDetailProduct(BaseModel):
     """부가서비스 상세 상품 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
@@ -69,12 +67,11 @@ class AddOnDetailProduct(BaseModel):
         default=[], alias="scrbDcList", description="가입할인목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class AddOnDetailSubscriptions(BaseModel):
     """부가서비스 상세 가입정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     add_on_cnt: str = Field(..., alias="addOnCnt", description="가입중부가서비스갯수")
     free_add_on_cnt: str = Field(..., alias="freeAddOnCnt", description="가입중무료부가서비스갯수")
@@ -92,44 +89,40 @@ class AddOnDetailSubscriptions(BaseModel):
         default=[], alias="smartCallPickList", description="스마트콜픽목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class ProductInfo(BaseModel):
     """상품 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
     svc_prod_cd: str = Field(..., alias="svcProdCd", description="상품구분코드")
 
-    class Config:
-        populate_by_name = True
-
 
 class PMProductInfo(BaseModel):
     """PM 상품 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     pm_product_id: str = Field(..., alias="pmProductId", description="PM상품ID")
     legacy_product_id: str = Field(..., alias="legacyProductId", description="Legacy상품ID")
     product_name: str = Field(..., alias="productName", description="상품명")
 
-    class Config:
-        populate_by_name = True
-
 
 class PMCampaignInfo(BaseModel):
     """PM 캠페인 정보"""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     pm_campaign_id: str = Field(..., alias="pmCampaignId", description="PM혜택ID")
     campaign_name: str = Field(..., alias="campaignName", description="혜택명")
-
-    class Config:
-        populate_by_name = True
 
 
 class BenefitInfo(BaseModel):
     """혜택 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     benefit_name: str = Field(..., alias="benefitName", description="혜택명")
     role: str = Field(..., alias="role", description="모두/선택제공여부")
@@ -137,29 +130,29 @@ class BenefitInfo(BaseModel):
     applied_status: str = Field(..., alias="appliedStatus", description="적용상태")
     next_plan_yn: str = Field(..., alias="nextPlanYN", description="유지/해지여부")
 
-    class Config:
-        populate_by_name = True
-
 
 class CustomerBenefit(BaseModel):
     """고객 혜택 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     benefit_name: str = Field(..., alias="benefitName", description="혜택명")
     signup_status: str = Field(..., alias="signupStatus", description="가입상태")
     applied_status: str = Field(..., alias="appliedStatus", description="적용상태")
 
-    class Config:
-        populate_by_name = True
-
 
 class AddOnHistory(BaseModel):
     """부가서비스 이력 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     pass  # docstring에서 구체적인 필드 정보를 찾지 못했습니다
 
 
 class BasicPlanCondition(BaseModel):
     """기본요금제 조건 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     recnt_plan_chg_yn: str = Field(..., alias="recntPlanChgYn", description="최근요금제변경여부")
     plan_last_chg_dt: str = Field(..., alias="planLastChgDt", description="요금제최종변경일자")
@@ -173,12 +166,11 @@ class BasicPlanCondition(BaseModel):
         ..., alias="planChgPsblTmthYn", description="당월요금변경가능여부"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class FlexibleContractRenewal(BaseModel):
     """유연약정 자동갱신 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     auto_rnwl_scrb_yn: str = Field(..., alias="autoRnwlScrbYn", description="사전신청가입여부")
     auto_rnwl_scrb_psbl_dt: str = Field(
@@ -191,33 +183,30 @@ class FlexibleContractRenewal(BaseModel):
     expir_dt: str = Field(..., alias="expirDt", description="약정만기일자")
     new_cond_trgt_yn: str = Field(..., alias="newCondTrgtYn", description="신규조건대상자여부")
 
-    class Config:
-        populate_by_name = True
-
 
 class DeviceInfo(BaseModel):
     """기기 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     device_model_code: str = Field(..., alias="deviceModelCode", description="단말모델코드")
     device_name: str = Field(..., alias="deviceName", description="단말모델명")
     device_pet_name: str = Field(..., alias="devicePetName", description="팻네임")
 
-    class Config:
-        populate_by_name = True
-
 
 class RuleCheckResult(BaseModel):
     """규칙 체크 결과"""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     error_code: str = Field(..., alias="errorCode", description="에러코드")
     error_message: str = Field(..., alias="errorMessage", description="에러메시지")
-
-    class Config:
-        populate_by_name = True
 
 
 class MobilePlanBenefitInfo(BaseModel):
     """모바일 플랜 혜택 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     curr_benefits: List[BenefitInfo] = Field(
         default=[], alias="currBenefits", description="현재혜택목록"
@@ -232,12 +221,11 @@ class MobilePlanBenefitInfo(BaseModel):
         default=[], alias="customerBenefits", description="고객혜택목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class InformationList(BaseModel):
     """정보 목록"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     automatically_terminated_product_list: List[PMProductInfo] = Field(
         default=[],
@@ -266,12 +254,11 @@ class InformationList(BaseModel):
         ..., alias="mobilePlanBenefitInfo", description="모바일플랜혜택정보"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class LegacyCondition(BaseModel):
     """레거시 조건"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     scrb_psbl_yn: str = Field(..., alias="scrbPsblYn", description="가입가능여부")
     scrb_imposs_rsn: str = Field(..., alias="scrbImpossRsn", description="가입불가사유")
@@ -282,12 +269,11 @@ class LegacyCondition(BaseModel):
         default=[], alias="termProdList", description="해지상품목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class PMCondition(BaseModel):
     """PM 조건"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     product_id: str = Field(..., alias="productID", description="상품ID")
@@ -298,22 +284,20 @@ class PMCondition(BaseModel):
     )
     information_list: InformationList = Field(..., alias="informationList", description="정보목록")
 
-    class Config:
-        populate_by_name = True
-
 
 class PlanSubscriptionPreview(BaseModel):
     """요금제 가입 미리보기 정보"""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     leg_cond: LegacyCondition = Field(..., alias="legCond", description="레거시조건")
     pm_cond: PMCondition = Field(..., alias="pmCond", description="PM조건")
-
-    class Config:
-        populate_by_name = True
 
 
 class CombinationGroupMember(BaseModel):
     """결합할인 그룹 멤버"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
@@ -321,12 +305,11 @@ class CombinationGroupMember(BaseModel):
     cust_nm: str = Field(..., alias="custNm", description="고객명")
     wless_scrb_yr_cnt: str = Field(..., alias="wlessScrbYrCnt", description="이동전화가입년수")
 
-    class Config:
-        populate_by_name = True
-
 
 class CombinationGroupPreview(BaseModel):
     """결합할인 그룹 미리보기 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     grp_tot_scrb_yr_cnt: str = Field(..., alias="grpTotScrbYrCnt", description="그룹합산년수")
     grp_expt_yr_dc_amt: str = Field(
@@ -341,12 +324,11 @@ class CombinationGroupPreview(BaseModel):
         default=[], alias="grpList", description="그룹목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class WirelessMember(BaseModel):
     """무선 멤버 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     rel_cl_cd: str = Field(..., alias="relClCd", description="서비스구분")
@@ -361,12 +343,11 @@ class WirelessMember(BaseModel):
     bas_fee_amt_tx: str = Field(..., alias="basFeeAmtTx", description="월정액(세금포함)")
     comb_sta_dt: str = Field(..., alias="combStaDt", description="결합시작일")
 
-    class Config:
-        populate_by_name = True
-
 
 class WiredMember(BaseModel):
     """유선 멤버 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_cd: str = Field(..., alias="svcCd", description="서비스구분코드")
@@ -386,12 +367,11 @@ class WiredMember(BaseModel):
     regu_agrmt_dc: str = Field(..., alias="reguAgrmtDc", description="정기계약할인")
     comb_sta_dt: str = Field(..., alias="combStaDt", description="결합시작일")
 
-    class Config:
-        populate_by_name = True
-
 
 class ServiceProductGroup(BaseModel):
     """서비스 상품 그룹 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_prod_grp_cd: str = Field(..., alias="svcProdGrpCd", description="서비스상품그룹코드")
     svc_prod_grp_id: str = Field(..., alias="svcProdGrpId", description="서비스상품그룹ID")
@@ -404,12 +384,11 @@ class ServiceProductGroup(BaseModel):
         default=[], alias="wireMbrList", description="유선멤버목록"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class GroupMember(BaseModel):
     """그룹 멤버 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_cd: str = Field(..., alias="svcCd", description="서비스구분")
@@ -419,12 +398,11 @@ class GroupMember(BaseModel):
         ..., alias="svcProdGrpAttrCd", description="서비스상품그룹속성코드"
     )
 
-    class Config:
-        populate_by_name = True
-
 
 class CombinationGroup(BaseModel):
     """결합할인 그룹 정보"""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     svc_prod_grp_list: List[ServiceProductGroup] = Field(
         default=[], alias="svcProdGrpList", description="서비스상품그룹목록"
@@ -440,6 +418,3 @@ class CombinationGroup(BaseModel):
     grp_mbr_list: List[GroupMember] = Field(
         default=[], alias="grpMbrList", description="그룹멤버목록"
     )
-
-    class Config:
-        populate_by_name = True
