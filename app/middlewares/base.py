@@ -10,10 +10,16 @@ from contextvars import ContextVar
 import json
 from utils.logger import logger
 from utils.timezone import KST
+from utils.request_handler import set_request_id, get_request_id, reset_request_id
 
-__ctx_request_context: ContextVar[Request] = ContextVar("ctx-request-context", default=None)
+MONITORING_EXCLUDED_PATHS = [
+    "/api/healthcheck/",
+    "/api/healthcheck",
+    "/api/healthz/",
+    "/api/healthz",
+]
 
-MONITORING_EXCLUDED_PATHS = ["/api/healthcheck/", "/api/healthcheck"]
+from ddtrace import tracer
 
 
 class ErrorCode(Enum):
@@ -40,40 +46,30 @@ class ErrorResponse(JSONResponse):
         super().__init__(status_code=status, content=body)
 
 
+# TODO transaction id header 달라질경우 변경 필요
 async def common_middleware(request: Request, call_next):
-    token = __ctx_request_context.set(request)
-
-    request.state.start = time.time()
-    request.state.request_id = (
+    request_id = (
         request.headers.get("x-request-id")
         or request.headers.get("x-transaction-id")
         or str(uuid4())
     )
 
+    token = get_request_id.set(request_id)
+
+    request.state.start = time.time()
+    request.state.request_id = request_id
+
     try:
         if request.url.path in MONITORING_EXCLUDED_PATHS:
             return await call_next(request)
-
-        # current_span = tracer.current_span()
-        # if current_span:
-        #     current_span.set_tag(
-        #         "langfuse_parent_span_id", request.headers.get("X-Langfuse-Parent-Span-Id", "")
-        #     )
-        #     current_span.set_tag(
-        #         "langfuse_trace_id", request.headers.get("X-Langfuse-Trace-Id", "")
-        #     )
-        #     current_span.set_tag("request_id", request.state.request_id)
 
         response: Response = await call_next(request)
         process_time = (time.time() - request.state.start) * 1000
         response.headers["X-Process-Time"] = str(process_time)
     except Exception as e:
-        # if current_span:
-        #     current_span.set_tag("memory.error", True)
-        #     current_span.set_tag("memory.error_message", str(e))
         raise
     finally:
-        __ctx_request_context.reset(token)
+        reset_request_id(token)
 
     return response
 
@@ -93,8 +89,6 @@ async def request_response_handler(request: Request, call_next):
         msg="",
         extra={
             "type": "request",
-            "langfuse_span_id": request.headers.get("X-Langfuse-Parent-Span-Id", ""),
-            "langfuse_trace_id": request.headers.get("X-Langfuse-Trace-Id", ""),
             "request_id": request.state.request_id,
             "method": request.method,
             "url": request.url,
@@ -151,7 +145,3 @@ async def error_handler(request: Request, exc: Exception):
     }
 
     return JSONResponse(status_code=status_code, content={"message": message})
-
-
-def get_request_context() -> Request:
-    return __ctx_request_context.get()
