@@ -63,10 +63,17 @@ async def common_middleware(request: Request, call_next):
         if request.url.path in MONITORING_EXCLUDED_PATHS:
             return await call_next(request)
 
+        current_span = tracer.current_span()
+        if current_span:
+            current_span.set_tag("request_id", request.state.request_id)
+
         response: Response = await call_next(request)
         process_time = (time.time() - request.state.start) * 1000
         response.headers["X-Process-Time"] = str(process_time)
     except Exception as e:
+        if current_span:
+            current_span.set_tag("map-search-agent.error", True)
+            current_span.set_tag("map-search-agent.error_message", str(e))
         raise
     finally:
         reset_request_id(token)
