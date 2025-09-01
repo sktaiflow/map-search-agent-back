@@ -76,7 +76,9 @@ neo4jclientconfig = Neo4jEngineConfig(
 )
 
 
-async def init_neo4j_database(engine_config: Neo4jEngineConfig) -> Neo4jDatabase:
+async def init_neo4j_database(
+    engine_config: Neo4jEngineConfig,
+) -> AsyncGenerator[Neo4jDatabase, None]:
     def _ensure_bolt_scheme(uri: str) -> str:
         if uri.startswith(("bolt://", "bolt+s://", "neo4j://", "neo4j+s://")):
             return uri
