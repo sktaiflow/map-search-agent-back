@@ -163,6 +163,7 @@ class AsyncGraphCypherQAChain:
         *,
         refresh_schema: bool = False,
         return_cypher_only: bool = False,
+        fewshot_examples: list = None,
     ) -> Dict[str, Any]:
         """
         Params
@@ -177,7 +178,16 @@ class AsyncGraphCypherQAChain:
         }
         """
         schema = await self._get_schema_str(refresh=refresh_schema)
-        cypher = await self._generate_cypher(question, schema, prompt)
+        
+        # Few-shot 예제를 프롬프트에 포함
+        enhanced_prompt = prompt
+        if fewshot_examples:
+            examples_text = "\n\n## Few-shot Examples:\n"
+            for i, ex in enumerate(fewshot_examples[:3]):
+                examples_text += f"예제 {i+1}: '{ex['query']}' → {ex['cypher_query']} (유사도: {ex['score']:.3f})\n"
+            enhanced_prompt = prompt + examples_text
+        
+        cypher = await self._generate_cypher(question, schema, enhanced_prompt)
 
         if return_cypher_only:
             return {"cypher": cypher, "records": [], "result": ""}

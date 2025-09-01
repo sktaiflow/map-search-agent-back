@@ -49,21 +49,21 @@ class MapSearchGraph(BaseGraph):
         )
 
         # 모든 노드 추가 (map-search-agent의 노드 구성 참고)
+        workflow.add_node("plan", partial(plan_node, deps=self.deps))
         workflow.add_node("embedding", partial(embedding_node, deps=self.deps))
         workflow.add_node("retrieve", partial(retrieve_node, deps=self.deps))
-        workflow.add_node("plan", partial(plan_node, deps=self.deps))
         workflow.add_node("execute", partial(execute_node, deps=self.deps))
         workflow.add_node("evaluate", partial(evaluate_node, deps=self.deps))
         workflow.add_node("replan", partial(replan_node, deps=self.deps))
         workflow.add_node("output", partial(output_node, deps=self.deps))
 
         # 초기 플로우: 준비 단계 (map-search-agent의 preparation flow)
-        workflow.add_edge(START, "embedding")
+        workflow.add_edge(START, "plan")
+        workflow.add_edge("plan", "embedding")
         workflow.add_edge("embedding", "retrieve")
-        workflow.add_edge("retrieve", "plan")
+        workflow.add_edge("retrieve", "execute")
         
-        # 실행 루프: plan → execute → evaluate (map-search-agent의 main loop)
-        workflow.add_edge("plan", "execute")
+        # 실행 루프: execute → evaluate (map-search-agent의 main loop)
         workflow.add_edge("execute", "evaluate")
         
         # 조건부 분기: 평가 결과에 따른 라우팅 (map-search-agent의 conditional routing)

@@ -35,12 +35,26 @@ async def retrieve_node(state: OverallState, deps: Deps, config: RunnableConfig)
     query = state.query_synonym
     query_embedding = state.query_embedding[0]
     trace = state.private.trace or []
+    plan = state.private.plan or []
+    
+    # 계획된 도구 중 Neo4j 도구가 있는지 확인
+    neo4j_tools = ["neo4j_product_search", "neo4j_search"]
+    needs_neo4j = any(step.get("tool") in neo4j_tools for step in plan)
+    
+    if not needs_neo4j:
+        trace.append("No Neo4j tools planned, skipping few-shot retrieval")
+        private_dict = state.private.model_dump()
+        private_dict["trace"] = trace
+        return {
+            "fewshot_examples": [],
+            "private": private_dict
+        }
     
     from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
 
     # expand_search에 따른 검색 전략 설정 (case1/case2)
     search_case = "case_1" if not state.expand_search else "case_2"
-    trace.append(f"Few-shot retrieval with {search_case}")
+    trace.append(f"Few-shot retrieval with {search_case} for Neo4j tools")
 
     async with deps.postgres_db.get_async_session() as session:
         retrieved_examples: list[tuple[SemanticSearchModel, float]] = await deps.pgvector_models[
@@ -65,7 +79,7 @@ async def retrieve_node(state: OverallState, deps: Deps, config: RunnableConfig)
             "score": score,
         })
     
-    trace.append(f"Retrieved {len(filtered_examples)} examples for {search_case} (from {len(retrieved_examples)} total)")
+    trace.append(f"Retrieved {len(filtered_examples)} Neo4j examples for {search_case} (from {len(retrieved_examples)} total)")
     
     # trace 업데이트
     private_dict = state.private.model_dump()
@@ -86,28 +100,17 @@ async def embedding_node(state: OverallState, deps: Deps, config: RunnableConfig
 
 
 async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> dict:
-    """쿼리를 브레이크다운하여 subtasks 생성 (few-shot 예제 활용)"""
+    """쿼리 분석하여 적절한 도구 선택"""
     cfg = Config.from_runnable_config(config)
 
     tools_description = deps.toolkit.get_tools_description()
     query = state.query_synonym
     
-    # few-shot 예제들을 포맷팅
-    fewshot_examples = state.fewshot_examples or []
-    examples_text = ""
-    if fewshot_examples:
-        examples_text = "\n".join([
-            f"예제 {i+1}: 질의='{ex['query']}' → 쿼리='{ex['cypher_query']}' (유사도: {ex['score']:.3f})"
-            for i, ex in enumerate(fewshot_examples[:3])  # 상위 3개만 사용
-        ])
-    else:
-        examples_text = "참고할 유사 예제 없음"
-    
     parser = PydanticOutputParser(pydantic_object=Plan)
     prompt = PLANNING_PROMPT.partial(
         format_instructions=parser.get_format_instructions(),
         tool_list_json=json.dumps(tools_description),
-        fewshot_examples=examples_text,
+        fewshot_examples="쿼리 패턴 분석 기반 도구 선택",
     )
     system_message = prompt.format()
     llm_response = await deps.llm_client.agenerate_response(
@@ -225,8 +228,17 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
             # 도구 실행 (LangChain BaseTool 표준 인터페이스)
             result = None
             if hasattr(tool_instance, 'arun'):
-                # 비동기 실행 - LangChain BaseTool 방식
-                result = await tool_instance.arun(query_params)
+                # Neo4j 도구인 경우 few-shot 예제 전달
+                if tool_name == "neo4j_product_search" and hasattr(tool_instance, '_arun'):
+                    fewshot_examples = state.fewshot_examples or []
+                    result = await tool_instance._arun(
+                        query=query_params.get("query", ""),
+                        expand_search=query_params.get("expand_search", True),
+                        fewshot_examples=fewshot_examples
+                    )
+                else:
+                    # 일반 도구는 기존 방식
+                    result = await tool_instance.arun(query_params)
             elif hasattr(tool_instance, 'run'):
                 # 동기 실행 - LangChain BaseTool 방식
                 result = tool_instance.run(query_params)

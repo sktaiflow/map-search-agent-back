@@ -34,13 +34,17 @@ class Neo4jSearchTool(SafeValidationTool):
         object.__setattr__(self, 'cypher_qa_chain', cypher_qa_chain)
         object.__setattr__(self, 'llm_model', llm_model or cypher_qa_chain.llm)
     
+    def _get_fewshot_from_state(self, execution_context) -> list:
+        """실행 컨텍스트에서 few-shot 예제 가져오기"""
+        # execute_node에서 state.fewshot_examples를 전달받아 사용
+        return getattr(execution_context, 'fewshot_examples', [])
     
     def _run(self, query: str, expand_search: bool = True) -> str:
         """동기 실행 (추상 메서드 구현)"""
         import asyncio
         return asyncio.run(self._arun(query, expand_search))
     
-    async def _arun(self, query: str, expand_search: bool = True) -> str:
+    async def _arun(self, query: str, expand_search: bool = True, fewshot_examples: list = None) -> str:
         """툴 실행 메인 함수 - 원본 map-search-agent 로직"""
         start_time = time.time()
         
@@ -49,10 +53,14 @@ class Neo4jSearchTool(SafeValidationTool):
             if not self.cypher_qa_chain.db._driver:
                 await self.cypher_qa_chain.db.connect()
             
-            # 1. 기본 검색 실행 (case1 시도)
+            # Few-shot 예제는 execute_node에서 전달받음
+            fewshot_examples = fewshot_examples or []
+            
+            # 1. 기본 검색 실행 (case1 시도) - few-shot 예제 포함
             result = await self.cypher_qa_chain.ainvoke(
                 prompt="사용자 질의에 맞는 상품 정보를 Neo4j에서 검색하세요.",
-                question=query
+                question=query,
+                fewshot_examples=fewshot_examples
             )
             
             execution_time = int((time.time() - start_time) * 1000)
