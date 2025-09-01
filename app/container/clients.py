@@ -4,6 +4,7 @@ from app.clients.map import MAPClient
 from app.clients.synonym import SynonymClient
 from app.llms import OpenAIChatLLM, OpenAIEmbeddingModel
 from app.clients.http_base import HTTPBaseClient, ClientTimeout, Retry
+from app.models.graphmodel.graph import AsyncGraphCypherQAChain
 from openai import AsyncOpenAI
 import httpx
 import asyncio
@@ -93,4 +94,10 @@ class ClientContainer(containers.DeclarativeContainer):
         host=global_config.openai_api_base,
         api_key=global_config.openai_api_key,
         model=global_config.vector_store_embedding_model_name,
+    )
+
+    neo4j_cypher_qa_chain = providers.Factory(
+        AsyncGraphCypherQAChain,
+        db=providers.DependenciesContainer.neo4j_db,
+        llm=openai_chat_llm,
     )
