@@ -36,6 +36,7 @@ async def init_oai_client(
 
 
 class ClientContainer(containers.DeclarativeContainer):
+    neo4j_db = providers.DependenciesContainer()
 
     map_api = providers.Factory(
         MAPClient,
@@ -98,6 +99,6 @@ class ClientContainer(containers.DeclarativeContainer):
 
     neo4j_cypher_qa_chain = providers.Factory(
         AsyncGraphCypherQAChain,
-        db=providers.DependenciesContainer.neo4j_db,
-        llm=openai_chat_llm,
+        db=neo4j_db.neo4j_db,
+        llm=providers.Callable(lambda chat_llm: chat_llm.client, openai_chat_llm),
     )

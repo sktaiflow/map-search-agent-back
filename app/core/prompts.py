@@ -21,6 +21,7 @@ PLANNING_TEMPLATE = """
     각 도구는 필요 시 다음 인자를 갖습니다:
     - get_service_info, get_subscribed_products → {{ "svc_mgmt_num": "7022044239" }}
     - prod_meta_search → {{ "query": "..." }}
+    - neo4j_product_search → {{ "query": "사용자의 검색 질의", "expand_search": true }}
 
     위의 유사한 예제들을 참고하여 현재 사용자 질문에 맞는 최적의 계획을 수립하세요.
 

@@ -51,7 +51,7 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
 
 
 from neo4j import AsyncGraphDatabase, READ_ACCESS, WRITE_ACCESS
-from app.database.neo4j import Neo4jEngineConfig
+from app.database.neo4j import Neo4jEngineConfig, Neo4jDatabase
 
 neo4jclientconfig = Neo4jEngineConfig(
     uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
@@ -76,6 +76,11 @@ class Neo4jContainer(containers.DeclarativeContainer):
     )
 
     session = providers.Resource(lambda d: _neo4j_session(d), driver)
+
+    neo4j_db = providers.Singleton(
+        Neo4jDatabase,
+        engine_config=neo4jclientconfig,
+    )
 
 
 async def _neo4j_session(driver):

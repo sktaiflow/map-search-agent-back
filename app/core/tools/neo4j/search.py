@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional, Type
-from langchain_core.tools import BaseTool
+from langchain_core.tools import BaseTool, ArgsSchema
 from pydantic import BaseModel, Field
 from app.core.tools.map.base import BaseToolKit, SafeValidationTool
 from app.models.graphmodel.graph import AsyncGraphCypherQAChain
@@ -25,19 +25,30 @@ class Neo4jSearchOutput(BaseModel):
 class Neo4jSearchTool(SafeValidationTool):
     name: str = "neo4j_product_search"
     description: str = "Neo4j 데이터베이스에서 상품 정보 검색 (case1: 정확매치, case2: 조건완화)"
+    args_schema: ArgsSchema | None = Neo4jSearchInput
     response_model: Type[BaseModel] = Neo4jSearchOutput
+    status: bool = True
     
-    def __init__(self, cypher_qa_chain: AsyncGraphCypherQAChain, llm_model=None):
-        super().__init__()
-        self.cypher_qa_chain = cypher_qa_chain
-        self.llm_model = llm_model or cypher_qa_chain.llm  # AsyncGraphCypherQAChain에서 LLM 추출
+    def __init__(self, cypher_qa_chain: AsyncGraphCypherQAChain, llm_model=None, **kwargs):
+        super().__init__(**kwargs)
+        object.__setattr__(self, 'cypher_qa_chain', cypher_qa_chain)
+        object.__setattr__(self, 'llm_model', llm_model or cypher_qa_chain.llm)
     
+    
+    def _run(self, query: str, expand_search: bool = True) -> str:
+        """동기 실행 (추상 메서드 구현)"""
+        import asyncio
+        return asyncio.run(self._arun(query, expand_search))
     
     async def _arun(self, query: str, expand_search: bool = True) -> str:
         """툴 실행 메인 함수 - 원본 map-search-agent 로직"""
         start_time = time.time()
         
         try:
+            # Neo4j 드라이버 연결 확인 및 초기화
+            if not self.cypher_qa_chain.db._driver:
+                await self.cypher_qa_chain.db.connect()
+            
             # 1. 기본 검색 실행 (case1 시도)
             result = await self.cypher_qa_chain.ainvoke(
                 prompt="사용자 질의에 맞는 상품 정보를 Neo4j에서 검색하세요.",

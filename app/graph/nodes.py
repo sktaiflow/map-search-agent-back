@@ -3,7 +3,7 @@ from app.graph.states import OverallState, OutputState, InputState
 from app.graph.configuration import Configuration as Config
 from app.core.prompts import PLANNING_TEMPLATE, PLANNING_PROMPT, INSIGHTS_PROMPT, SUMMARY_PROMPT, REASONING_PROMPT
 from app.graph.schema import Deps
-import utils.json as json
+import json
 from utils.timezone import KST
 from datetime import datetime
 from langchain_core.runnables import RunnableConfig
@@ -175,7 +175,7 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
         step_start_time = datetime.now()
         task_name = step.get("task", f"Step {i+1}")
         tool_name = step.get("tool")
-        query_params = step.get("query", {})
+        query_params = step.get("args", step.get("query", {}))
         
         trace.append(f"Executing step {i+1}: {task_name}")
         
@@ -216,14 +216,20 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
             
             trace.append(f"Step {i+1}: Found tool '{tool_name}', executing with params: {query_params}")
             
-            # 도구 실행 (map-search-agent의 tool invocation 패턴)
+            # 도구의 args_schema와 매개변수 호환성 검증
+            if hasattr(tool_instance, 'args_schema') and tool_instance.args_schema:
+                required_fields = tool_instance.args_schema.model_fields
+                trace.append(f"Step {i+1}: Tool requires fields: {list(required_fields.keys())}")
+                trace.append(f"Step {i+1}: Provided params: {list(query_params.keys())}")
+            
+            # 도구 실행 (LangChain BaseTool 표준 인터페이스)
             result = None
             if hasattr(tool_instance, 'arun'):
-                # 비동기 실행
-                result = await tool_instance.arun(**query_params)
+                # 비동기 실행 - LangChain BaseTool 방식
+                result = await tool_instance.arun(query_params)
             elif hasattr(tool_instance, 'run'):
-                # 동기 실행
-                result = tool_instance.run(**query_params)
+                # 동기 실행 - LangChain BaseTool 방식
+                result = tool_instance.run(query_params)
             elif hasattr(tool_instance, '__call__'):
                 # callable 객체
                 if asyncio.iscoroutinefunction(tool_instance):
@@ -423,6 +429,7 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
         prompt = PLANNING_PROMPT.partial(
             format_instructions=parser.get_format_instructions(),
             tool_list_json=json.dumps(tools_description),
+            fewshot_examples="이전 실행에서 few-shot 예제 참고 (재계획 단계)"
         )
         system_message = prompt.format()
         
@@ -564,7 +571,8 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
                 "telemetry": {
                     "failure_history": state.private.loop_telemetry.failure_mode_hist,
                     "last_error": state.private.loop_telemetry.last_error
-                }
+                },
+                "debug_trace": trace
             }
             
         else:
@@ -581,7 +589,8 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
                 "error_analysis": {
                     "failure_history": state.private.loop_telemetry.failure_mode_hist,
                     "last_error": state.private.loop_telemetry.last_error
-                }
+                },
+                "debug_trace": trace
             }
         
         # LLM 기반 콘텐츠 생성 (return_type=0만)

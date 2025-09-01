@@ -56,11 +56,14 @@ class AsyncGraphCypherQAChain:
         """Neo4j READ 트랜잭션 실행"""
         params = params or {}
         
-        def _work(tx):
-            return tx.run(cypher, params)
+        async def _work(tx):
+            result = await tx.run(cypher, params)
+            records = []
+            async for record in result:
+                records.append(record.data())
+            return records
         
-        result = await session.execute_read(_work)
-        rows = [r.data() for r in await result.to_list()]
+        rows = await session.execute_read(_work)
         return rows
 
     async def run_read(self, cypher: str) -> List[Dict[str, Any]]:
