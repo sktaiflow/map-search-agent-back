@@ -24,6 +24,8 @@ def neo4j_session_required(
     동작:
       - session이 전달되면 그대로 사용 (닫는 주체 외부)
       - session이 없으면 self.get_session(mode)로 새 세션을 열고 async with로 close (닫는 주체: decorator)
+
+    % 단 single server 환경에서 bolt driver는 access 모드 부하 분산 작동안함 -> 문법적으로 지원은 하지만, cluster 처럼 효과는 없음
     """
 
     def decorator(fn: Callable[..., Awaitable[Any]]):
@@ -50,6 +52,8 @@ def neo4j_tx_required(_fn: Callable[..., Awaitable[Any]] | None = None, *, acces
     사용법:
       @tx_required(access_mode="r") Transaction 처리의 경우 session.execute_read 혹은 session.execute_write로 사용
       async def get_user(self, user_id: str, *, tx=None): ...
+
+      % 단 single server 환경에서 bolt driver는 access 모드 부하 분산 작동안함 -> 문법적으로 지원은 하지만, cluster 처럼 효과는 없음
     """
 
     def decorator(fn: Callable[..., Awaitable[Any]]):
