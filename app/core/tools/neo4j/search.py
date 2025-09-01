@@ -23,8 +23,8 @@ class Neo4jSearchOutput(BaseModel):
 
 
 class Neo4jSearchTool(SafeValidationTool):
-    name = "neo4j_product_search"
-    description = "Neo4j 데이터베이스에서 상품 정보 검색 (case1: 정확매치, case2: 조건완화)"
+    name: str = "neo4j_product_search"
+    description: str = "Neo4j 데이터베이스에서 상품 정보 검색 (case1: 정확매치, case2: 조건완화)"
     response_model: Type[BaseModel] = Neo4jSearchOutput
     
     def __init__(self, cypher_qa_chain: AsyncGraphCypherQAChain, llm_model=None):
