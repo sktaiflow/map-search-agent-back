@@ -11,8 +11,13 @@ from aiohttp import (
     ClientError,
 )
 from typing import Optional, List, Literal, Dict
-import aiohttp
-from aiohttp.typedefs import LooseHeaders
+from aiohttp import (
+    ClientTimeout,
+    ServerTimeoutError,
+    ClientSession,
+    TCPConnector,
+    SocketTimeoutError,
+)
 from multidict import CIMultiDictProxy
 
 
@@ -128,43 +133,26 @@ class HTTPBaseClient:
         for attempts in range(self.retry.total + 1):
             try:
                 async with self.session.request(
-                    method=method,
-                    url=url,
-                    timeout=(timeout or self.timeout),
-                    **kwargs,
-                ) as resp:
-                    body = await resp.read()
-                    if self.retry.retry_on_status and resp.status in self.retry.retry_on_status:
-                        raise InvalidHttpStatus(resp.status, body)
-                return HTTPBaseClientResponse(resp.status, resp.headers, body)
-
-            except asyncio.CancelledError:
-                raise
-
-            except asyncio.TimeoutError as e:
-                # 읽기/연결 타임아웃 재시도 여부
-                if not self.retry.retry_on_read_timeout or attempts >= self.retry.total:
-                    raise
-
-                await asyncio.sleep(self.retry.backoff(attempts))
-
-            except InvalidHttpStatus as e:
+                    method=method, url=url, timeout=(timeout or self.timeout), **kwargs
+                ) as response:
+                    body = await response.read()
+                    if self.retry.retry_on_status and (
+                        response.status in self.retry.retry_on_status
+                    ):
+                        raise InvalidHttpStatus(response.status, body)
+                return HTTPBaseClientResponse(response.status, response.headers, body)
+            except Exception as e:
+                if not self.retry.retry_on_read_timeout:
+                    if (
+                        type(e) is ServerTimeoutError
+                        and str(e) == "Timeout on reading data from socket"
+                    ):
+                        raise  # sock_read timeout
+                    elif type(e) is SocketTimeoutError:
+                        raise  # sock_read timeout
+                    elif type(e) is asyncio.TimeoutError:
+                        raise  # total timeout
                 if attempts < self.retry.total:
                     await asyncio.sleep(self.retry.backoff(attempts))
                 else:
                     raise
-
-            except ClientError as e:
-                if attempts < self.retry.total:
-                    await asyncio.sleep(self.retry.backoff(attempts))
-                else:
-                    raise
-
-            except Exception:
-                raise
-
-
-def build_http_client(
-    session: ClientSession, timeout: ClientTimeout, retry: Retry
-) -> "HTTPBaseClient":
-    return HTTPBaseClient(session=session, timeout=timeout, retry=retry)
