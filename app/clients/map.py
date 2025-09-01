@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional
 from app.clients.http_base import HTTPBaseClient, InvalidHttpStatus, HTTPBaseClientResponse
 
 # from utils.trace import traced, trace
-from utils import logger
+from app import logger
 import utils.json as json
 
 
@@ -21,7 +21,7 @@ class MAPAPIError(ExternalRequestError):
         code: Optional[str] = None,
         message: Optional[str] = None,
     ):
-        super().__init__("UPS API", status_code, code=code, message=message)
+        super().__init__("MAP API", status_code, code=code, message=message)
         self.code = code
         self.message = message
 
