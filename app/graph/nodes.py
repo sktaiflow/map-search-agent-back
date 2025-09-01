@@ -605,88 +605,96 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
                 "debug_trace": trace
             }
         
-        # LLM 기반 콘텐츠 생성 (return_type=0만)
-        trace.append("Generating LLM-based insights, summary, and reasoning")
+        # LLM 기반 콘텐츠 생성 (return_type=0만) - 병렬 처리로 성능 최적화
+        trace.append("Generating LLM-based insights, summary, and reasoning in parallel")
         
         # 공통 데이터 준비
         user_query = " ".join(state.query) if isinstance(state.query, list) else str(state.query)
         search_results_summary = json.dumps(successful_results, ensure_ascii=False, indent=2)
         
-        # Insights 생성
-        execution_summary = f"총 {len(search_results)}단계 중 {len(successful_results)}개 성공"
-        if state.private.retry.retry_count > 0:
-            execution_summary += f", {state.private.retry.retry_count}회 재시도"
+        # 병렬 LLM 호출을 위한 태스크 생성
+        async def generate_insights():
+            execution_summary = f"총 {len(search_results)}단계 중 {len(successful_results)}개 성공"
+            if state.private.retry.retry_count > 0:
+                execution_summary += f", {state.private.retry.retry_count}회 재시도"
+            
+            insights_prompt = INSIGHTS_PROMPT.format(
+                user_query=user_query,
+                search_results=search_results_summary,
+                execution_summary=execution_summary
+            )
+            
+            response = await deps.llm_client.agenerate_response(
+                messages=[
+                    {"role": "system", "content": insights_prompt},
+                    {"role": "user", "content": "사용자의 검색 의도를 분석하고 가성비 관점에서 적절한 답변을 제공해주세요."}
+                ],
+                model=cfg.llm_model,
+                temperature=0.3,
+                max_tokens=500,
+                response_format={"type": "text"},
+                seed=cfg.seed,
+            )
+            return response.choices[0].message.content
         
-        insights_prompt = INSIGHTS_PROMPT.format(
-            user_query=user_query,
-            search_results=search_results_summary,
-            execution_summary=execution_summary
+        async def generate_summary():
+            execution_stats = f"성공률: {len(successful_results)}/{len(search_results)}"
+            if search_results:
+                avg_time = sum(r.get("execution_time_ms", 0) for r in search_results) / len(search_results)
+                execution_stats += f", 평균 응답시간: {avg_time:.0f}ms"
+            
+            summary_prompt = SUMMARY_PROMPT.format(
+                user_query=user_query,
+                search_results=search_results_summary,
+                execution_stats=execution_stats
+            )
+            
+            response = await deps.llm_client.agenerate_response(
+                messages=[
+                    {"role": "system", "content": summary_prompt},
+                    {"role": "user", "content": "검색 결과의 주요 특징과 제한사항을 요약해주세요."}
+                ],
+                model=cfg.llm_model,
+                temperature=0.2,
+                max_tokens=300,
+                response_format={"type": "text"},
+                seed=cfg.seed,
+            )
+            return response.choices[0].message.content
+        
+        async def generate_reasoning():
+            search_case = "Case 1 (정확 매치)" if not state.expand_search else "Case 2 (조건 완화)"
+            execution_steps = "\n".join([f"• {t}" for t in trace[-8:]])  # 최근 8개 단계
+            retry_info = f"{state.private.retry.retry_count}회 재시도" if state.private.retry.retry_count > 0 else "재시도 없음"
+            
+            reasoning_prompt = REASONING_PROMPT.format(
+                user_query=user_query,
+                search_case=search_case,
+                execution_steps=execution_steps,
+                retry_info=retry_info
+            )
+            
+            response = await deps.llm_client.agenerate_response(
+                messages=[
+                    {"role": "system", "content": reasoning_prompt},
+                    {"role": "user", "content": "검색 과정의 추론 근거와 실행 과정을 설명해주세요."}
+                ],
+                model=cfg.llm_model,
+                temperature=0.1,
+                max_tokens=400,
+                response_format={"type": "text"},
+                seed=cfg.seed,
+            )
+            return response.choices[0].message.content
+        
+        # 병렬 실행
+        insights, summary, reasoning = await asyncio.gather(
+            generate_insights(),
+            generate_summary(), 
+            generate_reasoning()
         )
         
-        insights_response = await deps.llm_client.agenerate_response(
-            messages=[
-                {"role": "system", "content": insights_prompt},
-                {"role": "user", "content": "사용자의 검색 의도를 분석하고 가성비 관점에서 적절한 답변을 제공해주세요."}
-            ],
-            model=cfg.llm_model,
-            temperature=0.3,
-            max_tokens=500,
-            response_format={"type": "text"},
-            seed=cfg.seed,
-        )
-        insights = insights_response.choices[0].message.content
-        
-        # Summary 생성  
-        execution_stats = f"성공률: {len(successful_results)}/{len(search_results)}"
-        if search_results:
-            avg_time = sum(r.get("execution_time_ms", 0) for r in search_results) / len(search_results)
-            execution_stats += f", 평균 응답시간: {avg_time:.0f}ms"
-        
-        summary_prompt = SUMMARY_PROMPT.format(
-            user_query=user_query,
-            search_results=search_results_summary,
-            execution_stats=execution_stats
-        )
-        
-        summary_response = await deps.llm_client.agenerate_response(
-            messages=[
-                {"role": "system", "content": summary_prompt},
-                {"role": "user", "content": "검색 결과의 주요 특징과 제한사항을 요약해주세요."}
-            ],
-            model=cfg.llm_model,
-            temperature=0.2,
-            max_tokens=300,
-            response_format={"type": "text"},
-            seed=cfg.seed,
-        )
-        summary = summary_response.choices[0].message.content
-        
-        # Reasoning 생성
-        search_case = "Case 1 (정확 매치)" if not state.expand_search else "Case 2 (조건 완화)"
-        execution_steps = "\n".join([f"• {t}" for t in trace[-8:]])  # 최근 8개 단계
-        retry_info = f"{state.private.retry.retry_count}회 재시도" if state.private.retry.retry_count > 0 else "재시도 없음"
-        
-        reasoning_prompt = REASONING_PROMPT.format(
-            user_query=user_query,
-            search_case=search_case,
-            execution_steps=execution_steps,
-            retry_info=retry_info
-        )
-        
-        reasoning_response = await deps.llm_client.agenerate_response(
-            messages=[
-                {"role": "system", "content": reasoning_prompt},
-                {"role": "user", "content": "검색 과정의 추론 근거와 실행 과정을 설명해주세요."}
-            ],
-            model=cfg.llm_model,
-            temperature=0.1,
-            max_tokens=400,
-            response_format={"type": "text"},
-            seed=cfg.seed,
-        )
-        reasoning = reasoning_response.choices[0].message.content
-        
-        trace.append("Completed LLM-based content generation")
+        trace.append("Completed parallel LLM-based content generation")
         
         # return_type=0: LLM 생성 콘텐츠로 응답
         return {
