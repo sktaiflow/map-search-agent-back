@@ -35,6 +35,8 @@ class BaseConfig(BaseSettings):
 
     # llm
     llm_model: str = "gpt-4o"
+    fast_llm_model: str = "gpt-4o-mini"
+    reasoning_llm_model: str = "gpt-o3"
 
     # map api config
     map_base_url: str = ""
