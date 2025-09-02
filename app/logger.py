@@ -4,7 +4,7 @@ from types import TracebackType
 from typing import Optional, Tuple, Union
 
 from utils.logger import logger
-from app.middlewares.base import get_request_context
+from utils.request_handler import get_request_id
 
 
 _SysExcInfoType = Union[
@@ -23,8 +23,8 @@ def _log(
     **extra,
 ):
     if "request_id" not in extra:
-        request = get_request_context()
-        extra["request_id"] = request.state.request_id if request else "-"
+        request_id = get_request_id()
+        extra["request_id"] = request_id if request_id else "-"
     logger.log(
         level, message, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra
     )
