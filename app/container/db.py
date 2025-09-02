@@ -64,7 +64,6 @@ neo4jclientconfig = Neo4jEngineConfig(
     password=global_config.neo4j_password,
     max_connection_pool_size=50,
     connection_timeout=0.5,
-    fetch_size=1000,
     keep_alive=True,
     liveness_check_timeout=5.0,
     connection_acquisition_timeout=1.0,
