@@ -1,7 +1,7 @@
 from app.agents.base import BaseAgent, BaseAgentConfig
 from typing import Any, Dict, List
 from uuid import UUID
-from app.schemas.api.schema import InvokeRequest, SynonymsRequest, SynonymsResponse
+from app.schemas.api.schema import InvokeRequest, InvokeResponse, SynonymsRequest, SynonymsResponse
 from app.graph.base import BaseGraph
 from app.clients.synonym import SynonymClient
 from app.models.vectorstore.base import BaseModel as PGVectorModel
@@ -11,7 +11,9 @@ from app.agents.task.analyzer import (
     preprocess_synonyms,
     retrieval_query,
 )
-from app.graph.states import InputState
+from app.graph.states import OutputState
+from app import logger
+from langchain_core.runnables import RunnableConfig
 
 
 class MapSearchAgentConfig(BaseAgentConfig):
@@ -26,46 +28,58 @@ class MapSearchAgent(BaseAgent):
 
     config = MapSearchAgentConfig(agent_name="map-search-agent")
 
-    # TODO: 명세서 json, data, params 어떤건지 확인 필요 (개발 명세서 불확실 ex): "application-json", "application-x-www-form-urlencoded" ...)
-    async def get_synonyms(self, params: Dict[str, Any]) -> tuple[Dict, Dict]:
-        """synonym 호출"""
-        resp = await self.http_client._request("POST", "/kvf/multi-keywords", json=params)
-        return (params, resp.json())
-
-    def preprocess_synonyms(self, keywords: List[str], synonyms: Dict[str, Any]) -> str:
-        """동의어 프롬프트 결과를 만들어 사용할 f string 결과 반환"""
-        synonyms_list = synonyms.get("resultList", [])
-        if synonyms_list:
-            synonyms_entity_list = [synonym.get("entityName") for synonym in synonyms_list]
-            return f"""동의어 사전: {keywords}: {synonyms_entity_list}"""
-        else:
-            return ""
-
-    async def apreprocess_input(
+    async def preprocess(
         self, user_input: InvokeRequest, request_params: Dict[str, Any] = {}
-    ) -> str:
-        """문장합치고 -> 자르고 -> 동의어 호출로 변경 -> 결과 반환"""
-        query = concat_query(user_input.query)
-        splitted_query = split_query(query)
-        # TODO: 동의어 API 명세서: keywords -> 갯수 제한 [3-5] 고려하는 로직 필요
-        params = {
-            "utterance": query,
-            "keywords": splitted_query,
-            "searchOption": request_params.get("searchOption", "1"),
-            "threshold": request_params.get("threshold", "30"),
-        }
-        # SynonymsRequest.model_validate(params)
-        params, synonyms = await self.get_synonyms(params)
-        # TODO: 동의어 호출 처리
-        synonyms_template = self.preprocess_synonyms(params.get("keywords", []), synonyms)
+    ) -> InvokeRequest:
+        """동의어 API 호출 필요"""
 
-        ## query + synonyms_template
-        return query + "\n" + synonyms_template
+        return user_input
 
-    async def apreprocess_input_mock(self, user_input: InvokeRequest):
-        query = concat_query(user_input.query)
-        return query
+    async def ainvoke(
+        self, input_data: InvokeRequest, runnable_config: RunnableConfig
+    ) -> InvokeResponse:
+        """
+        graph 의 invoke 를 호출하고, 결과를 전달할때 사용.
 
-    # TODO: 포스트 프로세싱
-    async def postprocess_messages(self, response):
-        return response
+        Args:
+            input_data (dict[str, Any]): _description_
+
+        Returns:
+            Any: _description_
+        """
+        runnable_config["recursion_limit"] = 50
+
+        try:
+            input_data = await self.preprocess(input_data)
+            graph_result = await self.graph.compiled_graph.ainvoke(
+                input=input_data, config=runnable_config
+            )
+            content = self.postprocess(graph_result)
+            return content
+
+        except Exception as e:
+            logger.error("Error ainvoking graph", exc_info=e)
+            raise e
+
+    def postprocess(self, response: OutputState) -> InvokeResponse:
+        if response.return_type == 1:
+            response_data = {
+                "raw_result": response.raw_data,
+                "product_meta": response.product_meta,  # 이미 ID 리스트로 처리됨
+                "user_info": response.user_info_data,
+            }
+        else:
+            response_data = {
+                "insights": response.insights,
+                "summary": response.summary,
+                "reasoning": response.reasoning,
+                "raw_result": response.raw_data,
+                "product_meta": response.product_meta,
+                "user_info": response.user_info_data,
+                "updated_at": response.updated_at,
+            }
+
+        return InvokeResponse(
+            code=200,
+            data=response_data or {},
+        )
