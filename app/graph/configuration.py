@@ -16,6 +16,8 @@ class Configuration:
 
     embedding_kwargs: dict = field(default_factory=dict)
     llm_model: str = global_config.llm_model
+    fast_llm_model: str = global_config.fast_llm_model
+    reasoning_llm_model: str = global_config.reasoning_llm_model
     version: str = global_config.app_version
     temperature: float = 0.0
     streaming: bool = False
