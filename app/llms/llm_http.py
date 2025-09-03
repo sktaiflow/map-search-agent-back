@@ -109,7 +109,7 @@ class OpenAIChatLLM:
         tools: Optional[List[Dict]] = None,
         tool_choice: str = "auto",
         max_tokens: int = 100,
-        model: Optional[int] = None,
+        model: Optional[Union[int, str]] = None,
         seed: int = 10,
         temperature: Optional[float] = 0.1,
         top_p: Optional[float] = 0.1,
