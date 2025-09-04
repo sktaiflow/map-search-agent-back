@@ -22,22 +22,20 @@ from neo4j import (
 )
 
 
+# TODO: session params 최적화 필요
 class Neo4jEngineConfig(BaseModel):
     uri: str
     user: str
     password: str
-    max_connection_pool_size: int = 50
+    max_concurrent_sessions: int = 70
+    max_connection_pool_size: int = 100
     connection_timeout: float = 1.0
-    fetch_size: int = Field(
-        default=10,
-        description="결과를 스트리밍 받는 단위 크기 (너무 크면 메모리 위험 작으면 속도 저하) ",
-        ge=1,
-        le=1000,
-    )
     keep_alive: bool = True
     liveness_check_timeout: float | None = 5.0
     connection_acquisition_timeout: float = 1.0
-    max_transaction_retry_time: float = 5.0
+    max_transaction_retry_time: float = (
+        5.0  # 최대 트랜잭션 재시도 시간 (서비스 사용성에 맞게 맞춰야함)
+    )
     max_connection_lifetime: int = 1800  # pool TCP 커넥션 재사용 시간
     initial_retry_delay: float = 0.5
     retry_delay_multiplier: float = 2.0
@@ -61,7 +59,9 @@ class Neo4jDatabase:
         self._cfg = engine_config
         self._default_db = default_database
         self._sema: Optional[asyncio.Semaphore] = (
-            asyncio.Semaphore(max_concurrent_sessions) if max_concurrent_sessions else None
+            asyncio.Semaphore(max_concurrent_sessions)
+            if max_concurrent_sessions
+            else None  # connection pool > self._sema -> 안그러면 병목
         )
 
     def open_session(
@@ -79,7 +79,7 @@ class Neo4jDatabase:
             database=database,
             bookmarks=bookmarks,
             impersonated_user=impersonated_user,
-            fetch_size=fetch_size or self._cfg.fetch_size,
+            fetch_size=fetch_size or 1000,  # (내부 로직 봐보니 default 값이 1000)
         )
 
     @asynccontextmanager
