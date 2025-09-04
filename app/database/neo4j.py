@@ -97,7 +97,7 @@ class Neo4jDatabase:
         try:
             async with self.open_session(
                 mode=mode,
-                database=database,
+                database=database or "neo4j",
                 impersonated_user=impersonated_user,
                 fetch_size=fetch_size,
                 bookmarks=bookmarks,
