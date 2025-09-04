@@ -62,8 +62,9 @@ neo4jclientconfig = Neo4jEngineConfig(
     uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
     user=global_config.neo4j_username,
     password=global_config.neo4j_password,
-    max_connection_pool_size=50,
-    connection_timeout=0.5,
+    max_concurrent_sessions=70,
+    max_connection_pool_size=100,
+    connection_timeout=1.0,
     keep_alive=True,
     liveness_check_timeout=5.0,
     connection_acquisition_timeout=1.0,
@@ -75,18 +76,18 @@ neo4jclientconfig = Neo4jEngineConfig(
 )
 
 
-async def init_neo4j_database(
-    engine_config: Neo4jEngineConfig,
-) -> AsyncGenerator[Neo4jDatabase, None]:
-    def _ensure_bolt_scheme(uri: str) -> str:
-        if uri.startswith(("bolt://", "bolt+s://", "neo4j://", "neo4j+s://")):
+async def init_neo4j_driver(engine_config: Neo4jEngineConfig) -> AsyncGenerator[AsyncDriver, None]:
+    def _ensure_scheme(uri: str) -> str:
+        if uri.startswith(("neo4j://", "neo4j+s://", "bolt://", "bolt+s://")):
             return uri
+
         return f"bolt://{uri}"
 
-    uri = _ensure_bolt_scheme(engine_config.uri)
+    uri = _ensure_scheme(engine_config.uri)
     pool_size = getattr(
         engine_config, "max_connection_pool_size", getattr(engine_config, "max_pool_size", 50)
     )
+
     driver = AsyncGraphDatabase.driver(
         uri,
         auth=(engine_config.user, engine_config.password),
@@ -101,33 +102,36 @@ async def init_neo4j_database(
         retry_delay_multiplier=engine_config.retry_delay_multiplier,
         retry_delay_jitter_factor=engine_config.retry_delay_jitter_factor,
     )
+
     await driver.verify_connectivity()
     await bootstrap_schema(driver)
-    db = Neo4jDatabase(driver=driver, engine_config=engine_config)
     try:
-        yield db
+        yield driver
     finally:
         await driver.close()
-
-
-# TODO: init 작업이 필요한 경우 사용해야함 -> 사용할 경우 singleton -> Resource 대체 필요
-# async def init_neo4j_model(
-#     neo4j_db: Neo4jDatabase, graphmodel: Type[BaseGraphModel]
-# ) -> Type[BaseGraphModel]:
-#     try:
-#         yield graphmodel
-#     except Exception as e:
-#         logger.error(message=f"Error initializing Neo4j model", exec_info=e)
-#         raise
-#     finally:
-#         pass
 
 
 # TODO: BaseGraphModel 대신 CypherAgent 구현체로 바꿔야함
 class Neo4jContainer(containers.DeclarativeContainer):
 
-    config = providers.Object(neo4jclientconfig)
+    engine_config = providers.Object(neo4jclientconfig)
 
-    neo4j_db = providers.Resource(init_neo4j_database, engine_config=config)
+    # Driver는 리소스로 관리 (app life cycle과 수명주기 맞춤)
+    neo4j_driver = providers.Resource(
+        init_neo4j_driver,
+        engine_config=engine_config,
+    )
 
-    neo4j_model = providers.Object(BaseGraphModel)
+    neo4j_db = providers.Singleton(
+        Neo4jDatabase,
+        driver=neo4j_driver,
+        engine_config=engine_config,
+        max_concurrent_sessions=providers.Callable(
+            lambda cfg: getattr(cfg, "max_concurrent_sessions", None), engine_config
+        ),
+        default_database=providers.Callable(
+            lambda cfg: getattr(cfg, "database", "neo4j"), engine_config
+        ),
+    )
+
+    neo4j_model = providers.Singleton(BaseGraphModel)
