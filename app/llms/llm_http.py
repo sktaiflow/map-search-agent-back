@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Any, Literal
+from typing import Dict, List, Optional, Any, Literal, Union
 
 import json
 from langchain_openai import ChatOpenAI
@@ -114,9 +114,10 @@ class OpenAIChatLLM:
         temperature: Optional[float] = 0.1,
         top_p: Optional[float] = 0.1,
         strict_messages_only: bool = False,
-    ) -> ChatCompletion:
+    ) -> LLMResult:
         """
         Asynchronously generate a response based on the given messages using OpenAI.
+        Returns parsed LLMResult with tool calls or chat response.
         """
         params = {
             "model": self.model if model is None else model,
@@ -136,8 +137,9 @@ class OpenAIChatLLM:
                 }
             )
 
+        # OpenAI API 호출
         resp = await self.async_client.chat.completions.create(**params)
-        return resp
+        return parse_chat_completion(resp)
 
 
 # import json
