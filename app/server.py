@@ -4,7 +4,6 @@ from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from starlette.middleware.base import BaseHTTPMiddleware
 from langfuse.decorators import langfuse_context
 
@@ -80,3 +79,6 @@ app.add_exception_handler(RequestValidationError, error_handler)
 app.add_exception_handler(HTTPException, error_handler)
 
 app.include_router(api.agents.router)
+
+if StackType not in ["prd", "stg"]:
+    app.include_router(api.cypher.router)
