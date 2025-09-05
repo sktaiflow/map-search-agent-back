@@ -1,6 +1,8 @@
 from functools import wraps
-from typing import Optional, Callable, Awaitable, Any
+from typing import Optional, Callable, Awaitable, Any, ClassVar, Literal
 from neo4j import AsyncSession
+from contextvars import ContextVar, Token
+from app import logger
 
 
 def session_required(fn):
@@ -13,66 +15,72 @@ def session_required(fn):
     return wrapper
 
 
-def neo4j_session_required(
-    _fn: Callable[..., Awaitable[Any]] | None = None, *, access_mode: str = "r"
-):
-    """
-    사용법:
-      @session_required(access_mode="r") : access_mode 기본값은 "r": READ 나머진 Write 모드
-      async def foo(self, ..., session: AsyncSession | None = None): ...
+class SessionContext:
+    _ctx: ClassVar[ContextVar[AsyncSession | None]] = ContextVar("neo4j_session", default=None)
 
-    동작:
-      - session이 전달되면 그대로 사용 (닫는 주체 외부)
-      - session이 없으면 self.get_session(mode)로 새 세션을 열고 async with로 close (닫는 주체: decorator)
+    @classmethod
+    def set(cls, session: AsyncSession) -> Token[AsyncSession | None]:
+        return cls._ctx.set(session)
 
-    % 단 single server 환경에서 bolt driver는 access 모드 부하 분산 작동안함 -> 문법적으로 지원은 하지만, cluster 처럼 효과는 없음
-    """
+    @classmethod
+    def get(cls) -> AsyncSession:
+        s = cls._ctx.get()
+        if s is None:
+            raise RuntimeError("Neo4j session is not set in ContextVar.")
+        return s
 
-    def decorator(fn: Callable[..., Awaitable[Any]]):
+    @classmethod
+    def reset(cls, token: Token[AsyncSession | None]) -> None:
+        cls._ctx.reset(token)
+
+
+def neo4j_session_required(mode: Literal["r", "w"] = "r"):
+    def deco(fn):
         @wraps(fn)
-        async def wrapper(self_or_cls, *args, **kwargs):
-            session: Optional[AsyncSession] = kwargs.get("session")
+        async def wrapper(self, *args, session: Optional[AsyncSession] = None, **kwargs):
             if session is not None:
-                return await fn(self_or_cls, *args, **kwargs)
+                return await fn(self, *args, session=session, **kwargs)
+            try:
+                s = SessionContext.get()
+                return await fn(self, *args, session=s, **kwargs)
+            except RuntimeError as e:
+                logger.error("Neo4j session is not set in ContextVar.", exc_info=e)
 
+        return wrapper
+
+    return deco
+
+
+"""
+Deprecated old decorators [수정하였음 혹시나 해서 남겨둠]
+def neo4j_session_read(fn: Callable[..., Awaitable[R]]) -> Callable[..., Awaitable[R]]:
+    @wraps(fn)
+    async def wrapper(self_or_cls: Any, *args, **kwargs) -> R:
+        session: Optional[AsyncSession] = kwargs.get("session")
+        if session is None:
             if not hasattr(self_or_cls, "get_session"):
-                raise RuntimeError("get_session(mode) 메서드를 self에 구현해야 합니다.")
+                raise RuntimeError("get_session() must be implemented.")
+            kwargs["session"] = self_or_cls.get_session()
+        return await fn(self_or_cls, *args, **kwargs)
 
-            session = self_or_cls.get_session(access_mode)
-            kwargs["session"] = session
+    return wrapper
+
+
+def neo4j_write_tx(fn: Callable[..., Awaitable[R]]) -> Callable[..., Awaitable[R]]:
+    @wraps(fn)
+    async def wrapper(self_or_cls: Any, *args, **kwargs) -> R:
+        if kwargs.get("tx") is not None:
             return await fn(self_or_cls, *args, **kwargs)
 
-        return wrapper
+        if not hasattr(self_or_cls, "get_session"):
+            raise RuntimeError("get_session() must be implemented.")
 
-    return decorator if _fn is None else decorator(_fn)
+        async with self_or_cls.get_session() as session:
 
+            async def work(tx):
+                return await fn(self_or_cls, *args, **{**kwargs, "tx": tx})
 
-def neo4j_tx_required(_fn: Callable[..., Awaitable[Any]] | None = None, *, access_mode: str = "r"):
-    """
-    사용법:
-      @tx_required(access_mode="r") Transaction 처리의 경우 session.execute_read 혹은 session.execute_write로 사용
-      async def get_user(self, user_id: str, *, tx=None): ...
+            return await session.execute_write(work)
 
-      % 단 single server 환경에서 bolt driver는 access 모드 부하 분산 작동안함 -> 문법적으로 지원은 하지만, cluster 처럼 효과는 없음
-    """
-
-    def decorator(fn: Callable[..., Awaitable[Any]]):
-        @wraps(fn)
-        async def wrapper(self_or_cls, *args, **kwargs):
-            if kwargs.get("tx") is not None:
-                return await fn(self_or_cls, *args, **kwargs)
-
-            if not hasattr(self_or_cls, "get_session"):
-                raise RuntimeError("get_session(mode) 메서드를 self에 구현하세요.")
-
-            async with self_or_cls.get_session() as session:
-                executor = session.execute_read if access_mode == "r" else session.execute_write
-
-                async def work(tx):
-                    return await fn(self_or_cls, *args, **{**kwargs, "tx": tx})
-
-                return await executor(work)
-
-        return wrapper
-
-    return decorator if _fn is None else decorator(_fn)
+    return wrapper
+"""
