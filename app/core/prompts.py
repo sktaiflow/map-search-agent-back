@@ -89,6 +89,51 @@ REASONING_TEMPLATE = """
 200자 이내로 논리적이고 투명한 설명을 작성하세요.
 """
 
+CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph database.
+    Instructions:
+    Use only the provided relationship types and properties in the schema.
+    Do not use any other relationship types or properties that are not provided in the schema.
+    Korean terms should be surrounded by backticks (``).
+
+    Schema:
+    {schema}
+
+    fewshot examples:
+    {fewshot_examples}
+
+    Domain mapping and other rules:
+    - For 기본제공데이터용량 (data limit), 문자제공량 (sms limit), 음성통화제공량 (voice limit) and other similar numeric fields about capacity, treat the term 무제한 (unlimited) as the value 99999. Do not apply this rule to price fields.
+    - For questions about cheap or expensive plans, sort by the value of 월정액 (monthly price).
+    - For search keywords, prefer a single noun split by a space. For example, use "넷플릭스" instead of "넷플릭스 할인".
+    - For comparing products, generate a Cypher query that retrieves all products to be compared, and then compare the results.
+
+    For age-related queries, generate WHERE clause based on the following examples:
+    - Plans only for 18 years old -> 가입가능최대나이 = 18 AND 가입가능최소나이 = 18
+    - Plans for 18 years old -> 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
+    - Plans only for 18 years old and above -> 가입가능최대나이 >= 18 AND 가입가능최소나이 <= 18
+    - Plans only for 18 years old and below -> 가입가능최대나이 <= 18 AND 가입가능최소나이 <= 18
+    - Plans only for younger than 13 years old -> 가입가능최대나이 < 13 AND 가입가능최소나이 < 13
+
+    For querying list properties, do not use the CONTAINS operator directly on the array itself.
+    Instead, use one of the following methods depending on the query intent:
+    - To check for exact inclusion of a value: 'value' IN node.array_property
+    - To check if any element partially matches a condition (e.g., substring): ANY(item IN node.array_property WHERE item CONTAINS 'value')
+    - To check if all elements satisfy a condition: ALL(item IN node.array_property WHERE item CONTAINS 'value')
+
+    Example:
+    - "Find plans that are only available for under 18" -> "MATCH (p:`요금제`) WHERE p.`가입가능최대나이` < 18 AND p.`가입가능최소나이` < 18 RETURN p"
+    - "Compare 5GX 프리미엄 plan with other plans that have similar price" -> "MATCH (p:`요금제` {{`상품명`: '5GX 프리미엄'}}) WITH p, p.`월정액` AS reference_price  MATCH (other:`요금제`) WHERE ABS(other.`월정액` - reference_price) <= reference_price * 0.1 RETURN p AS `기준상품`, other AS `유사상품` ORDER BY ABS(other.`월정액` - reference_price)"
+    - "Find one unlimited data plan" -> "MATCH (p:`요금제`) WHERE p.`기본제공데이터용량` = 99999 RETURN p LIMIT 1"
+    - "Find discount benefits for 65 and above" -> "MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 RETURN p, c"
+
+    Note: Do not include any explanations or apologies in your responses.
+    Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
+    Do not include any text except the generated Cypher statement.
+    Include the nodes and properties related to the question in the result.
+
+    The question is:
+    {question}
+"""
 # PromptTemplate 객체로 생성
 PLANNING_PROMPT = PromptTemplate(
     template=PLANNING_TEMPLATE, input_variables=["user_id", "format_instructions", "tool_list_json"]
@@ -100,4 +145,8 @@ REASONING_PROMPT = PromptTemplate(
 
 SUMMARY_PROMPT = PromptTemplate(
     template=SUMMARY_TEMPLATE, input_variables=["user_query", "search_results", "execution_stats"]
+)
+
+CYPHER_GENERATION_PROMPT = PromptTemplate(
+    input_variables=["schema", "question", "fewshot_examples"], template=CYPHER_GENERATION_TEMPLATE
 )
