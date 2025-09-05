@@ -54,7 +54,7 @@ async def common_middleware(request: Request, call_next):
         or str(uuid4())
     )
 
-    token = get_request_id.set(request_id)
+    token = set_request_id(request_id)
 
     request.state.start = time.time()
     request.state.request_id = request_id
