@@ -8,7 +8,10 @@ from app.container import GraphContainer
 
 # TODO: synonyhm api 호출을 graph에서 할거면 추후 제거 필요
 class AgentContainer(containers.DeclarativeContainer):
-    ## http client, graph 주입
+    """
+    agentContainer Scope: 인풋 (전처리 [synonym], graph.invoke, graph.invoke 결과 후 처리)
+    """
+
     graphs = providers.DependenciesContainer()
     http_client = providers.DependenciesContainer()
 
