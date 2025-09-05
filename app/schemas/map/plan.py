@@ -13,17 +13,15 @@ class AddOnProduct(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class SupplementaryPlan(BaseModel):
     """보조요금제 정보"""
-
+    
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
     bas_fee_amt: str = Field(..., alias="basFeeAmt", description="기본료금액")
 
     class Config:
         populate_by_name = True
-
 
 class AddOnSubscriptions(BaseModel):
     """부가서비스 가입정보"""
@@ -47,7 +45,6 @@ class AddOnSubscriptions(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class DiscountInfo(BaseModel):
     """할인 정보"""
 
@@ -57,7 +54,6 @@ class DiscountInfo(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class AddOnDetailProduct(BaseModel):
     """부가서비스 상세 상품 정보"""
@@ -75,7 +71,7 @@ class AddOnDetailProduct(BaseModel):
 
 class AddOnDetailSubscriptions(BaseModel):
     """부가서비스 상세 가입정보"""
-
+    
     add_on_cnt: str = Field(..., alias="addOnCnt", description="가입중부가서비스갯수")
     free_add_on_cnt: str = Field(..., alias="freeAddOnCnt", description="가입중무료부가서비스갯수")
     paid_add_on_cnt: str = Field(..., alias="paidAddOnCnt", description="가입중유료부가서비스갯수")
@@ -95,18 +91,16 @@ class AddOnDetailSubscriptions(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class ProductInfo(BaseModel):
     """상품 정보"""
-
+    
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
     svc_prod_cd: str = Field(..., alias="svcProdCd", description="상품구분코드")
 
     class Config:
         populate_by_name = True
-
-
+        
 class PMProductInfo(BaseModel):
     """PM 상품 정보"""
 
@@ -140,7 +134,6 @@ class BenefitInfo(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class CustomerBenefit(BaseModel):
     """고객 혜택 정보"""
 
@@ -150,7 +143,6 @@ class CustomerBenefit(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class AddOnHistory(BaseModel):
     """부가서비스 이력 정보"""
@@ -205,10 +197,8 @@ class DeviceInfo(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class RuleCheckResult(BaseModel):
     """규칙 체크 결과"""
-
     error_code: str = Field(..., alias="errorCode", description="에러코드")
     error_message: str = Field(..., alias="errorMessage", description="에러메시지")
 
@@ -234,7 +224,6 @@ class MobilePlanBenefitInfo(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class InformationList(BaseModel):
     """정보 목록"""
@@ -285,7 +274,6 @@ class LegacyCondition(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class PMCondition(BaseModel):
     """PM 조건"""
 
@@ -300,7 +288,6 @@ class PMCondition(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class PlanSubscriptionPreview(BaseModel):
     """요금제 가입 미리보기 정보"""
@@ -389,7 +376,6 @@ class WiredMember(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class ServiceProductGroup(BaseModel):
     """서비스 상품 그룹 정보"""
 
@@ -407,7 +393,6 @@ class ServiceProductGroup(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class GroupMember(BaseModel):
     """그룹 멤버 정보"""
 
@@ -421,7 +406,6 @@ class GroupMember(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class CombinationGroup(BaseModel):
     """결합할인 그룹 정보"""

@@ -1,6 +1,6 @@
 from typing import List
-
 from pydantic import BaseModel, Field
+
 
 
 class DataUsage(BaseModel):
@@ -12,7 +12,7 @@ class DataUsage(BaseModel):
         ..., alias="basOfrDataUsgQty", description="기본제공데이터사용량MB"
     )
 
-    class Config:
+      class Config:
         populate_by_name = True
 
 
@@ -36,7 +36,6 @@ class DataLimitItem(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class DataLimit(BaseModel):
     """데이터 한도 정보"""
@@ -75,7 +74,6 @@ class DataLimit(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class ChildDataLimitItem(BaseModel):
     """자녀 데이터 한도 항목"""
 
@@ -108,7 +106,6 @@ class ChildDataLimit(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class DataLimitChildren(BaseModel):
     """자녀 데이터 한도 정보"""
@@ -145,7 +142,6 @@ class DataSharingLimit(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class VoiceLimitItem(BaseModel):
     """음성 한도 항목"""
 
@@ -160,7 +156,6 @@ class VoiceLimitItem(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class VoiceLimit(BaseModel):
     """음성 한도 정보"""
 
@@ -174,14 +169,11 @@ class VoiceLimit(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class VoiceLimitChildren(BaseModel):
     """자녀 음성 한도 정보"""
-
     pass  # docstring에서 구체적인 필드 정보를 찾지 못했습니다
 
 
 class TFamilySharingDataLimit(BaseModel):
     """T가족 공유 데이터 한도 정보"""
-
     pass  # docstring에서 구체적인 필드 정보를 찾지 못했습니다

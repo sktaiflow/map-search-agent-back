@@ -239,3 +239,4 @@
 #         chain = self.build_chain(prompt=prompt, llm=llm, parser=parser)
 #         message = await chain.ainvoke(messages)
 #         return self._normalize_to_llm_output(message)
+

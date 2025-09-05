@@ -6,6 +6,12 @@ from configs import config as global_config
 
 
 # TODO : 툴킷 콘테이너 미구현 상태, 구현 필요[미구현 이유: 툴 스코프 미정]
+
+# from app.core.tools import create_agent_tools_data
+from configs import config as global_config
+
+
+# TODO : TOOLKIT 구현 필요
 class ToolkitContainer(containers.DeclarativeContainer):
 
     clients = providers.DependenciesContainer()

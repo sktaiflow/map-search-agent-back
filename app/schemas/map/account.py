@@ -13,6 +13,7 @@ class AccountPeriodAmount(BaseModel):
         populate_by_name = True
 
 
+
 class ServicePeriodAmount(BaseModel):
     """서비스 납기월 미납금액 정보"""
 
@@ -54,7 +55,6 @@ class UnpaidBill(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class CurrentBillItem(BaseModel):
     """현재 요금 항목"""
 
@@ -65,7 +65,6 @@ class CurrentBillItem(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class CurrentBill(BaseModel):
     """현재 요금 정보"""
@@ -107,7 +106,6 @@ class CurrentBillChildItem(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class CurrentBillChildren(BaseModel):
     """자녀 현재 요금 정보"""
 
@@ -118,9 +116,9 @@ class CurrentBillChildren(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class FixedBillService(BaseModel):
     """정액 요금 서비스 정보"""
+
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
@@ -129,7 +127,6 @@ class FixedBillService(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class FixedBillItem(BaseModel):
     """정액 요금 항목"""
@@ -146,6 +143,7 @@ class FixedBillItem(BaseModel):
 
 class FixedBill(BaseModel):
     """정액 요금 정보"""
+
 
     pps_yn: str = Field(..., alias="ppsYn", description="선불요금제여부")
     inv_sta_dt: str = Field(..., alias="invStaDt", description="청구시작일자")
@@ -167,7 +165,6 @@ class MobilePaymentItem(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class MobilePayment(BaseModel):
     """모바일 결제 정보"""
