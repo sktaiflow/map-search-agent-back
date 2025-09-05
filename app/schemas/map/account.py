@@ -1,30 +1,31 @@
 from typing import List
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 
 class AccountPeriodAmount(BaseModel):
     """계정 납기월 미납금액 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     acnt_prd_pay_ym: str = Field(..., alias="acntPrdPayYm", description="계정납기년월")
     acnt_prd_col_amt: str = Field(..., alias="acntPrdColAmt", description="계정납기월미납금액")
+
+    class Config:
+        populate_by_name = True
+
 
 
 class ServicePeriodAmount(BaseModel):
     """서비스 납기월 미납금액 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     svc_prd_pay_ym: str = Field(..., alias="svcPrdPayYm", description="서비스납기년월")
     svc_prd_col_amt: str = Field(..., alias="svcPrdColAmt", description="서비스납기월미납금액")
+
+    class Config:
+        populate_by_name = True
 
 
 class UnpaidBill(BaseModel):
     """미납 요금 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     acnt_rep_svc_yn: str = Field(..., alias="acntRepSvcYn", description="계정대표서비스여부")
     acnt_col_yn: str = Field(..., alias="acntColYn", description="계정미납유무")
@@ -51,22 +52,22 @@ class UnpaidBill(BaseModel):
     acnt_chg_yn: str = Field(..., alias="acntChgYn", description="계정변경여부")
     use_obj_yn: str = Field(..., alias="useObjYn", description="정지해제대상여부")
 
+    class Config:
+        populate_by_name = True
 
 class CurrentBillItem(BaseModel):
     """현재 요금 항목"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     bill_itm_lcl_nm: str = Field(..., alias="billItmLclNm", description="청구항목대분류명")
     bill_itm_scl_nm: str = Field(..., alias="billItmSclNm", description="청구항목소분류명")
     bill_itm_nm: str = Field(..., alias="billItmNm", description="청구항목명")
     bill_amt: str = Field(..., alias="billAmt", description="청구금액")
 
+    class Config:
+        populate_by_name = True
 
 class CurrentBill(BaseModel):
     """현재 요금 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     pps_yn: str = Field(..., alias="ppsYn", description="선불요금제여부")
     acnt_rep_svc_yn: str = Field(..., alias="acntRepSvcYn", description="청구대표서비스여부")
@@ -91,42 +92,44 @@ class CurrentBill(BaseModel):
         default=[], alias="currBillList", description="실시간요금목록"
     )
 
+    class Config:
+        populate_by_name = True
+
 
 class CurrentBillChildItem(BaseModel):
     """자녀 현재 요금 항목"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
     curr_bill_amt: str = Field(..., alias="currBillAmt", description="실시간요금")
     inv_bill_amt: str = Field(..., alias="invBillAmt", description="청구요금")
 
+    class Config:
+        populate_by_name = True
 
 class CurrentBillChildren(BaseModel):
     """자녀 현재 요금 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     chld_list: List[CurrentBillChildItem] = Field(
         default=[], alias="chldList", description="자녀요금목록"
     )
 
+    class Config:
+        populate_by_name = True
 
 class FixedBillService(BaseModel):
     """정액 요금 서비스 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
     svc_nm: str = Field(..., alias="svcNm", description="서비스명")
     svc_cd: str = Field(..., alias="svcCd", description="서비스코드")
 
+    class Config:
+        populate_by_name = True
 
 class FixedBillItem(BaseModel):
     """정액 요금 항목"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     itm_lcl_nm: str = Field(..., alias="itmLclNm", description="대분류명")
     itm_mcl_nm: str = Field(..., alias="itmMclNm", description="중분류명")
@@ -134,11 +137,13 @@ class FixedBillItem(BaseModel):
     itm_bill_amt: str = Field(..., alias="itmBillAmt", description="청구금액")
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
 
+    class Config:
+        populate_by_name = True
+
 
 class FixedBill(BaseModel):
     """정액 요금 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
 
     pps_yn: str = Field(..., alias="ppsYn", description="선불요금제여부")
     inv_sta_dt: str = Field(..., alias="invStaDt", description="청구시작일자")
@@ -148,20 +153,21 @@ class FixedBill(BaseModel):
     svc_list: List[FixedBillService] = Field(default=[], alias="svcList", description="서비스목록")
     itm_list: List[FixedBillItem] = Field(default=[], alias="itmList", description="청구항목목록")
 
+    class Config:
+        populate_by_name = True
+
 
 class MobilePaymentItem(BaseModel):
     """모바일 결제 항목"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     pg_nm: str = Field(..., alias="pgNm", description="서비스업체")
     bill_amt: str = Field(..., alias="billAmt", description="결제금액")
 
+    class Config:
+        populate_by_name = True
 
 class MobilePayment(BaseModel):
     """모바일 결제 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     adult_yn: str = Field(..., alias="adultYn", description="성인여부")
     brws_psbl_yn: str = Field(..., alias="brwsPsblYn", description="조회가능여부")
@@ -170,11 +176,12 @@ class MobilePayment(BaseModel):
         default=[], alias="itmList", description="결제내역목록"
     )
 
+    class Config:
+        populate_by_name = True
+
 
 class ContentPurchaseItem(BaseModel):
     """콘텐츠 구매 항목"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     rgst_dtm: str = Field(..., alias="rgstDtm", description="결제일시")
     cp_nm: str = Field(..., alias="cpNm", description="서비스업체")
@@ -183,14 +190,18 @@ class ContentPurchaseItem(BaseModel):
     ctt_typ_nm: str = Field(..., alias="cttTypNm", description="컨텐츠유형명")
     bill_amt: str = Field(..., alias="billAmt", description="결제금액")
 
+    class Config:
+        populate_by_name = True
+
 
 class ContentPurchase(BaseModel):
     """콘텐츠 구매 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     brws_psbl_yn: str = Field(..., alias="brwsPsblYn", description="조회가능여부")
     inv_bill_amt: str = Field(..., alias="invBillAmt", description="총청구금액")
     itm_list: List[ContentPurchaseItem] = Field(
         default=[], alias="itmList", description="구매내역목록"
     )
+
+    class Config:
+        populate_by_name = True

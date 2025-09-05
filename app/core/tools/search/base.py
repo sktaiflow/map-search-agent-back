@@ -17,12 +17,6 @@ from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
 from app.llms.embedding_llm_http import OpenAIEmbeddingModel
 
 
-class CypherQueryInput(BaseModel):
-    """Cypher 쿼리 입력 스키마"""
-
-    query: str = Field(description="자연어로 된 검색 쿼리")
-
-
 class SearchBaseToolKit:
     """neo4j Search 관련 도구들을 관리하는 기본 툴킷 클래스"""
 

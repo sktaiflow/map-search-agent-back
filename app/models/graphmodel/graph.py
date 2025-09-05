@@ -174,7 +174,7 @@ class AsyncGraphModel(BaseAsyncGraphModel):
 
         return structured_schema
 
-    # TODO: 람다
+    # TODO: 람다에서 색인 후 스키마 업데이트 하는 기능 필요 (api etc ...) 없으면 cache_schema_ttl 만료까지 반영 안됨
     async def _get_schema_str(self, refresh: bool = False, timeout: Optional[float] = None) -> str:
         """
         PROMPT에 넣을 스키마 문자열 생성.

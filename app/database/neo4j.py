@@ -1,22 +1,18 @@
 # app/db/neo4j_database.py
 from __future__ import annotations
 import asyncio
-import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Optional, Sequence
-from contextvars import ContextVar
-
-from neo4j import AsyncGraphDatabase, AsyncDriver
 
 from app import logger
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
 from utils.decorators import SessionContext
 from neo4j import (
     AsyncGraphDatabase,
     AsyncDriver,
     AsyncSession,
-    AsyncTransaction,
     READ_ACCESS,
     WRITE_ACCESS,
 )

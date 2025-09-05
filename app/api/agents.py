@@ -58,8 +58,6 @@ async def invoke_agent(
         input_data=InvokeRequest.model_validate(graph_input_data), runnable_config=runnable_config
     )
 
-    print("#######")
-    print(agent_response)
-    print("#######")
-    # TODO: postprocess_messages 처리
+    logger.info(f"agent_response: {agent_response}")
+
     return JSONResponse(content=agent_response.model_dump())

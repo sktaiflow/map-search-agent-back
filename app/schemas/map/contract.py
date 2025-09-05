@@ -5,17 +5,12 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class ServiceInfo(BaseModel):
     """서비스 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
 
 
 class ChildInfo(BaseModel):
     """자녀 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     cust_num: str = Field(..., alias="custNum", description="자녀고객번호")
     svc_list: List[ServiceInfo] = Field(..., alias="svcList", description="서비스 목록")
@@ -24,27 +19,26 @@ class ChildInfo(BaseModel):
 class CustomerChildren(BaseModel):
     """법정대리인 자녀 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     chld_reg_yn: str = Field(..., alias="chldRegYn", description="자녀등록여부")
     chld_list: List[ChildInfo] = Field(default=[], alias="chldList", description="자녀 목록")
+
+    class Config:
+        populate_by_name = True
 
 
 class MilitaryService(BaseModel):
     """군 입영 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     army_unit_dt: str = Field(..., alias="armyUnitDt", description="군입영일자")
     audit_dtm: str = Field(..., alias="auditDtm", description="최종변경일시")
     armysvc_typ_cd: str = Field(..., alias="armysvcTypCd", description="복무유형")
     army_mrd_dt: str = Field(..., alias="armyMrdDt", description="전역예정일자")
 
+    class Config:
+        populate_by_name = True
 
 class MobileContractDevice(BaseModel):
     """무선 회선 기본 가입정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     svc_scrb_dt: str = Field(..., alias="svcScrbDt", description="가입일자YYYYMMDD")
     dvc_dtl_yn: Optional[str] = Field(None, alias="dvcDtlYn", description="가입정보존재여부")
@@ -89,11 +83,12 @@ class MobileContractDevice(BaseModel):
     scrb_dd_cnt: Optional[str] = Field(None, alias="scrbDdCnt", description="장기가입기간")
     rem_mth_cnt: Optional[str] = Field(None, alias="remMthCnt", description="잔여개월수")
 
+    class Config:
+        populate_by_name = True
+
 
 class AllotmentDetail(BaseModel):
     """할부 상세 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     eqp_mdl_nm: str = Field(..., alias="eqpMdlNm", description="모델명")
     allot_sta_dt: str = Field(..., alias="allotStaDt", description="할부시작일자YYYYMMDD")
@@ -102,11 +97,12 @@ class AllotmentDetail(BaseModel):
     allot_tot_amt: str = Field(..., alias="allotTotAmt", description="할부총금액")
     allot_rem_amt: str = Field(..., alias="allotRemAmt", description="할부잔여금액")
 
+    class Config:
+        populate_by_name = True
+
 
 class ContractDetail(BaseModel):
     """약정 상세 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     sta_dt: str = Field(..., alias="staDt", description="시작일자YYYYMMDD")
@@ -114,11 +110,11 @@ class ContractDetail(BaseModel):
     dc_amt: str = Field(..., alias="dcAmt", description="할인금액")
     pen_amt: str = Field(..., alias="penAmt", description="할인반환금금액")
 
+    class Config:
+        populate_by_name = True
 
 class RemainContractDetail(BaseModel):
     """잔여 약정 상세 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     flx_cntrct_scrb_yn: str = Field(..., alias="flxCntrctScrbYn", description="선택약정가입여부")
     flx_cntrct_dtl: Optional[ContractDetail] = Field(
@@ -164,11 +160,11 @@ class RemainContractDetail(BaseModel):
         ..., alias="recntTermTrentalYn", description="최근종료된T렌탈유무"
     )
 
+    class Config:
+        populate_by_name = True
 
 class ContractRemainInfo(BaseModel):
     """계약 잔여 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     rem_allot_yn: str = Field(..., alias="remAllotYn", description="잔여할부유무")
     rem_allot_dtl: Optional[AllotmentDetail] = Field(
@@ -185,11 +181,12 @@ class ContractRemainInfo(BaseModel):
         ..., alias="usableNoCntrctPtYn", description="사용가능무약정포인트유무"
     )
 
+    class Config:
+        populate_by_name = True
+
 
 class DirectPlanDetail(BaseModel):
     """다이렉트플랜 상세 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     org_id: str = Field(..., alias="orgId", description="구매영업장ID")
     org_nm: str = Field(..., alias="orgNm", description="구매영업장명")
@@ -201,11 +198,13 @@ class DirectPlanDetail(BaseModel):
     chg_dtm: str = Field(..., alias="chgDtm", description="변경일시")
     scrb_psbl_org_cd_yn: str = Field(..., alias="scrbPsblOrgCdYn", description="가입가능조직여부")
 
+    class Config:
+        populate_by_name = True
+
+
 
 class DeviceContract(BaseModel):
     """기기 계약 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
@@ -243,11 +242,11 @@ class DeviceContract(BaseModel):
         ..., alias="directPlanDtlList", description="다이렉트플랜 상세 목록"
     )
 
+    class Config:
+        populate_by_name = True
 
 class RemainingAllotmentDetail(BaseModel):
     """잔여 할부 상세 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     eqp_mdl_nm: str = Field(..., alias="eqpMdlNm", description="모델명")
     allot_sta_dt: str = Field(..., alias="allotStaDt", description="할부시작일자YYYYMMDD")
@@ -256,57 +255,60 @@ class RemainingAllotmentDetail(BaseModel):
     allot_tot_amt: str = Field(..., alias="allotTotAmt", description="할부총금액")
     allot_rem_amt: str = Field(..., alias="allotRemAmt", description="할부잔여금액")
 
+    class Config:
+        populate_by_name = True
+
 
 class FlexibleContractDetail(BaseModel):
     """선택약정 상세 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     sta_dt: str = Field(..., alias="staDt", description="시작일자YYYYMMDD")
     end_dt: str = Field(..., alias="endDt", description="종료일자YYYYMMDD")
     dc_amt: str = Field(..., alias="dcAmt", description="할인금액")
     pen_amt: str = Field(..., alias="penAmt", description="할인반환금금액")
 
+    class Config:
+        populate_by_name = True
 
 class PlanContractDetail(BaseModel):
     """요금약정 상세 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     sta_dt: str = Field(..., alias="staDt", description="시작일자YYYYMMDD")
     end_dt: str = Field(..., alias="endDt", description="종료일자YYYYMMDD")
     dc_amt: str = Field(..., alias="dcAmt", description="할인금액")
     pen_amt: str = Field(..., alias="penAmt", description="할인반환금금액")
+
+    class Config:
+        populate_by_name = True
 
 
 class TSupportContractDetail(BaseModel):
     """T지원금약정 상세 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     sta_dt: str = Field(..., alias="staDt", description="시작일자YYYYMMDD")
     end_dt: str = Field(..., alias="endDt", description="종료일자YYYYMMDD")
     dc_amt: str = Field(..., alias="dcAmt", description="할인금액")
     pen_amt: str = Field(..., alias="penAmt", description="할인반환금금액")
 
+    class Config:
+        populate_by_name = True
 
 class ContractPenalty2Detail(BaseModel):
     """약정위약금2 상세 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
-
     sta_dt: str = Field(..., alias="staDt", description="시작일자YYYYMMDD")
     end_dt: str = Field(..., alias="endDt", description="종료일자YYYYMMDD")
     dc_amt: str = Field(..., alias="dcAmt", description="할인금액")
     pen_amt: str = Field(..., alias="penAmt", description="할인반환금금액")
 
+    class Config:
+        populate_by_name = True
+
 
 class RemainingContractDetail(BaseModel):
     """잔여 약정 상세 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     flx_cntrct_scrb_yn: str = Field(..., alias="flxCntrctScrbYn", description="선택약정가입여부")
     flx_cntrct_dtl: Optional[FlexibleContractDetail] = Field(
@@ -351,12 +353,12 @@ class RemainingContractDetail(BaseModel):
     recnt_term_trental_yn: str = Field(
         ..., alias="recntTermTrentalYn", description="최근종료된T렌탈유무"
     )
+    class Config:
+        populate_by_name = True
 
 
 class RemainedContract(BaseModel):
     """잔여 약정 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     rem_allot_yn: str = Field(..., alias="remAllotYn", description="잔여할부유무")
     rem_allot_dtl: Optional[RemainingAllotmentDetail] = Field(
@@ -373,22 +375,27 @@ class RemainedContract(BaseModel):
         ..., alias="usableNoCntrctPtYn", description="사용가능무약정포인트유무"
     )
 
+    class Config:
+        populate_by_name = True
 
 class DeviceInfo(BaseModel):
     """기기 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
     eqp_mdl_cd: str = Field(..., alias="eqpMdlCd", description="단말기모델코드")
     eqp_mdl_nm: str = Field(..., alias="eqpMdlNm", description="단말기모델명")
     eqp_rmk: Optional[str] = Field(None, alias="eqpRmk", description="단말기펫네임")
     eqp_mthd_cd: str = Field(..., alias="eqpMthdCd", description="단말기방식코드")
     eqp_mktg_dt: str = Field(..., alias="eqpMktgDt", description="단말기출시일자")
 
+    class Config:
+        populate_by_name = True
 
 class NoContractPoint(BaseModel):
     """무약정 포인트 정보"""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
 
     tot_accum_pt: str = Field(..., alias="totAccumPt", description="총적립포인트")
     tot_used_pt: str = Field(..., alias="totUsedPt", description="총사용포인트")

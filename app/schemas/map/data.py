@@ -1,12 +1,9 @@
 from typing import List
 
-from pydantic import BaseModel, Field, ConfigDict
-
+from pydantic import BaseModel, Field
 
 class DataGiftSender(BaseModel):
     """데이터 선물 발신자 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     data_gift_psbl_yn: str = Field(..., alias="dataGiftPsblYn", description="선물하기가능여부")
     data_gift_st_cd: str = Field(..., alias="dataGiftStCd", description="선물하기상태코드")
@@ -25,11 +22,12 @@ class DataGiftSender(BaseModel):
     fmly_gift_psbl_cnt: str = Field(..., alias="fmlyGiftPsblCnt", description="가족선물가능횟수")
     blklst_st_cd: str = Field(..., alias="blklstStCd", description="블랙리스트상태코드")
 
+    class Config:
+        populate_by_name = True
+
 
 class DataGiftLimit(BaseModel):
     """데이터 선물 한도 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     data_gift_psbl_yn: str = Field(..., alias="dataGiftPsblYn", description="선물하기가능여부")
     data_gift_st_cd: str = Field(..., alias="dataGiftStCd", description="선물하기상태코드")
@@ -49,11 +47,12 @@ class DataGiftLimit(BaseModel):
     )
     blklst_st_cd: str = Field(..., alias="blklstStCd", description="블랙리스트상태코드")
 
+    class Config:
+        populate_by_name = True
+
 
 class RegularDataGiftLimit(BaseModel):
     """정기 데이터 선물 한도 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     regu_data_gift_psbl_yn: str = Field(
         ..., alias="reguDataGiftPsblYn", description="자동선물하기가능여부"
@@ -68,11 +67,12 @@ class RegularDataGiftLimit(BaseModel):
         ..., alias="reguDataGiftLmt", description="자동데이터선물잔여횟수"
     )
 
+    class Config:
+        populate_by_name = True
+
 
 class DataGiftSendHistoryItem(BaseModel):
     """데이터 선물 발송 이력 항목"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     op_dtm: str = Field(..., alias="opDtm", description="처리일시")
     data_qty: str = Field(..., alias="dataQty", description="선물데이터MB")
@@ -80,11 +80,12 @@ class DataGiftSendHistoryItem(BaseModel):
     befr_cust_nm: str = Field(..., alias="befrCustNm", description="수혜자고객명")
     data_gift_typ_cd: str = Field(..., alias="dataGiftTypCd", description="데이터선물유형코드")
 
+    class Config:
+        populate_by_name = True
+
 
 class DataGiftSendHistory(BaseModel):
     """데이터 선물 발송 이력 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     hst_yn: str = Field(..., alias="hstYn", description="이력여부")
     hst_cnt: str = Field(..., alias="hstCnt", description="총이력갯수")
@@ -98,11 +99,12 @@ class DataGiftSendHistory(BaseModel):
         ..., alias="reguDataGiftPsblYn", description="자동선물하기가능여부"
     )
 
+    class Config:
+        populate_by_name = True
+
 
 class DataGiftReceiver(BaseModel):
     """데이터 선물 수신자 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     data_gift_psbl_yn: str = Field(..., alias="dataGiftPsblYn", description="선물받기가능여부")
     data_gift_st_cd: str = Field(..., alias="dataGiftStCd", description="선물받기상태코드")
@@ -112,11 +114,11 @@ class DataGiftReceiver(BaseModel):
         ..., alias="sameGoodFmlyGrpYn", description="동일T가족결합그룹여부"
     )
 
+    class Config:
+        populate_by_name = True
 
 class RegularDataGiftReceiver(BaseModel):
     """정기 데이터 선물 수신자 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     regu_data_gift_psbl_yn: str = Field(
         ..., alias="reguDataGiftPsblYn", description="자동선물받기가능여부"
@@ -127,11 +129,12 @@ class RegularDataGiftReceiver(BaseModel):
     )
     befr_cust_name: str = Field(..., alias="befrCustName", description="수혜자고객명")
 
+    class Config:
+        populate_by_name = True
+
 
 class RefillCouponItem(BaseModel):
     """리필 쿠폰 항목"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     copn_isue_num: str = Field(..., alias="copnIsueNum", description="쿠폰발급번호")
     copn_nm: str = Field(..., alias="copnNm", description="쿠폰명")
@@ -139,11 +142,12 @@ class RefillCouponItem(BaseModel):
     rfil_psbl_sta_dt: str = Field(..., alias="rfilPsblStaDt", description="리필가능시작일자")
     rfil_psbl_end_dt: str = Field(..., alias="rfilPsblEndDt", description="리필가능종료일자")
 
+    class Config:
+        populate_by_name = True
+
 
 class DataRefillCoupon(BaseModel):
     """데이터 충전 쿠폰 정보"""
-
-    model_config = ConfigDict(populate_by_name=True)
 
     rfil_psbl_yn: str = Field(..., alias="rfilPsblYn", description="리필가능여부")
     curr_rfil_psbl_yn: str = Field(..., alias="currRfilPsblYn", description="금월리필가능여부")
@@ -154,3 +158,6 @@ class DataRefillCoupon(BaseModel):
     copn_list: List[RefillCouponItem] = Field(default=[], alias="copnList", description="쿠폰목록")
     fst_ltrm_copn: RefillCouponItem = Field(..., alias="fstLtrmCopn", description="첫번째장기쿠폰")
     fst_gift_copn: RefillCouponItem = Field(..., alias="fstGiftCopn", description="첫번째선물쿠폰")
+
+    class Config:
+        populate_by_name = True
