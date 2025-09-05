@@ -2,18 +2,19 @@ from dependency_injector import containers, providers
 
 from app.core.tools.map import MAPToolkitCollectors
 from app.core.tools.search import SearchToolkitCollectors
-from app.core.tools import create_agent_tools_data
+
+# from app.core.tools import create_agent_tools_data
 from configs import config as global_config
 
 
+# TODO : TOOLKIT 구현 필요
 class ToolkitContainer(containers.DeclarativeContainer):
-    """최적화된 툴킷 컨테이너 - 함수 기반, 개별 컬렉터 내부화"""
 
     clients = providers.DependenciesContainer()
     db = providers.DependenciesContainer()
 
     _agent_tools_data = providers.Singleton(
-        create_agent_tools_data,
+        # create_agent_tools_data,
         tool_collectors=providers.List(
             providers.Singleton(
                 MAPToolkitCollectors,
