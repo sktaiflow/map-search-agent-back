@@ -35,6 +35,7 @@ class BaseModel(Base):
             await conn.execute(text(f"DROP TABLE IF EXISTS {cls.__tablename__};"))
             logger.info(f"Table '{cls.__tablename__}' dropped successfully.")
 
+    # TODO : posrtgres table schema 확인하기 [혜진님 전달 파일이 모르는 필드가 있어서 unknown으로 채워놓음 ]
     @classmethod
     async def create_table_and_hnsw_index(
         cls,
