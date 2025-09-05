@@ -7,15 +7,16 @@ from typing_extensions import TypedDict, List
 class InvokeRequest(BaseModel):
     user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
     query: List[str] = Field(description="검색 쿼리")
-    # transaction_id: str = Field(description="트랜잭션 아이디")  -> HEADER 관리가 좋음
-    search_type: Optional[bool] = Field(
-        description="검색 타입, True: 기본 검색, False: 확장 검색",
-        default=True,
+    expand_search: bool = Field(
+        description="case_1: 정확 일치만, case_2: 확장 검색 허용", default=True
     )
+
     return_type: Optional[int] = Field(
-        description="1: product_id List[str], 2: Neo4jSchema", default=1
+        description="0: neo4j schema 검색결과, 1: product id list만", default=0
     )
-    user_info_yn: Optional[bool] = Field(description="사용자 정보 포함 여부", default=True)
+    user_info: Optional[bool] = Field(
+        description="true: user 정보 조회 tool 사용, false: 사용 안함", default=True
+    )
 
 
 class InvokeResponse(BaseModel):

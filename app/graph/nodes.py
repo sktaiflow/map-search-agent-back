@@ -68,6 +68,7 @@ async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> 
     query = state.query_synonym
     parser = PydanticOutputParser(pydantic_object=Plan)
     prompt = PLANNING_PROMPT.partial(
+        user_id=state.user_id,
         format_instructions=parser.get_format_instructions(),
         tool_list_json=json.dumps(tools_description),
     )

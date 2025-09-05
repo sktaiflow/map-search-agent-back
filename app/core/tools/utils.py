@@ -1,10 +1,11 @@
-from typing import Dict, List, Union, Callable
+from typing import Dict, List, Union, Callable, runtime_checkable
 from typing import Type
 from app import logger
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ValidationError
-from typing import List
-from abc import ABC, abstractmethod
+from typing import Generic, Sequence, Protocol, TypeVar, runtime_checkable
+from configs.default import BaseConfig
+from configs import config as global_config
 
 
 def get_tools_description(tools: list[BaseTool]) -> str:
@@ -19,6 +20,7 @@ class SafeValidationTool(BaseTool):
     """
 
     response_model: Type[BaseModel]
+    config: BaseConfig = global_config
     status: bool = True
 
     def _validate_response(self, response: dict) -> dict:
@@ -33,3 +35,7 @@ class SafeValidationTool(BaseTool):
                 f" 일치하지 않습니다. 원본 데이터를 그대로 반환합니다. Error: {e}"
             )
             return response
+
+    # 동기 실행도 구현하려면 이 부분을 없애고 구현
+    def _run(self, *args, **kwargs):
+        raise NotImplementedError("Use async _arun()")

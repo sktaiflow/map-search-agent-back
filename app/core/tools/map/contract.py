@@ -13,6 +13,9 @@ from typing import Type
 from typing import List
 
 from app.core.tools.map.base import MAPBaseToolKit
+from configs import config as global_config
+from configs.default import BaseConfig
+from app import logger
 
 
 class UserIdInput(BaseModel):
@@ -59,7 +62,8 @@ class GetContractMobileContractRemainedContractsTool(SafeValidationTool):
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"contract/mobile-contract_{self.method_api_key}/remained-contracts"
         response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
-        return self._validate_response(response)
+        response_data = response.json()
+        return self._validate_response(response_data)
 
 
 class GetContractMobileContractNoContractPointsTool(SafeValidationTool):
@@ -77,7 +81,8 @@ class GetContractMobileContractNoContractPointsTool(SafeValidationTool):
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"contract/mobile-contract_{self.method_api_key}/no-contract-points"
         response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
-        return self._validate_response(response)
+        response_data = response.json()
+        return self._validate_response(response_data)
 
 
 class GetContractMobileContractDeviceContractsTool(SafeValidationTool):
@@ -106,9 +111,9 @@ class GetContractMobileContractServicesTool(SafeValidationTool):
         "서비스관리번호별 서비스/청구/고객 정보를 조회한다, SKT 회선이 아닌 경우 빈 오브젝트({}) 리턴한다."
     )
     args_schema: ArgsSchema | None = UserIdInput
+    response_model: Type[BaseModel] = MobileService
     map_client: MAPClient
     method_api_key: str
-    response_model: Type[BaseModel] = MobileService
     status: bool = False
 
     def _run(self, *args, **kwargs):
@@ -123,23 +128,38 @@ class GetContractMobileContractServicesTool(SafeValidationTool):
 class ContractToolKit(MAPBaseToolKit):
     """contract 관련 도구들을 관리하는 툴킷 method_api_key 공유하는 도구만 모아둬야함"""
 
-    def get_tool_class(self) -> List[Type[SafeValidationTool]]:
-        return [
-            GetContractMobileContractDevicesTool,
-            GetContractMobileContractRemainedContractsTool,
-            GetContractMobileContractNoContractPointsTool,
-            GetContractMobileContractDeviceContractsTool,
-            GetContractMobileContractServicesTool,
-        ]
+    name: str = "ContractToolKit"
+    description: str = (
+        "contract 관련 도구들을 관리하는 툴킷 method_api_key 공유하는 도구만 모아둬야함"
+    )
+    cfg: BaseConfig = global_config
 
-    def get_valid_tools(self) -> List[SafeValidationTool]:
-        """사용 가능한 tool 반환"""
-        tools = self.get_tools()
-        return [tool for tool in tools if tool.status]
+    def __init__(self, map_client: MAPClient):
+        super().__init__(map_client)
 
-    def get_tools(self) -> List[SafeValidationTool]:
-        """contract 관련 도구들을 반환합니다."""
-        return [
+        try:
+            self.method_api_key = self._verify_method_api_key()
+
+        except KeyError as e:
+            logger.error(
+                type="tool",
+                message=f"Method api key for {self.name} not found. Please check the config",
+                exc_info=e,
+            )
+            raise
+
+    def _verify_method_api_key(self) -> str:
+        method_api_key = self.cfg.map_method_api_keys.get(self.name, None)
+        if not method_api_key:
+            raise KeyError(f"Method api key for {self.name} not found in config")
+        return method_api_key
+
+    def tools(self) -> List[SafeValidationTool]:
+        raise NotImplementedError("This method is not implemented")
+
+    def valid_tools(self) -> List[SafeValidationTool]:
+        """사용 가능한 tool 반환 - 필요시에만 생성"""
+        all_tools = [
             GetContractMobileContractDevicesTool(
                 map_client=self.map_client, method_api_key=self.method_api_key
             ),
@@ -154,4 +174,6 @@ class ContractToolKit(MAPBaseToolKit):
             ),
             GetContractMobileContractServicesTool(
                 map_client=self.map_client, method_api_key=self.method_api_key
+            ),
         ]
+        return [tool for tool in all_tools if tool.status]

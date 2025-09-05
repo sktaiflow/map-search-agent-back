@@ -5,6 +5,7 @@ from app.database.postgresql import PostgreSQLDatabase
 from app.models.vectorstore.base import BaseModel as PGVectorModel
 
 
+# TODO: 추가 필요
 @dataclass(frozen=True)
 class Deps:
     llm_client: Any

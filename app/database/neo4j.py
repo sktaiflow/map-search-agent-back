@@ -11,7 +11,7 @@ from neo4j import AsyncGraphDatabase, AsyncDriver
 from app import logger
 
 from pydantic import BaseModel, Field
-from app.models.graphmodel.base import BaseGraphModel
+from utils.decorators import SessionContext
 from neo4j import (
     AsyncGraphDatabase,
     AsyncDriver,
@@ -53,7 +53,8 @@ class Neo4jDatabase:
         engine_config: Neo4jEngineConfig,
         *,
         max_concurrent_sessions: Optional[int] = None,
-        default_database: Optional[str] = None,
+        default_database: Optional[str] = "neo4j",
+        default_fetch_size: Optional[int] = 1000,
     ):
         self._driver = driver
         self._cfg = engine_config
@@ -63,23 +64,24 @@ class Neo4jDatabase:
             if max_concurrent_sessions
             else None  # connection pool > self._sema -> 안그러면 병목
         )
+        self._default_fetch_size = default_fetch_size
 
     def open_session(
         self,
         *,
         mode: str = "r",
+        fetch_size: Optional[int] = None,
         database: Optional[str] = None,
         impersonated_user: Optional[str] = None,
-        fetch_size: Optional[int] = None,
         bookmarks: Optional[Sequence[str]] = None,  # ← 추가
     ) -> AsyncSession:
         access = READ_ACCESS if mode == "r" else WRITE_ACCESS
         return self._driver.session(
             default_access_mode=access,
-            database=database,
+            database=database or self._default_db,
             bookmarks=bookmarks,
             impersonated_user=impersonated_user,
-            fetch_size=fetch_size or 1000,  # (내부 로직 봐보니 default 값이 1000)
+            fetch_size=fetch_size or self._default_fetch_size,
         )
 
     @asynccontextmanager
@@ -97,16 +99,16 @@ class Neo4jDatabase:
         try:
             async with self.open_session(
                 mode=mode,
-                database=database or "neo4j",
+                database=database or self._default_db,
                 impersonated_user=impersonated_user,
                 fetch_size=fetch_size,
                 bookmarks=bookmarks,
             ) as session:
-                context_token = BaseGraphModel.set_session(session)
+                context_token = SessionContext.set(session)
                 try:
                     yield session
                 finally:
-                    BaseGraphModel.reset_session(context_token)
+                    SessionContext.reset(context_token)
         finally:
             if self._sema:
                 self._sema.release()
