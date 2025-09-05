@@ -20,7 +20,7 @@ __all__ = [
 
 class Container(containers.DeclarativeContainer):
     pgvector_db = providers.Container(PGVectorDBContainer)
-    # neo4j_db = providers.Container(Neo4jContainer)
+    neo4j_db = providers.Container(Neo4jContainer)
     clients = providers.Container(ClientContainer)
     llm = providers.Container(LLMContainer)
     toolkit = providers.Container(ToolkitContainer, clients=clients)
