@@ -15,8 +15,7 @@ def _default_headers() -> Dict[str, str]:
     span = trace.get_current_span().get_span_context()
     return {
         "X-TRANSACTION-ID": rid,
-        "X-Langfuse-Trace-Id": trace.format_trace_id(span.trace_id),
-        "X-Langfuse-Parent-Span-Id": trace.format_span_id(span.span_id),
+        "X-Trace-Id": trace.format_trace_id(span.trace_id),
     }
 
 
