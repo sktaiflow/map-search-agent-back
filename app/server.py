@@ -79,6 +79,5 @@ app.add_exception_handler(RequestValidationError, error_handler)
 app.add_exception_handler(HTTPException, error_handler)
 
 app.include_router(api.agents.router)
-
 if StackType not in ["prd", "stg"]:
     app.include_router(api.cypher.router)
