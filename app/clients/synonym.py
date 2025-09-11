@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from app.clients.http_base import HTTPBaseClient, InvalidHttpStatus, HTTPBaseClientResponse
 from app import logger
 import utils.json as json

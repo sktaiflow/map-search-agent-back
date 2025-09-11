@@ -1,19 +1,19 @@
-from typing import Any, List, Type
+from typing import Any, List, Type, Optional
 
 from langchain_core.tools import BaseTool, ArgsSchema
 from pydantic import BaseModel, Field
 
 from app.schemas.map.plan import AddOnSubscriptions, AddOnDetailSubscriptions, AddOnHistory
 from app.clients.map import MAPClient
-from app.core.tools.map.base import SafeValidationTool
-from app.core.tools.map.base import BaseToolKit
+from app.core.tools.utils import SafeValidationTool
+from app.core.tools.map.base import MAPBaseToolKit
+from configs import config as global_config
+from configs.default import BaseConfig
+from app import logger
 
 
 class UserIdInput(BaseModel):
     user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
-
-
-# TODO: respone HttpBaseClientResponse 로 변경
 
 
 class GetPlanAddOnAddOnSubscriptionsTool(SafeValidationTool):
@@ -71,26 +71,47 @@ class GetPlanAddOnHistoriesTool(SafeValidationTool):
         return self._validate_response(response)
 
 
-class PlanToolKit(BaseToolKit):
+class PlanToolKit(MAPBaseToolKit):
     """요금제 관련 도구들을 관리하는 툴킷 -> method_api_key 공유하는 도구만 모아둬야함"""
 
-    def get_tool_class(self) -> List[Type[BaseTool]]:
-        return [
-            GetPlanAddOnAddOnSubscriptionsTool,
-            GetPlanAddOnSubscriptionsTool,
-            GetPlanAddOnHistoriesTool,
-        ]
+    name: str = "PlanToolKit"
+    description: str = "Plan 관련 도구들을 관리하는 툴킷 method_api_key 공유하는 도구만 모아둬야함"
+    cfg: BaseConfig = global_config
 
-    def get_tools(self) -> List[BaseTool]:
-        """요금제 관련 도구들을 반환합니다."""
-        return [
+    def __init__(self, map_client):
+        super().__init__(map_client)
+
+        try:
+            self.method_api_key = self._verify_method_api_key()
+
+        except KeyError as e:
+            logger.error(
+                type="tool",
+                message=f"Method api key for {self.name} not found. Please check the config",
+                exc_info=e,
+            )
+            raise
+
+    def _verify_method_api_key(self) -> str:
+        method_api_key = self.cfg.map_method_api_keys.get(self.name, None)
+        if not method_api_key:
+            raise KeyError(f"Method api key for {self.name} not found in config")
+        return method_api_key
+
+    def tools(self) -> List[SafeValidationTool]:
+        raise NotImplementedError("This method is not implemented")
+
+    def valid_tools(self) -> List[SafeValidationTool]:
+        """사용 가능한 tool 반환 - 필요시에만 생성"""
+        all_tools = [
             GetPlanAddOnAddOnSubscriptionsTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=True
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetPlanAddOnSubscriptionsTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
             GetPlanAddOnHistoriesTool(
-                map_client=self.map_client, method_api_key=self.method_api_key, status=False
+                map_client=self.map_client, method_api_key=self.method_api_key
             ),
         ]
+        return [tool for tool in all_tools if tool.status]

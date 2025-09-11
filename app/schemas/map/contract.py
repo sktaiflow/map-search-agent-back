@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class ServiceInfo(BaseModel):
     """서비스 정보"""
-
     svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
 
@@ -37,7 +36,6 @@ class MilitaryService(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class MobileContractDevice(BaseModel):
     """무선 회선 기본 가입정보"""
@@ -115,7 +113,6 @@ class ContractDetail(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class RemainContractDetail(BaseModel):
     """잔여 약정 상세 정보"""
 
@@ -166,7 +163,6 @@ class RemainContractDetail(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class ContractRemainInfo(BaseModel):
     """계약 잔여 정보"""
 
@@ -204,6 +200,7 @@ class DirectPlanDetail(BaseModel):
 
     class Config:
         populate_by_name = True
+
 
 
 class DeviceContract(BaseModel):
@@ -248,7 +245,6 @@ class DeviceContract(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class RemainingAllotmentDetail(BaseModel):
     """잔여 할부 상세 정보"""
 
@@ -275,7 +271,6 @@ class FlexibleContractDetail(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class PlanContractDetail(BaseModel):
     """요금약정 상세 정보"""
 
@@ -299,7 +294,6 @@ class TSupportContractDetail(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class ContractPenalty2Detail(BaseModel):
     """약정위약금2 상세 정보"""
@@ -359,7 +353,6 @@ class RemainingContractDetail(BaseModel):
     recnt_term_trental_yn: str = Field(
         ..., alias="recntTermTrentalYn", description="최근종료된T렌탈유무"
     )
-
     class Config:
         populate_by_name = True
 
@@ -385,7 +378,6 @@ class RemainedContract(BaseModel):
     class Config:
         populate_by_name = True
 
-
 class DeviceInfo(BaseModel):
     """기기 정보"""
 
@@ -397,7 +389,6 @@ class DeviceInfo(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class NoContractPoint(BaseModel):
     """무약정 포인트 정보"""

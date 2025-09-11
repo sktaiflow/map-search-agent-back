@@ -2,7 +2,6 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-
 class DataGiftSender(BaseModel):
     """데이터 선물 발신자 정보"""
 
@@ -117,7 +116,6 @@ class DataGiftReceiver(BaseModel):
 
     class Config:
         populate_by_name = True
-
 
 class RegularDataGiftReceiver(BaseModel):
     """정기 데이터 선물 수신자 정보"""

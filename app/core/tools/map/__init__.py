@@ -1,38 +1,28 @@
 from app.core.tools.map.contract import ContractToolKit
 from app.core.tools.map.plan import PlanToolKit
 
-from typing import Any, Dict, List
-from langchain.tools import BaseTool  # 가정
-from app.core.tools.map.base import BaseToolKit
+from typing import Any, Dict, List, Type, Optional
+from app.core.tools.utils import SafeValidationTool
+from app.core.tools.map.base import MAPBaseToolKit
+from langchain_core.utils.function_calling import convert_to_openai_function
+from app.core.tools.protocol import ToolKitCollectorProtocol
 
 
-class MAPTools:
-    _TOOLKIT_CLASSES = [ContractToolKit, PlanToolKit]
+class MAPToolkitCollectors(ToolKitCollectorProtocol[SafeValidationTool]):
+    """MAP Tool 집합 관리하는 Class"""
 
-    def __init__(self, map_client, method_api_key: Dict[str, str]):
+    _TOOLKIT_CLASSES: List[Type[MAPBaseToolKit]] = [ContractToolKit, PlanToolKit]
+
+    def __init__(self, map_client):
         self.map_client = map_client
-        self.method_api_key = method_api_key
 
-    def get_toolkit(self) -> List[BaseToolKit]:
-        """toolkit 클래스 반환"""
-        return [
-            toolkit_class(self.map_client, self.method_api_key[toolkit_class.__name__])
-            for toolkit_class in self._TOOLKIT_CLASSES
-        ]
-
-    def get_valid_tools(self) -> List[BaseTool]:
-        """toolkit_classes 안 모든 tool 반환"""
-        all_tools = []
-        for toolkit in self.get_toolkit():  # 오타 수정
-            all_tools.extend(toolkit.get_tools())
-        return [tool for tool in all_tools if tool.status]
-
-    def __len__(self) -> int:
-        return len(self.get_valid_tools())
-
-    def get_tools_description(self) -> str:
-        """toolkit 클래스 이름 설명 반환"""
-        return "\n".join([f"{tools.name}: {tools.description}" for tools in self.get_valid_tools()])
+    def get_valid_tools(self) -> List[SafeValidationTool]:
+        """사용 가능한 tool 반환"""
+        valid_tool_list: List[SafeValidationTool] = []
+        for toolkit_class in self._TOOLKIT_CLASSES:
+            tools = toolkit_class(self.map_client).valid_tools()
+            valid_tool_list.extend([tool for tool in tools if isinstance(tool, SafeValidationTool)])
+        return valid_tool_list
 
 
-__all__ = ["MAPTools"]
+__all__ = ["MAPToolkitCollectors"]

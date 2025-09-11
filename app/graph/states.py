@@ -36,6 +36,11 @@ class OutputState(BaseModel):
     updated_at: datetime = Field(..., description="업데이트 시간")
     version: str = "map-search-agent-dev"
     fewshot_examples: List[Dict[str, Any]] = Field(default_factory=list)
+    product_meta: List[Dict[str, Any]] = Field(default_factory=list)
+    return_type: Optional[int] = Field(
+        description="1: product_id List[str], 2: Neo4jSchema", default=1
+    )
+    user_info_data: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class RetryBudget(BaseModel):
@@ -85,6 +90,7 @@ class PrivateStateModel(BaseModel):
 
 class OverallState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    user_id: str = Field(default="")
     query: list[str] = Field(default=[])
     query_synonym: str = Field(default="")
     query_embedding: Optional[List[List[float]]] = Field(default=[])

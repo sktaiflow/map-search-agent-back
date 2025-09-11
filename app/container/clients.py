@@ -8,14 +8,15 @@ from openai import AsyncOpenAI
 import httpx
 import asyncio
 from configs import config as global_config
+from typing import AsyncGenerator
 
 
 async def init_http_client(limits: httpx.Limits, timeout: ClientTimeout, retry: Retry):
     async with ClientSession(
         connector=TCPConnector(
-            limit=limits.max_connections,
-            limit_per_host=limits.max_keepalive_connections,
-            keepalive_timeout=limits.keepalive_expiry,
+            limit=limits.max_connections or 2048,
+            limit_per_host=limits.max_keepalive_connections or 2048,
+            keepalive_timeout=limits.keepalive_expiry or 10,
         )
     ) as session:
         yield HTTPBaseClient(session=session, timeout=timeout, retry=retry)
@@ -24,7 +25,7 @@ async def init_http_client(limits: httpx.Limits, timeout: ClientTimeout, retry: 
 
 async def init_oai_client(
     base_url: str, api_key: str, limits: httpx.Limits, timeout: httpx.Timeout
-) -> AsyncOpenAI:
+) -> AsyncGenerator[AsyncOpenAI, None]:
     async with AsyncOpenAI(
         base_url=base_url,
         api_key=api_key,

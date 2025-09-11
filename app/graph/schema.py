@@ -5,6 +5,7 @@ from app.database.postgresql import PostgreSQLDatabase
 from app.models.vectorstore.base import BaseModel as PGVectorModel
 
 
+# TODO: 그래프 및 툴킷 구현후 : 수정 필요
 @dataclass(frozen=True)
 class Deps:
     llm_client: Any

@@ -1,139 +1,171 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Type, TypeVar
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import select, update, inspect
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
-from sqlalchemy import Column, DateTime, func, delete
-from sqlalchemy.dialects.postgresql import insert
-from typing import Optional, Type, TypeVar
-from sqlalchemy import text
-from contextvars import ContextVar, Token
+from typing import Any, Mapping, Optional, Dict, Any, LiteralString, List, Union
 
-
-from datetime import datetime, timedelta, timezone
 from utils.logger import logger
-from utils.decorators import session_required
-from neo4j import Result
+from utils.decorators import neo4j_session_required
 
-from langchain.chains import GraphCypherQAChain
+from neo4j import AsyncSession, AsyncManagedTransaction, Query, ResultSummary
 
-_T = TypeVar("_T", bound="BaseGraphModel")
+from abc import abstractmethod
 
-Base = declarative_base()
+from neo4j import Query as Neo4jQuery
+from app.database.neo4j import Neo4jDatabase
 
 
-class BaseGraphModel(Base):
-    """NEORJ 를 직접 핸들링할떄 필요한 베이스 모델"""
+class BaseAsyncGraphModel:
 
-    __abstract__ = True
-    _session_ctx: ContextVar[AsyncSession | None] = ContextVar("neo4j_session", default=None)
-
-    @classmethod
-    def set_session(cls: Type[_T], session: AsyncSession) -> Token:
-        return cls._session_ctx.set(session)
-
-    @classmethod
-    def get_session(cls) -> AsyncSession:
-        session = cls._session_ctx.get()
-        if session is None:
-            raise RuntimeError("Neo4j session is not set in ContextVar.")
-        return session
-
-    @classmethod
-    def reset_session(cls: Type[_T], token: Token) -> None:
-        cls._session_ctx.reset(token)
-
-    @classmethod
-    @session_required
-    async def aread(
-        cls: Type[_T],
-        session: AsyncSession,
-        cypher: str,
+    @neo4j_session_required("r")
+    async def asession_read(
+        self,
+        *,
+        session: Optional[AsyncSession] = None,
+        cypher: Union[str, Neo4jQuery, LiteralString],
         params: Optional[Mapping[str, Any]] = None,
-    ) -> list[dict]:
-        """
-        READ 트랜잭션에서 Cypher 실행.
-        LangGraph/Tool 등 어디서든 재사용 가능.
-        """
-        params = params or {}
+    ) -> list[Any]:
+        res = await session.run(cypher, params or {})
+        return [r async for r in res]
 
-        def _work(tx):  # tx: AsyncTransaction
-            return tx.run(cypher, params)
+    @neo4j_session_required("r")
+    async def execute_read_tx(
+        self,
+        *,
+        session: Optional[AsyncSession] = None,
+        cypher: Union[LiteralString, str, Neo4jQuery],
+        params: Optional[Mapping[str, Any]] = None,
+    ) -> list[Any]:
 
-        result: Result = await session.execute_read(_work)
-        rows = [r.data() for r in await result.to_list()]
-        return rows
+        async def work(tx: AsyncManagedTransaction):
+            res = await tx.run(cypher, params or {})
+            return [r async for r in res]
+
+        return await session.execute_read(work)
+
+    @neo4j_session_required("w")
+    async def execute_write(
+        self,
+        *,
+        session: Optional[AsyncSession] = None,
+        cypher: Union[str, Neo4jQuery, LiteralString],
+        params: Optional[Mapping[str, Any]] = None,
+    ) -> ResultSummary:
+        async def work(tx: AsyncManagedTransaction) -> ResultSummary:
+            res = await tx.run(cypher, params or {})
+            return await res.consume()
+
+        return await session.execute_write(work)
+
+    @abstractmethod
+    def get_schema(cls) -> str:
+        """Return the schema of the Graph database"""
+
+    @abstractmethod
+    def get_structured_schema(cls) -> Dict[str, Any]:
+        """Return the schema of the Graph database"""
+        ...
 
     @classmethod
-    @session_required
-    async def awrite(
-        cls: Type[_T],
-        session: AsyncSession,
-        cypher: str,
-        params: Optional[Mapping[str, Any]] = None,
-    ) -> list[dict]:
-        """
-        WRITE 트랜잭션에서 Cypher 실행.
-        """
-        params = params or {}
+    @abstractmethod
+    def refresh_schema(cls) -> None:
+        """Refresh the graph schema information."""
 
-        def _work(tx):
-            return tx.run(cypher, params)
 
-        result: Result = await session.execute_write(_work)
-        rows = [r.data() for r in await result.to_list()]
-        return rows
+# class BaseGraphModel:
+#     """
+#     NEO4J 를 직접 핸들링할떄 필요한 베이스 모델
+#     Read만 권장합니다. - Read할 경우 transaction 이용한 Read 권장
+#     """
 
-    # TODO: 추후 검토 후 고도화 혹은 수정 필요, 테스트 필요: 어떤 값들을 schema string으로 Return하는지 확인 필요
-    async def _get_schema_str(self) -> str:
-        """
-        PROMPT에 넣을 스키마 문자열 생성.
-        - 라벨/관계타입/프로퍼티키를 모아 프롬프트에 넣기 좋은 텍스트로 변환
-        - APOC이 있으면 apoc.meta.schema를 우선 시도
-        """
-        schema_lines = ["# Graph Schema (summary)"]
+#     _session_ctx: ContextVar[AsyncSession | None] = ContextVar("neo4j_session", default=None)
 
-        try:
-            # 1) APOC meta schema 시도
-            apoc_schema = await self.run_read("CALL apoc.meta.schema() YIELD * RETURN * LIMIT 20")
-            if apoc_schema:
-                schema_lines.append("APOC meta.schema sample (limited 20 rows):")
-                for row in apoc_schema:
-                    schema_lines.append(str(row))
-                return "\n".join(schema_lines)
-        except Exception as e:
-            schema_lines.append(f"(APOC meta.schema 사용 불가, fallback)")
+#     @classmethod
+#     def set_session(cls: Type[_T], session: AsyncSession) -> Token:
+#         return cls._session_ctx.set(session)
 
-        # 2) Fallback: 기본 시스템 프로시저
-        labels = await self.run_read("CALL db.labels() YIELD label RETURN label")
-        rels = await self.run_read(
-            "CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType"
-        )
-        props = await self.run_read("CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey")
+#     @classmethod
+#     def get_session(cls) -> AsyncSession:
+#         session = cls._session_ctx.get()
+#         if session is None:
+#             raise RuntimeError("Neo4j session is not set in ContextVar.")
+#         return session
 
-        label_list = ", ".join(sorted([r["label"] for r in labels]))
-        rel_list = ", ".join(sorted([r["relationshipType"] for r in rels]))
-        prop_list = ", ".join(sorted([r["propertyKey"] for r in props]))
+#     @classmethod
+#     def reset_session(cls: Type[_T], token: Token) -> None:
+#         cls._session_ctx.reset(token)
 
-        schema_lines.extend(
-            [
-                f"Labels: {label_list or '(none)'}",
-                f"Relationships: {rel_list or '(none)'}",
-                f"PropertyKeys: {prop_list or '(none)'}",
-            ]
-        )
+#     @classmethod
+#     @abstractmethod
+#     def _extract_cypher(cls, content: str) -> str:
+#         """cypher 파싱 코드"""
 
-        # 샘플 노드 모양
-        sample_nodes = await self.run_read(
-            """
-            MATCH (n) WITH labels(n) AS ls, keys(n) AS ks LIMIT 3
-            RETURN ls AS labels, ks AS keys
-            """
-        )
-        if sample_nodes:
-            schema_lines.append("Sample node shapes (labels, keys):")
-            for s in sample_nodes:
-                schema_lines.append(f"- {s['labels']} / {s['keys']}")
+#     @classmethod
+#     @neo4j_session_required
+#     async def asession_read(
+#         cls,
+#         session: AsyncSession,
+#         cypher: Union[str, Query],
+#         params: Optional[Mapping[str, Any]] = None,
+#     ) -> Any:
+#         """session으로 cypher read하는 함수"""
+#         params = params or {}
+#         result = await session.run(cypher, params or {})
+#         rows = []
+#         async for r in result:
+#             rows.append(r)
+#         return rows
 
-        return "\n".join(schema_lines)
+#     @classmethod
+#     @neo4j_session_required
+#     async def execute_read_tx(
+#         cls,
+#         cypher: str,
+#         session: AsyncSession,
+#         *,
+#         params: Optional[dict[str, Any]] = None,
+#     ):
+#         """
+#         읽기 전용: 트랜잭션 함수(자동 재시도) 안에서 실행.
+#         대량 결과면 스트리밍/페이징 전략을 별도 메서드로 분리해도 좋음.
+#         """
+
+#         async def work(tx: AsyncManagedTransaction):
+#             res = await tx.run(cypher, params or {})
+#             return [r async for r in res]
+
+#         return await session.execute_read(work)
+
+#     @classmethod
+#     @neo4j_session_required
+#     async def execute_write(
+#         cls,
+#         cypher: str,
+#         session: AsyncSession,
+#         *,
+#         params: Optional[dict[str, Any]] = None,
+#     ):
+#         """
+#         쓰기 전용: 트랜잭션 함수(자동 재시도) 안에서 실행.
+#         반환값: ResultSummary (consume 결과) 또는 필요시 바꿔도 됨.
+#         """
+
+#         async def work(tx: AsyncManagedTransaction):
+#             res = await tx.run(cypher, params or {})
+#             return await res.consume()
+
+#         return await session.execute_write(work)
+
+#     @classmethod
+#     @abstractmethod
+#     def get_schema(cls) -> str:
+#         """Return the schema of the Graph database"""
+
+#     @classmethod
+#     @abstractmethod
+#     def get_structured_schema(cls) -> Dict[str, Any]:
+#         """Return the schema of the Graph database"""
+#         ...
+
+#     @classmethod
+#     @abstractmethod
+#     def refresh_schema(cls) -> None:
+#         """Refresh the graph schema information."""

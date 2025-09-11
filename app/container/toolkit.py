@@ -1,25 +1,35 @@
 from dependency_injector import containers, providers
 
-from app.core.tools.map import (
-    ContractToolKit,
-    PlanToolKit,
-    MAPTools,
-)
-
+from app.core.tools.map import MAPToolkitCollectors
+from app.core.tools.search import SearchToolkitCollectors
 from configs import config as global_config
 
 
-# TODO meta 검색 툴 [cypher agent] 추가 주입 필요
+# TODO : 툴킷 콘테이너 미구현 상태, 구현 필요[미구현 이유: 툴 스코프 미정]
+
+# from app.core.tools import create_agent_tools_data
+from configs import config as global_config
+
+
+# TODO : TOOLKIT 구현 필요
 class ToolkitContainer(containers.DeclarativeContainer):
+
     clients = providers.DependenciesContainer()
+    db = providers.DependenciesContainer()
 
-    map_toolkit = providers.Factory(
-        MAPTools,
-        map_client=clients.map_api,
-        method_api_key=global_config.map_method_api_keys,
-    )
-
-    map_tools = providers.Factory(
-        lambda toolkit: toolkit.get_valid_tools(),
-        toolkit=map_toolkit,
-    )
+    # _agent_tools_data = providers.Singleton(
+    #     create_agent_tools_data,
+    #     tool_collectors=providers.List(
+    #         providers.Singleton(
+    #             MAPToolkitCollectors,
+    #             map_client=clients.map_api,
+    #             method_api_key=global_config.map_method_api_keys,
+    #         ),
+    #         providers.Singleton(
+    #             SearchToolkitCollectors,
+    #             llm=clients.openai_chat_llm,
+    #             graph_db=db.neo4j_db,
+    #             graphmodel=db.neo4j_model,
+    #         ),
+    #     ),
+    # )

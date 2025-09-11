@@ -8,8 +8,8 @@ def set_request_id(request_id: str) -> None:
     request_id_context.set(request_id)
 
 
-def reset_request_id() -> None:
-    request_id_context.set(None)
+def reset_request_id(token: Optional[str] = None) -> None:
+    request_id_context.set(token)
 
 
 def get_request_id() -> Optional[str]:

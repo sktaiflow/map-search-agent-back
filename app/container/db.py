@@ -1,25 +1,29 @@
-import aioboto3
+import asyncio
 
-from aioboto3.resources.base import ServiceResource
-from aiobotocore.client import BaseClient
+# python library 모듈
 from dependency_injector import containers, providers
 from typing import AsyncGenerator
-from app.database.postgresql import PostgreSQLEngineConfig, PostgreSQLDatabase
-from app.models.vectorstore.base import BaseModel as PGVectorModel
-from app.models.vectorstore import list_vector_store_models
+from datetime import timedelta
 
+# app 모듈
 from configs import config as global_config
 from app import logger
 
-postgresql_engine_config = PostgreSQLEngineConfig(
-    url=f"postgresql+asyncpg://{global_config.postgres_db_username}:{global_config.postgres_db_password}@{global_config.postgres_db_host}:{global_config.postgres_db_port}/{global_config.vector_store_dbname}",
-    echo=False,
-    pool_size=50,  # 기본 연결 풀 크기 (CPU 코어 수 * 2-4배)
-    max_overflow=100,  # 최대 추가 연결 수 (pool_size의 2배)
-    pool_timeout=60,  # 연결 대기 시간 (초) - 더 긴 대기 시간
-    pool_recycle=3600,  # 연결 재사용 시간 (1시간) - 더 긴 재사용 시간
-    pool_pre_ping=True,  # 연결 유효성 검사
-)
+## postgres
+from app.database.postgresql import PostgreSQLDatabase
+from app.models.vectorstore.base import BaseModel as PGVectorModel
+from app.models.vectorstore import list_vector_store_models
+
+## neo4j
+from app.models.graphmodel import AsyncGraphModel, GraphModelConfig
+from app.database.neo4j import Neo4jDatabase
+from neo4j import AsyncGraphDatabase, AsyncDriver, READ_ACCESS, WRITE_ACCESS
+from app.models.graphmodel.bootstrap import bootstrap_schema
+from app.database.neo4j import Neo4jEngineConfig
+from app.container.config import neo4jdriverconfig, graph_model_config, postgresql_engine_config
+
+# Exception
+from app.graph.exception import GraphInitError, GraphSchemaEmptyError
 
 
 async def init_pgvector_models(
@@ -34,7 +38,7 @@ async def init_pgvector_models(
             await model.create_table_and_hnsw_index(engine=engine)
         yield models
     except Exception as e:
-        logger.error(f"Error initializing PGVector models: {e}")
+        logger.error(message=f"Error initializing PGVector models", exec_info=e)
         raise
 
 
@@ -50,34 +54,102 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
     )
 
 
-from neo4j import AsyncGraphDatabase, READ_ACCESS, WRITE_ACCESS
-from app.database.neo4j import Neo4jEngineConfig
+async def init_neo4j_driver(engine_config: Neo4jEngineConfig) -> AsyncGenerator[AsyncDriver, None]:
+    def _ensure_scheme(uri: str) -> str:
+        if uri.startswith(("neo4j://", "neo4j+s://", "bolt://", "bolt+s://")):
+            return uri
 
-neo4jclientconfig = Neo4jEngineConfig(
-    uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
-    user=global_config.neo4j_username,
-    password=global_config.neo4j_password,
-    max_pool_size=50,
-    connection_timeout=0.5,
-    fetch_size=1000,
-)
+        return f"bolt://{uri}"
+
+    uri = _ensure_scheme(engine_config.uri)
+    pool_size = getattr(
+        engine_config, "max_connection_pool_size", getattr(engine_config, "max_pool_size", 50)
+    )
+
+    driver = AsyncGraphDatabase.driver(
+        uri,
+        auth=(engine_config.user, engine_config.password),
+        max_connection_pool_size=pool_size,
+        connection_timeout=engine_config.connection_timeout,
+        keep_alive=engine_config.keep_alive,
+        liveness_check_timeout=engine_config.liveness_check_timeout,
+        connection_acquisition_timeout=engine_config.connection_acquisition_timeout,
+        max_transaction_retry_time=engine_config.max_transaction_retry_time,
+        max_connection_lifetime=engine_config.max_connection_lifetime,
+        initial_retry_delay=engine_config.initial_retry_delay,
+        retry_delay_multiplier=engine_config.retry_delay_multiplier,
+        retry_delay_jitter_factor=engine_config.retry_delay_jitter_factor,
+    )
+
+    await driver.verify_connectivity()
+    # TODO: 프리워밍 코드 필요시 추가 (bootstrap_schema 안쪽에 )
+    await bootstrap_schema(driver)
+    try:
+        yield driver
+    finally:
+        await driver.close()
+
+
+async def init_neo4j_graph_cache(
+    neo4j_db: Neo4jDatabase,
+    model: AsyncGraphModel,
+) -> AsyncGenerator[None, None]:
+    try:
+        async with neo4j_db.get_async_session(mode="r") as session:
+            graph_schema = await model._get_schema_str(refresh=True)
+            if not graph_schema:
+                raise GraphSchemaEmptyError("Graph schema is empty, prewarm failed")
+            logger.info(type="graph", message="Graph schema cache prewarmed successfully")
+        yield
+
+    # TODO: graph schema cache 실패시에도 앱 서버 뜨게 할거면 코드 변경 필요합니당 (현재는 에러냄)
+    except Exception as e:
+        logger.error(
+            type="graph", message="Failed to prewarm graph schema cache in init", exec_info=e
+        )
+        raise GraphInitError(f"Failed to prewarm graph schema: {e}") from e
 
 
 class Neo4jContainer(containers.DeclarativeContainer):
 
-    driver = providers.Singleton(
-        AsyncGraphDatabase.driver,
-        uri=f"{global_config.neo4j_nlb_dns}:{global_config.neo4j_bolt_port}",
-        auth=providers.Callable(
-            lambda u, p: (u, p), global_config.neo4j_username, global_config.neo4j_password
-        ),
-        max_connection_lifetime=60,
-        max_connection_pool_size=50,
+    engine_config = providers.Object(neo4jdriverconfig)
+
+    # Driver는 리소스로 관리 (app life cycle과 수명주기 맞춤)
+    neo4j_driver = providers.Resource(
+        init_neo4j_driver,
+        engine_config=engine_config,
     )
 
-    session = providers.Resource(lambda d: _neo4j_session(d), driver)
+    neo4j_db_engine = providers.Singleton(
+        Neo4jDatabase,
+        driver=neo4j_driver,
+        engine_config=engine_config,
+        max_concurrent_sessions=providers.Callable(
+            lambda cfg: getattr(cfg, "max_concurrent_sessions", None), engine_config
+        ),
+        default_database=providers.Callable(
+            lambda cfg: getattr(cfg, "database", "neo4j"), engine_config
+        ),
+    )
 
+    graph_model_config = providers.Factory(
+        GraphModelConfig,
+        cache_schema_ttl=(
+            graph_model_config.cache_schema_ttl
+            if hasattr(neo4jdriverconfig, "cache_schema_ttl")
+            else timedelta(minutes=5)
+        ),
+        timeout=graph_model_config.timeout if hasattr(neo4jdriverconfig, "timeout") else 1.0,
+    )
 
-async def _neo4j_session(driver):
-    async with driver.session(default_access_mode=READ_ACCESS) as session:
-        yield session
+    neo4j_model = providers.Singleton(
+        AsyncGraphModel,
+        cfg=graph_model_config,
+    )
+
+    # graph schema 생성은 앱 시작시 한번 불러오기
+    graph_model_prewarm = providers.Resource(
+        init_neo4j_graph_cache,
+        neo4j_db=neo4j_db_engine,
+        model=neo4j_model,
+    )
