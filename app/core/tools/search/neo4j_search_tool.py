@@ -25,6 +25,93 @@ from app.schemas.cypher import CypherResponse
 from configs.default import BaseConfig
 
 
+class CypherDecomposer:
+    """Cypher 쿼리 분해 클래스 - case2용 조건 완화 검색"""
+
+    def __init__(self, llm: OpenAIChatLLM, cfg: BaseConfig):
+        self.llm = llm
+        self.cfg = cfg
+
+    def _match_to_where(self, cypher: str):
+        """MATCH 절의 속성값 조건을 WHERE 절로 옮기기"""
+        conds = []
+        
+        # MATCH 절에서 조건 추출
+        for alias, props in re.findall(r"\((\w+)[^{}]*\{([^}]+)\}\)", cypher):
+            for part in props.split(","):
+                if ":" in part:
+                    key, val = part.split(":", 1)
+                    conds.append(f"{alias}.{key.strip()} = {val.strip()}")
+
+        # {...} 부분 제거
+        cypher = re.sub(r"\s*\{[^}]*\}", "", cypher)
+
+        # WHERE 절 추가
+        if conds:
+            where_clause = "WHERE " + " AND ".join(conds)
+            if "WHERE" in cypher.upper():
+                cypher = re.sub(r"(?i)\bWHERE\b", where_clause + " AND ", cypher, count=1)
+            else:
+                # RETURN 앞에 WHERE 삽입
+                cypher = re.sub(r"(?i)\b(RETURN|ORDER)\b", where_clause + r" \1", cypher, count=1)
+
+        return cypher
+
+    async def decompose(self, original_question: str, base_cypher: str) -> List[str]:
+        """원본 Cypher 쿼리를 분해하여 조건을 하나씩 제거한 서브쿼리들 생성"""
+        # 전처리 (MATCH 절의 속성 필터를 WHERE 절로 이동)
+        refined_cypher = self._match_to_where(base_cypher.strip())
+
+        # 프롬프트 구성
+        system_message = (
+            "You are an expert Cypher generator. "
+            "Given an original question and a Cypher query that found no results, "
+            "generate valid Cypher sub-queries by removing exactly one filtering condition in each. "
+            "IMPORTANT RULES:\n"
+            "- Keep the exact same MATCH pattern structure\n" 
+            "- Only remove conditions from WHERE clause, never modify MATCH clause\n"
+            "- When removing a condition about node property (e.g. p.`상품명`), keep it as p.`상품명`\n"
+            "- When removing a condition about different node property (e.g. h.`혜택명`), keep it as h.`혜택명`\n"
+            "- Do NOT change node aliases or property references\n"
+            "- Do NOT move properties between different nodes\n"
+            "Return ONLY a JSON array of the Cypher strings."
+        )
+
+        user_message = (
+            f"Original question: {original_question}\n"
+            f"Failed Cypher: {refined_cypher}\n\n"
+            f"Generate sub-queries by removing one condition each time."
+        )
+
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message},
+        ]
+
+        try:
+            # LLM 호출
+            llm_response = await self.llm.agenerate_response(
+                messages=messages,
+                model=self.cfg.llm_model,
+                temperature=0.0,
+                max_tokens=1000,
+                response_format={"type": "json_object"},
+                seed=0,
+            )
+
+            # JSON 파싱
+            content = llm_response.message.strip()
+            sub_queries = json.loads(content)
+            return sub_queries if isinstance(sub_queries, list) else []
+
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON 디코딩 에러: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"CypherDecomposer 오류: {e}")
+            return []
+
+
 class Neo4jSearchRequest(BaseModel):
     """
     Neo4j 자연어 검색 요청 스키마
@@ -52,92 +139,6 @@ class Neo4jSearchTool(StandardizedTool):
     4. Neo4j에서 Cypher 실행
     5. 실패시 조건 완화 검색 (case 2)
     """
-    
-    class CypherDecomposer:
-        """Cypher 쿼리 분해 클래스 - case2용 조건 완화 검색"""
-
-        def __init__(self, llm: OpenAIChatLLM, cfg: BaseConfig):
-            self.llm = llm
-            self.cfg = cfg
-
-        def _match_to_where(self, cypher: str):
-            """MATCH 절의 속성값 조건을 WHERE 절로 옮기기"""
-            conds = []
-            
-            # MATCH 절에서 조건 추출
-            for alias, props in re.findall(r"\((\w+)[^{}]*\{([^}]+)\}\)", cypher):
-                for part in props.split(","):
-                    if ":" in part:
-                        key, val = part.split(":", 1)
-                        conds.append(f"{alias}.{key.strip()} = {val.strip()}")
-
-            # {...} 부분 제거
-            cypher = re.sub(r"\s*\{[^}]*\}", "", cypher)
-
-            # WHERE 절 추가
-            if conds:
-                where_clause = "WHERE " + " AND ".join(conds)
-                if "WHERE" in cypher.upper():
-                    cypher = re.sub(r"(?i)\bWHERE\b", where_clause + " AND ", cypher, count=1)
-                else:
-                    # RETURN 앞에 WHERE 삽입
-                    cypher = re.sub(r"(?i)\b(RETURN|ORDER)\b", where_clause + r" \1", cypher, count=1)
-
-            return cypher
-
-        async def decompose(self, original_question: str, base_cypher: str) -> List[str]:
-            """원본 Cypher 쿼리를 분해하여 조건을 하나씩 제거한 서브쿼리들 생성"""
-            # 전처리 (MATCH 절의 속성 필터를 WHERE 절로 이동)
-            refined_cypher = self._match_to_where(base_cypher.strip())
-
-            # 프롬프트 구성
-            system_message = (
-                "You are an expert Cypher generator. "
-                "Given an original question and a Cypher query that found no results, "
-                "generate valid Cypher sub-queries by removing exactly one filtering condition in each. "
-                "IMPORTANT RULES:\n"
-                "- Keep the exact same MATCH pattern structure\n" 
-                "- Only remove conditions from WHERE clause, never modify MATCH clause\n"
-                "- When removing a condition about node property (e.g. p.`상품명`), keep it as p.`상품명`\n"
-                "- When removing a condition about different node property (e.g. h.`혜택명`), keep it as h.`혜택명`\n"
-                "- Do NOT change node aliases or property references\n"
-                "- Do NOT move properties between different nodes\n"
-                "Return ONLY a JSON array of the Cypher strings."
-            )
-
-            user_message = (
-                f"Original question: {original_question}\n"
-                f"Failed Cypher: {refined_cypher}\n\n"
-                f"Generate sub-queries by removing one condition each time."
-            )
-
-            messages = [
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message},
-            ]
-
-            try:
-                # LLM 호출
-                llm_response = await self.llm.agenerate_response(
-                    messages=messages,
-                    model=self.cfg.llm_model,
-                    temperature=0.0,
-                    max_tokens=1000,
-                    response_format={"type": "json_object"},
-                    seed=0,
-                )
-
-                # JSON 파싱
-                content = llm_response.message.strip()
-                sub_queries = json.loads(content)
-                return sub_queries if isinstance(sub_queries, list) else []
-
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON 디코딩 에러: {e}")
-                return []
-            except Exception as e:
-                logger.error(f"CypherDecomposer 오류: {e}")
-                return []
     
     name: str = "neo4j_search"
     description: str = (
@@ -204,7 +205,7 @@ class Neo4jSearchTool(StandardizedTool):
             # Case 2: 검색 실패시 조건 완화 검색 적용 (expand_search=True인 경우만)
             if expand_search:
                 # CypherDecomposer를 사용하여 조건 분해
-                decomposer = self.CypherDecomposer(llm=self.llm, cfg=self.cfg)
+                decomposer = CypherDecomposer(llm=self.llm, cfg=self.cfg)
                 sub_queries = await decomposer.decompose(
                     original_question=query,
                     base_cypher=cypher
