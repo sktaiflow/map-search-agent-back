@@ -1,7 +1,7 @@
 import os
+from typing import Any, ClassVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import ClassVar, Any
 
 from utils.enums import StrEnum
 
@@ -20,7 +20,7 @@ class BaseConfig(BaseSettings):
         """
 
     model_config = SettingsConfigDict(
-        env_file=f".env",
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -42,23 +42,9 @@ class BaseConfig(BaseSettings):
     map_base_url: str = ""
     map_api_key: str = ""
 
-    map_method_api_key_contract_mobile_device: str = ""
-    map_method_api_key_account_payment: str = ""
-    map_method_api_key_plan_benefit: str = ""
-    map_method_api_key_rate_usage: str = ""
-    map_method_api_key_data_refill: str = ""
-    map_method_api_key_contract_customer: str = ""
     map_method_api_key_plan_add_on: str = ""
     map_method_api_key_plan_basic: str = ""
-    map_method_api_key_rate_limit: str = ""
-    map_method_api_key_data_gift: str = ""
     map_method_api_key_contract_mobile: str = ""
-    map_method_api_key_account_bill: str = ""
-
-    map_method_api_keys: dict = {
-        "ContractToolKit": "",  # contract 관련
-        "PlanToolKit": "",  # plan 관련
-    }
 
     # synonym api config
     synonym_base_url: str = ""

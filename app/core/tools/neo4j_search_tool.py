@@ -10,7 +10,7 @@ import re
 import time
 from typing import Any, Dict, List, Type
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app import logger
 from app.core.prompts import CYPHER_GENERATION_PROMPT
@@ -21,7 +21,7 @@ from app.llms.embedding_llm_http import OpenAIEmbeddingModel
 from app.llms.llm_http import OpenAIChatLLM
 from app.models.graphmodel.graph import AsyncGraphModel
 from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
-from app.schemas.cypher import CypherResponse
+from app.schemas.cypher import CypherResponse, Neo4jSearchRequest
 from configs.default import BaseConfig
 
 
@@ -100,7 +100,7 @@ class CypherDecomposer:
             )
 
             # JSON 파싱
-            content = llm_response.message.strip()
+            content = (llm_response.message or "").strip()
             sub_queries = json.loads(content)
             return sub_queries if isinstance(sub_queries, list) else []
 
@@ -110,22 +110,6 @@ class CypherDecomposer:
         except Exception as e:
             logger.error(f"CypherDecomposer 오류: {e}")
             return []
-
-
-class Neo4jSearchRequest(BaseModel):
-    """
-    Neo4j 자연어 검색 요청 스키마
-    사용자의 자연어 질문을 받아서 Neo4j 그래프 데이터베이스 검색
-    """
-    query: str = Field(
-        ...,
-        description="자연어 검색 쿼리",
-        examples=["무제한 데이터 요금제 찾아줘", "할인 혜택이 있는 상품 보여줘"]
-    )
-    expand_search: bool = Field(
-        default=True,
-        description="검색 실패시 조건 완화 검색 수행 여부 (case1: 정확매치, case2: 조건완화)"
-    )
 
 
 class Neo4jSearchTool(StandardizedTool):
@@ -190,17 +174,15 @@ class Neo4jSearchTool(StandardizedTool):
             
             # Case 1: 기본 검색 성공
             if raw_result and raw_result.get("data") and len(raw_result["data"]) > 0:
-                return {
+                response = {
                     "case": "1",
                     "cypher": cypher,
-                    "result": "검색 성공",
-                    "raw_data": raw_result["data"],
-                    "execution_time_ms": execution_time,
-                    "result_metadata": {
-                        "validated": True,
-                        "search_strategy": "exact_match"
-                    }
+                    "data": raw_result["data"],
+                    "message": "검색 성공",
+                    "record_count": len(raw_result["data"]),
+                    "execution_time": execution_time
                 }
+                return self._validate_response(response)
             
             # Case 2: 검색 실패시 조건 완화 검색 적용 (expand_search=True인 경우만)
             if expand_search:
@@ -224,48 +206,45 @@ class Neo4jSearchTool(StandardizedTool):
 
                 total_execution_time = int((time.time() - start_time) * 1000)
 
-                return {
+                # cypher_results를 평탄화하여 data로 변환
+                flattened_data = []
+                for result_list in cypher_results:
+                    flattened_data.extend(result_list)
+                
+                response = {
                     "case": "2",
                     "cypher": sub_queries,  # 리스트!
-                    "result": "조건 완화 검색 수행",
-                    "raw_data": cypher_results,  # 리스트의 리스트!
-                    "execution_time_ms": total_execution_time,
-                    "result_metadata": {
-                        "validated": True,
-                        "search_strategy": "condition_relaxation",
-                        "sub_queries_count": len(sub_queries)
-                    }
+                    "data": flattened_data,
+                    "message": "조건 완화 검색 수행",
+                    "record_count": len(flattened_data),
+                    "execution_time": total_execution_time
                 }
+                return self._validate_response(response)
 
             # expand_search=False인데 실패한 경우
             else:
-                return {
+                response = {
                     "case": "1",
                     "cypher": cypher,
-                    "result": "검색 결과가 없습니다.",
-                    "raw_data": [],
-                    "execution_time_ms": execution_time,
-                    "result_metadata": {
-                        "validated": True,
-                        "search_strategy": "exact_match_only",
-                        "no_results": True
-                    }
+                    "data": [],
+                    "message": "검색 결과가 없습니다.",
+                    "record_count": 0,
+                    "execution_time": execution_time
                 }
+                return self._validate_response(response)
 
         except Exception as e:
             execution_time = int((time.time() - start_time) * 1000)
             logger.error(f"Neo4j 검색 실패: {str(e)}", exc_info=e)
-            return {
+            response = {
                 "case": "1",
                 "cypher": "",
-                "result": f"검색 실행 중 오류 발생: {str(e)}",
-                "raw_data": [],
-                "execution_time_ms": execution_time,
-                "result_metadata": {
-                    "validated": False,
-                    "error": str(e)
-                }
+                "data": [],
+                "message": f"검색 실행 중 오류 발생: {str(e)}",
+                "record_count": 0,
+                "execution_time": execution_time
             }
+            return self._validate_response(response)
     
     async def _embed_query(self, query: str) -> List[float]:
         """
@@ -363,30 +342,3 @@ class Neo4jSearchTool(StandardizedTool):
                 "message": "검색 성공", 
                 "record_count": 1 if raw_result else 0
             }
-
-
-# ============================================================================
-# 백업: 기존 graph_tool.py의 CypherQAChainTool (제거됨)
-# 제거 이유: 비동기 지원 부족, 미완성 상태, Neo4jSearchTool로 대체
-# ============================================================================
-"""
-class CypherQAChainTool(SafeValidationTool):
-    # Neo4j Cypher 쿼리를 실행하는 도구 (GraphCypherQAChain 기반)
-
-    name: str = "CypherSearchTool"
-    description: str = "자연어 쿼리를 Cypher로 변환하여 Neo4j 그래프 데이터베이스를 검색합니다"
-    args_schema: Type[BaseModel] = CypherRequest
-    response_model: Type[BaseModel] = CypherResponse
-    status: bool = False  # 비활성화됨
-    agent: GraphCypherQAChain
-    cfg: BaseConfig
-
-    def _run(self, query: str) -> str:
-        raise NotImplementedError("이 도구는 비동기 실행만 지원합니다. _arun을 사용하세요.")
-
-    # TODO 아직 미완성 코드 (구현후 사용하려면 status 값 바꾸기 -> 이부분 제대로 쓰려면 Neo4jGraph 사용할떄 driver config도 전부 지정 필요함. 안그럼 터집니다)
-    async def _arun(self, query: str, params: dict = {}) -> str:
-        resp = await self.agent.ainvoke({"query": query})
-        result_json = json.dumps(resp["result"], ensure_ascii=False, indent=2)
-        return result_json
-"""
