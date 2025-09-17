@@ -1,58 +1,51 @@
 from dependency_injector import containers, providers
 
-from app.core.tools import ToolExecutor
-from app.core.tools.map import MAPToolkitCollectors
-from app.core.tools.search import SearchToolkitCollectors
-from app.core.tools.search.graph_tool import CypherRunTool
-from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
+from app.core.tools.map_api_tools import (
+    CheckPlanEligibilityTool,
+    GetContractServicesTool,
+    GetPlanSubscriptionsTool,
+)
+from app.core.tools.neo4j_search_tool import Neo4jSearchTool
 from configs import config as global_config
 
 
-# 여러 외부 리소스를 조합해 에이전트가 사용할 툴 모음을 제공하는 컨테이너
 class ToolkitContainer(containers.DeclarativeContainer):
 
     clients = providers.DependenciesContainer()
     pgvector_container = providers.DependenciesContainer()
     neo4j_container = providers.DependenciesContainer()
 
-    semantic_model = providers.Object(SemanticSearchModel)
-    config_obj = providers.Object(global_config)
-
-    map_tool_collector = providers.Singleton(
-        MAPToolkitCollectors,
+    # MAP API 툴들 - 각각 올바른 method_api_key 주입
+    get_contract_services_tool = providers.Singleton(
+        GetContractServicesTool,
         map_client=clients.map_api,
+        method_api_key=global_config.map_method_api_key_contract_mobile,
     )
 
-    search_tool_collector = providers.Singleton(
-        SearchToolkitCollectors,
+    get_plan_subscriptions_tool = providers.Singleton(
+        GetPlanSubscriptionsTool,
+        map_client=clients.map_api,
+        method_api_key=global_config.map_method_api_key_plan_add_on,
+    )
+
+    check_plan_eligibility_tool = providers.Singleton(
+        CheckPlanEligibilityTool,
+        map_client=clients.map_api,
+        method_api_key=global_config.map_method_api_key_plan_basic,
+    )
+
+    # Neo4j Search 툴
+    neo4j_search_tool = providers.Singleton(
+        Neo4jSearchTool,
         llm=clients.openai_chat_llm,
-        graph_db=neo4j_container.neo4j_db_engine,
-        graphmodel=neo4j_container.neo4j_model,
-        postgres_db=pgvector_container.postgres_db,
-        vectormodel=semantic_model,
-        llm_embedding=clients.embedding_model,
-        cfg=config_obj,
+        graph_db=db.neo4j_db,
+        graphmodel=db.neo4j_model,
     )
 
-    cypher_tool_factory = providers.Factory(
-        CypherRunTool,
-        llm=clients.openai_chat_llm,
-        llm_embedding=clients.embedding_model,
-        neo4j_db=neo4j_container.neo4j_db_engine,
-        postgres_db=pgvector_container.postgres_db,
-        graphmodel=neo4j_container.neo4j_model,
-        vectormodel=semantic_model,
-        cfg=config_obj,
+    # 활성화된 모든 툴들 (status=True인 것만)
+    all_active_tools = providers.List(
+        get_contract_services_tool,
+        get_plan_subscriptions_tool,
+        check_plan_eligibility_tool,
+        neo4j_search_tool,
     )
-
-    tool_collectors = providers.List(map_tool_collector, search_tool_collector)
-
-    tool_executor = providers.Singleton(
-        ToolExecutor,
-        collectors=tool_collectors,
-        extra_tools=providers.List(cypher_tool_factory),
-    )
-
-    tools = tool_executor.provided.get_tools.call()
-    openai_tools = tool_executor.provided.get_openai_tools.call()
-    tool_descriptions = tool_executor.provided.get_tools_description.call()

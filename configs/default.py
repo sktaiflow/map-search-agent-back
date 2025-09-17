@@ -1,8 +1,8 @@
 import os
+from typing import Any, ClassVar
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import ClassVar, Any
 
 from utils.enums import StrEnum
 
@@ -45,33 +45,13 @@ class BaseConfig(BaseSettings):
     map_base_url: str = ""
     map_api_key: str = ""
 
-    map_method_api_key_contract_mobile_device: str = ""
-    map_method_api_key_account_payment: str = ""
-    map_method_api_key_plan_benefit: str = ""
-    map_method_api_key_rate_usage: str = ""
-    map_method_api_key_data_refill: str = ""
-    map_method_api_key_contract_customer: str = ""
     map_method_api_key_plan_add_on: str = ""
     map_method_api_key_plan_basic: str = ""
-    map_method_api_key_rate_limit: str = ""
-    map_method_api_key_data_gift: str = ""
     map_method_api_key_contract_mobile: str = ""
-    map_method_api_key_account_bill: str = ""
-
-    map_method_api_keys: dict = {
-        "contracttoolkit": "",  # contract 관련
-        "plantoolkit": "",  # plan 관련
-    }
 
     # synonym api config
     synonym_base_url: str = ""
     synonym_api_key: str = ""
-
-    # postgres config
-    # vector_store_host: str
-    # vector_store_port: int = 5432
-    # vector_store_user: str
-    # vector_store_password: str
 
     # pg vector store config
     vector_store_collection_name: str = "map-vector-store"
@@ -82,10 +62,10 @@ class BaseConfig(BaseSettings):
     vector_store_diskann: bool = False
     vector_store_hnsw: bool = True
 
-    postgres_db_host: str
+    postgres_db_host: str = ""
     postgres_db_port: int = 5432
-    postgres_db_username: str
-    postgres_db_password: str
+    postgres_db_username: str = ""
+    postgres_db_password: str = ""
 
     # pg vector
     m: int = 16
