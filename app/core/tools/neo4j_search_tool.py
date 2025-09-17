@@ -129,8 +129,8 @@ class Neo4jSearchTool(StandardizedTool):
         "자연어 쿼리를 Neo4j 그래프 데이터베이스에서 검색합니다. "
         "상품 정보, 요금제, 할인 혜택 등을 자연어로 질문하면 관련 데이터를 찾아드립니다."
     )
-    args_schema: Type[BaseModel] = Neo4jSearchRequest
-    response_model: Type[BaseModel] = CypherResponse
+    args_schema: Any = Neo4jSearchRequest
+    response_model: Any = CypherResponse
     status: bool = True
     
     # 의존성 주입될 컴포넌트들

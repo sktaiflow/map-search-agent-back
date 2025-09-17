@@ -26,8 +26,8 @@ class GetContractServicesTool(StandardizedTool):
         "서비스관리번호별 서비스/청구/고객 정보를 조회합니다. "
         "SKT 회선이 아닌 경우 빈 객체를 반환합니다."
     )
-    args_schema: Type[BaseModel] = UserIdInput
-    response_model: Type[BaseModel] = MobileService
+    args_schema: Any = UserIdInput
+    response_model: Any = MobileService
     status: bool = True
     
     # 의존성 주입될 컴포넌트들
@@ -67,7 +67,7 @@ class GetPlanSubscriptionsTool(StandardizedTool):
         "고객 기준으로 최대 10개 회선에 대해 가입된 모든 상품 목록을 조회합니다. "
         "현재 이용 중인 요금제와 부가서비스를 확인할 수 있습니다."
     )
-    args_schema: Type[BaseModel] = UserIdInput
+    args_schema: Any = UserIdInput
     response_model: Any = List[AddOnDetailSubscriptions]
     status: bool = True
     
@@ -109,8 +109,8 @@ class CheckPlanEligibilityTool(StandardizedTool):
         "단말기 키워드가 입력되는 경우는 기변으로 간주하여 처리하되 "
         "키워드와 유사한 단말 정보가 없는 경우는 에러로 반환합니다."
     )
-    args_schema: Type[BaseModel] = PlanSubscriptionPreviewInput
-    response_model: Type[BaseModel] = PlanSubscriptionPreview
+    args_schema: Any = PlanSubscriptionPreviewInput
+    response_model: Any = PlanSubscriptionPreview
     status: bool = True
     
     # 의존성 주입될 컴포넌트들
