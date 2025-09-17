@@ -50,12 +50,6 @@ class BaseConfig(BaseSettings):
     synonym_base_url: str = ""
     synonym_api_key: str = ""
 
-    # postgres config
-    # vector_store_host: str
-    # vector_store_port: int = 5432
-    # vector_store_user: str
-    # vector_store_password: str
-
     # pg vector store config
     vector_store_collection_name: str = "map-vector-store"
     vector_store_provider: str = "pgvector"
@@ -65,10 +59,10 @@ class BaseConfig(BaseSettings):
     vector_store_diskann: bool = False
     vector_store_hnsw: bool = True
 
-    postgres_db_host: str
+    postgres_db_host: str = ""
     postgres_db_port: int = 5432
-    postgres_db_username: str
-    postgres_db_password: str
+    postgres_db_username: str = ""
+    postgres_db_password: str = ""
 
     # pg vector
     m: int = 16
