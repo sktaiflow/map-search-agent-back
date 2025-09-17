@@ -18,9 +18,11 @@ class GraphContainer(containers.DeclarativeContainer):
         embed_client=client_container.embedding_model,
         postgres_db=pgvector_container.postgres_db,
         pgvector_models=pgvector_container.pgvector_models,
-        neo4j_client=neo4j_container,
+        # TODO: 그냥 neo4j_container가 가는게 맞는건지 .neo4j_db_engine가 가는게 맞는건지 확인 필요
+        neo4j_client=neo4j_container.neo4j_db_engine,
+        # TODO: 아래 둘의 차이가 뭐지..? 아래껀 원래 openai_tools 였음
         toolkit=toolkit_container.tool_executor,
-        tools=toolkit_container.openai_tools,
+        tools=toolkit_container.tools,
     )
 
     memory_saver = providers.Factory(MemorySaver)

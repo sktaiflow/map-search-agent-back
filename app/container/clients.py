@@ -42,7 +42,9 @@ class ClientContainer(containers.DeclarativeContainer):
         http_client=providers.Resource(
             init_http_client,
             limits=httpx.Limits(
-                max_connections=2048, max_keepalive_connections=2048, keepalive_expiry=10
+                max_connections=2048,
+                max_keepalive_connections=2048,
+                keepalive_expiry=10,
             ),
             timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=0.5),
             retry=Retry(total=1, base=0.15, cap=0.25),
@@ -56,7 +58,9 @@ class ClientContainer(containers.DeclarativeContainer):
         http_client=providers.Resource(
             init_http_client,
             limits=httpx.Limits(
-                max_connections=2048, max_keepalive_connections=2048, keepalive_expiry=10
+                max_connections=2048,
+                max_keepalive_connections=2048,
+                keepalive_expiry=10,
             ),
             timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=0.5),
             retry=Retry(total=1, base=0.25, cap=0.75),
@@ -75,7 +79,9 @@ class ClientContainer(containers.DeclarativeContainer):
             base_url=f"{global_config.openai_api_base}",
             api_key=global_config.openai_api_key,
             limits=httpx.Limits(
-                max_keepalive_connections=2048, max_connections=2048, keepalive_expiry=10
+                max_keepalive_connections=2048,
+                max_connections=2048,
+                keepalive_expiry=10,
             ),
             timeout=httpx.Timeout(pool=1.0, connect=1.0, read=14.0, write=None),
         ),
@@ -86,9 +92,13 @@ class ClientContainer(containers.DeclarativeContainer):
         http_client=providers.Resource(
             init_http_client,
             limits=httpx.Limits(
-                max_keepalive_connections=2048, max_connections=2048, keepalive_expiry=10
+                max_keepalive_connections=2048,
+                max_connections=2048,
+                keepalive_expiry=10,
             ),
-            timeout=ClientTimeout(connect=1.0, sock_connect=1.0, sock_read=3.5, ceil_threshold=1),
+            timeout=ClientTimeout(
+                connect=1.0, sock_connect=1.0, sock_read=3.5, ceil_threshold=1
+            ),
             retry=Retry(total=1, base=0.25, cap=0.75, retry_on_read_timeout=True),
         ),
         host=global_config.openai_api_base,

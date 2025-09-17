@@ -25,7 +25,7 @@ class UserIdInput(BaseModel):
 # TODO: 필요시 responeFormat -> HttpBaseClientResponse 로 변경
 class GetContractMobileContractDevicesTool(SafeValidationTool):
     name: str = "get_contract_mobile_contract_devices"
-    description: str = "무선 회선에 대한 기본 가입정보를 조회한다."
+    description: str = "고객에 대한 기본 정보(나이, 성별, 가입 정보 등)를 조회한다."
     args_schema: ArgsSchema | None = UserIdInput
     response_model: Type[BaseModel] = MobileContractDevice
     map_client: MAPClient
@@ -37,7 +37,9 @@ class GetContractMobileContractDevicesTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"contract/mobile-contract_{self.method_api_key}/devices"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         response_data = response.json()
         if isinstance(response_data, dict):
             return self._validate_response(response_data)
@@ -61,7 +63,9 @@ class GetContractMobileContractRemainedContractsTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"contract/mobile-contract_{self.method_api_key}/remained-contracts"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         response_data = response.json()
         return self._validate_response(response_data)
 
@@ -80,7 +84,9 @@ class GetContractMobileContractNoContractPointsTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"contract/mobile-contract_{self.method_api_key}/no-contract-points"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         response_data = response.json()
         return self._validate_response(response_data)
 
@@ -101,7 +107,9 @@ class GetContractMobileContractDeviceContractsTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"contract/mobile-contract_{self.method_api_key}/device-contracts"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         return self._validate_response(response)
 
 
@@ -121,7 +129,9 @@ class GetContractMobileContractServicesTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"contract/mobile-contract_{self.method_api_key}/services"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         return self._validate_response(response)
 
 
@@ -149,7 +159,7 @@ class ContractToolKit(MAPBaseToolKit):
             raise
 
     def _verify_method_api_key(self) -> str:
-        method_api_key = self.cfg.map_method_api_keys.get(self.name, None)
+        method_api_key = self.cfg.map_method_api_keys.get(self.name.lower(), None)
         if not method_api_key:
             raise KeyError(f"Method api key for {self.name} not found in config")
         return method_api_key

@@ -1,7 +1,7 @@
 import json
-from typing import Any, List, Type, Union, Optional
+from typing import Any, Dict, List, Optional, Sequence, Type, Union
 
-from langchain_core.tools import BaseTool, ArgsSchema
+from langchain_core.tools import ArgsSchema, BaseTool
 from pydantic import BaseModel, Field
 
 from app.core.tools.utils import SafeValidationTool
@@ -15,11 +15,11 @@ from app.models.graphmodel.graph import AsyncGraphModel
 from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
 from app import logger
 
-from typing import Dict, Sequence
-from configs.default import BaseConfig
 from configs import config as global_config
-from app.core.prompts import CYPHER_GENERATION_PROMPT
+from configs.default import BaseConfig
 from langchain_neo4j import GraphCypherQAChain, Neo4jGraph
+
+from app.core.prompts import CYPHER_GENERATION_PROMPT
 from app.database.postgresql import PostgreSQLDatabase
 
 
@@ -47,15 +47,28 @@ class CypherRunTool(SafeValidationTool):
     neo4j_db: Neo4jDatabase
     postgres_db: PostgreSQLDatabase
     graphmodel: AsyncGraphModel
-    vectormodel: SemanticSearchModel
+    vectormodel: type[SemanticSearchModel]
     cfg: BaseConfig
 
     def _run(self, query: str) -> str:
-        raise NotImplementedError("이 도구는 비동기 실행만 지원합니다. _arun을 사용하세요.")
+        raise NotImplementedError(
+            "이 도구는 비동기 실행만 지원합니다. _arun을 사용하세요."
+        )
 
-    async def _generate_cypher(self, query: str, fewshot_examples: str) -> str | None:
+    async def _generate_cypher(
+        self,
+        query: str,
+        fewshot_examples: str,
+        *,
+        database: Optional[str] = None,
+        access_mode: str = "r",
+    ) -> Dict[str, Any] | None:
 
-        graph_schema = await self.graphmodel.get_schema()
+        async with self.neo4j_db.get_async_session(
+            mode=access_mode,
+            database=database,
+        ) as session:
+            graph_schema = await self.graphmodel.get_schema(session=session)
         prompt = CYPHER_GENERATION_PROMPT.partial(
             schema=graph_schema, question=query, fewshot_examples=fewshot_examples
         )
@@ -75,42 +88,130 @@ class CypherRunTool(SafeValidationTool):
             response_format={"type": "json_object"},
             seed=0,
         )
-        return llm_response.message
 
-    async def _execute_cypher(self, cypher: str, params: dict = {}) -> str:
-        return await self.graphmodel.execute_read_tx(cypher=cypher, params=params)
+        if not llm_response.message:
+            return None
+
+        try:
+            return json.loads(llm_response.message)
+        except json.JSONDecodeError:
+            return {"cypher": llm_response.message.strip()}
+
+    async def _execute_cypher(
+        self,
+        cypher: str,
+        params: Dict[str, Any] | None = None,
+        *,
+        database: Optional[str] = None,
+        access_mode: str = "r",
+    ) -> Any:
+        async with self.neo4j_db.get_async_session(
+            mode=access_mode,
+            database=database,
+        ) as session:
+            return await self.graphmodel.execute_read_tx(
+                session=session,
+                cypher=cypher,
+                params=params or {},
+            )
 
     async def _embed_query(self, query: str) -> List[float]:
         embedding_obj = await self.llm_embedding.aembed(query)
         return embedding_obj.embeddings[0]
 
-    async def _retrieve_fewshot_examples(self, embedding: List[float]) -> List[str]:
+    async def _retrieve_fewshot_examples(
+        self, embedding: List[float], limit: int = 3
+    ) -> List[Dict[str, Any]]:
         async with self.postgres_db.get_async_session() as session:
             retrieved_examples = await self.vectormodel.asearch_by_vector(
-                session=session, embedding=embedding, similarity_cutoff=0.0
+                session=session,
+                embedding=embedding,
+                limit=limit,
+                similarity_cutoff=0.0,
             )
-        return retrieved_examples
 
-    async def _arun(self, query: str, params: dict = {}, fewshot_examples: str = "") -> str:
+        examples: List[Dict[str, Any]] = []
+        for record, score in retrieved_examples:
+            question = getattr(record, "query", None)
+            cypher = getattr(record, "cypher_query", None)
+            if question and cypher:
+                examples.append(
+                    {
+                        "question": question,
+                        "cypher": cypher,
+                        "score": score,
+                    }
+                )
+        return examples
+
+    async def _arun(
+        self,
+        query: str,
+        params: Optional[Dict[str, Any]] = None,
+        database: Optional[str] = None,
+        access_mode: str = "r",
+    ) -> Dict[str, Any]:
+        params = params or {}
+        fewshot_payload = "[]"
+
         try:
-            cypher_query = await self._generate_cypher(query, fewshot_examples)
-            # TODO 없으면 어떡할지 구현 필요
-            if not cypher_query:
+            embedding = await self._embed_query(query)
+            examples = await self._retrieve_fewshot_examples(embedding)
+        except Exception as exc:  # noqa: BLE001
+            logger.warn(
+                message="fewshot 예시 생성에 실패했습니다.",
+                exc_info=exc,
+                type="fewshot",
+            )
+            examples = []
+
+        if examples:
+            fewshot_payload = json.dumps(examples, ensure_ascii=False)
+
+        try:
+            generated = await self._generate_cypher(
+                query,
+                fewshot_payload,
+                database=database,
+                access_mode=access_mode,
+            )
+            if not generated:
                 raise ValueError("Cypher generation failed")
 
-            cypher_result = await self._execute_cypher(cypher_query, params)
-            return cypher_result
+            cypher_query = generated.get("cypher") or generated.get("query")
+            if not cypher_query:
+                raise ValueError("생성된 결과에서 cypher 구문을 찾지 못했습니다.")
 
-        except Exception as e:
-            logger.error(message=f"Cypher search error: {e}", exc_info=e)
-            raise e
+            generated_params = generated.get("params") or {}
+            merged_params = {**generated_params, **params}
+
+            cypher_result = await self._execute_cypher(
+                cypher_query,
+                merged_params,
+                database=database,
+                access_mode=access_mode,
+            )
+
+            return {
+                "cypher": cypher_query,
+                "params": merged_params,
+                "result": cypher_result,
+                "fewshot_examples": examples,
+                "input_query": query,
+            }
+
+        except Exception as error:  # noqa: BLE001
+            logger.error(message=f"Cypher search error: {error}", exc_info=error)
+            raise
 
 
 class CypherQAChainTool(SafeValidationTool):
     """Neo4j Cypher 쿼리를 실행하는 도구"""
 
     name: str = "CypherSearchTool"
-    description: str = "자연어 쿼리를 Cypher로 변환하여 Neo4j 그래프 데이터베이스를 검색합니다"
+    description: str = (
+        "자연어 쿼리를 Cypher로 변환하여 Neo4j 그래프 데이터베이스를 검색합니다"
+    )
     args_schema: Type[BaseModel] = CypherRequest
     response_model: Type[BaseModel] = CypherResponse
     status: bool = False
@@ -118,7 +219,9 @@ class CypherQAChainTool(SafeValidationTool):
     cfg: BaseConfig
 
     def _run(self, query: str) -> str:
-        raise NotImplementedError("이 도구는 비동기 실행만 지원합니다. _arun을 사용하세요.")
+        raise NotImplementedError(
+            "이 도구는 비동기 실행만 지원합니다. _arun을 사용하세요."
+        )
 
     # TODO 아직 미완성 코드 (구현후 사용하려면 status 값 바꾸기 -> 이부분 제대로 쓰려면 Neo4jGraph 사용할떄 driver config도 전부 지정 필요함 (안그럼 터집니다.)
     async def _arun(self, query: str, params: dict = {}) -> str:
@@ -138,7 +241,7 @@ class GraphSearchToolKit(SearchBaseToolKit):
         graphmodel: Union[AsyncGraphModel, Neo4jGraph],
         graph_db: Neo4jDatabase,
         postgres_db: PostgreSQLDatabase,
-        vectormodel: SemanticSearchModel,
+        vectormodel: type[SemanticSearchModel],
         llm_embedding: OpenAIEmbeddingModel,
         cfg: Optional[BaseConfig] = None,
     ):

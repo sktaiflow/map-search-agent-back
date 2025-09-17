@@ -3,7 +3,11 @@ from typing import Any, List, Type, Optional
 from langchain_core.tools import BaseTool, ArgsSchema
 from pydantic import BaseModel, Field
 
-from app.schemas.map.plan import AddOnSubscriptions, AddOnDetailSubscriptions, AddOnHistory
+from app.schemas.map.plan import (
+    AddOnSubscriptions,
+    AddOnDetailSubscriptions,
+    AddOnHistory,
+)
 from app.clients.map import MAPClient
 from app.core.tools.utils import SafeValidationTool
 from app.core.tools.map.base import MAPBaseToolKit
@@ -30,14 +34,18 @@ class GetPlanAddOnAddOnSubscriptionsTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"plan/add-on_{self.method_api_key}/add-on-subscriptions"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         response_data = response.json()
         return self._validate_response(response_data)
 
 
 class GetPlanAddOnSubscriptionsTool(SafeValidationTool):
     name: str = "get_plan_add_on_subscriptions"
-    description: str = "고객 기준으로 최대 10개 회선에 대해 가입된 모든 상품 목록을 조회한다."
+    description: str = (
+        "고객 기준으로 최대 10개 회선에 대해 가입된 모든 상품 목록을 조회한다."
+    )
     args_schema: ArgsSchema | None = UserIdInput
     map_client: MAPClient
     method_api_key: str
@@ -49,7 +57,9 @@ class GetPlanAddOnSubscriptionsTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> list:
         endpoint = f"plan/add-on_{self.method_api_key}/subscriptions"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         return self._validate_response(response)
 
 
@@ -67,7 +77,9 @@ class GetPlanAddOnHistoriesTool(SafeValidationTool):
 
     async def _arun(self, user_id: str) -> dict:
         endpoint = f"plan/add-on_{self.method_api_key}/histories"
-        response = await self.map_client._request("GET", endpoint, params={"svcMgmtNum": user_id})
+        response = await self.map_client._request(
+            "GET", endpoint, params={"svcMgmtNum": user_id}
+        )
         return self._validate_response(response)
 
 
@@ -75,7 +87,9 @@ class PlanToolKit(MAPBaseToolKit):
     """요금제 관련 도구들을 관리하는 툴킷 -> method_api_key 공유하는 도구만 모아둬야함"""
 
     name: str = "PlanToolKit"
-    description: str = "Plan 관련 도구들을 관리하는 툴킷 method_api_key 공유하는 도구만 모아둬야함"
+    description: str = (
+        "Plan 관련 도구들을 관리하는 툴킷 method_api_key 공유하는 도구만 모아둬야함"
+    )
     cfg: BaseConfig = global_config
 
     def __init__(self, map_client):
@@ -93,7 +107,7 @@ class PlanToolKit(MAPBaseToolKit):
             raise
 
     def _verify_method_api_key(self) -> str:
-        method_api_key = self.cfg.map_method_api_keys.get(self.name, None)
+        method_api_key = self.cfg.map_method_api_keys.get(self.name.lower())
         if not method_api_key:
             raise KeyError(f"Method api key for {self.name} not found in config")
         return method_api_key

@@ -9,7 +9,9 @@ from typing import NotRequired
 
 
 class InputState(BaseModel):
-    user_id: str = Field(..., description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
+    user_id: str = Field(
+        ..., description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)"
+    )
     query: str = Field(..., description="그래프 입력")
     query_synonym: str = Field(..., description="동의어 변환 후 쿼리")
     search_type: Optional[bool] = Field(
@@ -20,7 +22,9 @@ class InputState(BaseModel):
         description="1: product_id List[str], 2: Neo4jSchema", default=1
     )
     transaction_id: Optional[str] = Field(description="트랜잭션 아이디")
-    user_info_yn: Optional[bool] = Field(description="사용자 정보 포함 여부", default=True)
+    user_info_yn: Optional[bool] = Field(
+        description="사용자 정보 포함 여부", default=True
+    )
 
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
@@ -73,6 +77,7 @@ class LoopTelemetry(BaseModel):
     last_error: Optional[str] = None
 
 
+# TODO: 아래의 각 파라미터가 하는 역할 명확히 하기
 class PrivateStateModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     is_reasoning: bool = Field(default=False, description="추론 여부")
@@ -88,6 +93,7 @@ class PrivateStateModel(BaseModel):
     loop_telemetry: LoopTelemetry = Field(default_factory=LoopTelemetry)
 
 
+# TODO: 아래의 각 파라미터가 하는 역할 명확히 하기
 class OverallState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     user_id: str = Field(default="")
@@ -96,6 +102,10 @@ class OverallState(BaseModel):
     query_embedding: Optional[List[List[float]]] = Field(default=[])
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
+    return_type: int = Field(
+        default=2,
+        description="1: product_id List[str], 2: 상세 결과 반환",
+    )
     raw_data: List[str] = Field(default=[])
     summary: str = Field(default="")
     insights: str = Field(default="")

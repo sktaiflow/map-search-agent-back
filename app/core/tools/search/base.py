@@ -26,7 +26,7 @@ class SearchBaseToolKit:
         graphmodel: AsyncGraphModel,
         graph_db: Neo4jDatabase,
         postgres_db: PostgreSQLDatabase,
-        vectormodel: SemanticSearchModel,
+        vectormodel: type[SemanticSearchModel],
         llm_embedding: OpenAIEmbeddingModel,
         cfg: BaseConfig,
     ):

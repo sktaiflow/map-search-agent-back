@@ -1,5 +1,6 @@
 import os
 
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import ClassVar, Any
 
@@ -20,10 +21,11 @@ class BaseConfig(BaseSettings):
         """
 
     model_config = SettingsConfigDict(
-        env_file=f".env",
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        env_nested_delimiter="__",
     )
 
     app_name: str = os.environ.get("APP_NAME", "map-search-agent")
@@ -35,6 +37,7 @@ class BaseConfig(BaseSettings):
 
     # llm
     llm_model: str = "gpt-4o"
+    # llm_model: str = "gpt-4o-mini"
     fast_llm_model: str = "gpt-4o-mini"
     reasoning_llm_model: str = "gpt-o3"
 
@@ -56,8 +59,8 @@ class BaseConfig(BaseSettings):
     map_method_api_key_account_bill: str = ""
 
     map_method_api_keys: dict = {
-        "ContractToolKit": "",  # contract 관련
-        "PlanToolKit": "",  # plan 관련
+        "contracttoolkit": "",  # contract 관련
+        "plantoolkit": "",  # plan 관련
     }
 
     # synonym api config

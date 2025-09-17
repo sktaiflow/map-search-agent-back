@@ -10,15 +10,12 @@ from configs import StackType, config
 from app import logger
 from app.graph.states import OverallState, InputState, OutputState
 from app.graph.nodes import (
-    apreprocess_node,
     plan_node,
-    to_output_node,
-    embedding_node,
-    retrieve_node,
     execute_node,
     evaluate_node,
     output_node,
     replan_node,
+    should_replan,
 )
 from app.graph.schema import Deps
 from functools import partial
@@ -47,13 +44,23 @@ class MapSearchGraph(BaseGraph):
             config_schema=Config,
         )
 
-        workflow.add_node("embedding", partial(embedding_node, deps=self.deps))
-        workflow.add_node("retrieve", partial(retrieve_node, deps=self.deps))
         workflow.add_node("plan", partial(plan_node, deps=self.deps))
-        workflow.add_node("to_output", to_output_node)
-        workflow.add_edge(START, "embedding")
-        workflow.add_edge("embedding", "retrieve")
-        workflow.add_edge("retrieve", "plan")
-        workflow.add_edge("plan", "to_output")
-        workflow.add_edge("to_output", END)
+        workflow.add_node("execute", partial(execute_node, deps=self.deps))
+        workflow.add_node("evaluate", partial(evaluate_node, deps=self.deps))
+        workflow.add_node("replan", partial(replan_node, deps=self.deps))
+        workflow.add_node("output", partial(output_node, deps=self.deps))
+
+        workflow.add_edge(START, "plan")
+        workflow.add_edge("plan", "execute")
+        workflow.add_edge("execute", "evaluate")
+        workflow.add_conditional_edges(
+            "evaluate",
+            should_replan,
+            {
+                "replan": "replan",
+                "output": "output",
+            },
+        )
+        workflow.add_edge("replan", "execute")
+        workflow.add_edge("output", END)
         return workflow

@@ -4,44 +4,31 @@ from langchain_core.prompts.prompt import PromptTemplate
 
 # TODO 이렇게 쓰면 OPENAI 객체 tool calling을 전혀 이용안하는 방식입니다...
 PLANNING_TEMPLATE = """
-    당신은 LangGraph 시스템에서 '계획 수립'을 담당하는 AI입니다.
-    아래의 사용자 질문을 바탕으로, 순차적 또는 병렬 실행이 필요한 작업 목록을 JSON 형식으로 작성하세요. 
-    
-    사용자 id: 
-    {user_id}
+당신은 LangGraph 시스템에서 '계획 수립'을 담당하는 AI입니다.
+아래의 사용자 질문을 바탕으로, 순차적 또는 병렬 실행이 필요한 작업 목록을 JSON 형식으로 작성하세요. 
 
-    아웃풋 포멧:
-    {format_instructions}
+사용자 id: 
+{user_id}
 
-    도구 목록:
-    {tool_list_json}
+아웃풋 포멧:
+{format_instructions}
 
-    각 작업에는 'mode' 필드를 포함하세요:
-    - "sequential": 이전 step이 끝난 후 실행해야 함
-    - "parallel": 병렬로 실행 가능함
+사용 가능한 도구 요약:
+{tool_overview}
 
-    각 도구는 필요 시 다음 인자를 갖습니다:
-    - get_service_info, get_subscribed_products → {{ "svc_mgmt_num": "7022044239" }}
-    - prod_meta_search → {{ "query": "..." }}
+도구 스키마(JSON):
+{tool_schema_json}
 
-    출력 예시:
-    {{
-    "plan": [
-        {{
-        "step": 1,
-        "tool": "get_service_info",
-        "reason": "가입 정보 확인",
-        "mode": "sequential"
-        }},
-        {{
-        "step": 2,
-        "tool": "prod_meta_search",
-        "reason": "상품 조회",
-        "args": {{ "query": "무제한 요금제" }},
-        "mode": "parallel"
-        }}
-    ]
-}}
+도구 사용 예시(JSON):
+{tool_usage_examples}
+
+위 정보에서 제공하는 도구 설명과 파라미터 스키마를 참고하여, 각 단계에서 호출할 도구와 인자를 결정하세요.
+
+각 작업에는 'mode' 필드를 포함하세요:
+- "sequential": 이전 step이 끝난 후 실행해야 함
+- "parallel": 병렬로 실행 가능함
+
+결과는 plan 키를 갖는 JSON 객체로 작성하고, 각 단계에 필요한 인자(args)가 있다면 함께 포함하세요.
 """
 
 INSIGHTS_TEMPLATE = """
@@ -95,6 +82,14 @@ CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph 
     Do not use any other relationship types or properties that are not provided in the schema.
     Korean terms should be surrounded by backticks (``).
 
+    Response format (must be valid JSON):
+    {{
+        "cypher": "<generated cypher statement>",
+        "params": {{"param_name": "value"}},
+        "reasoning": "<optional concise reasoning>"
+    }}
+    Always respond with a JSON object. Do not include markdown fences. The word "json" already appears here to satisfy API requirements.
+
     Schema:
     {schema}
 
@@ -126,17 +121,23 @@ CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph 
     - "Find one unlimited data plan" -> "MATCH (p:`요금제`) WHERE p.`기본제공데이터용량` = 99999 RETURN p LIMIT 1"
     - "Find discount benefits for 65 and above" -> "MATCH (p:`요금제`)-[:`가입조건`]->(c:`가입조건`) WHERE c.`가입가능최소나이` >= 65 RETURN p, c"
 
-    Note: Do not include any explanations or apologies in your responses.
+    Note: Do not include any explanations or apologies outside the JSON response.
     Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
-    Do not include any text except the generated Cypher statement.
-    Include the nodes and properties related to the question in the result.
+    Include the nodes and properties related to the question in the result via the JSON response.
 
     The question is:
     {question}
 """
 # PromptTemplate 객체로 생성
 PLANNING_PROMPT = PromptTemplate(
-    template=PLANNING_TEMPLATE, input_variables=["user_id", "format_instructions", "tool_list_json"]
+    template=PLANNING_TEMPLATE,
+    input_variables=[
+        "user_id",
+        "format_instructions",
+        "tool_overview",
+        "tool_schema_json",
+        "tool_usage_examples",
+    ],
 )
 REASONING_PROMPT = PromptTemplate(
     template=REASONING_TEMPLATE,
@@ -144,9 +145,11 @@ REASONING_PROMPT = PromptTemplate(
 )
 
 SUMMARY_PROMPT = PromptTemplate(
-    template=SUMMARY_TEMPLATE, input_variables=["user_query", "search_results", "execution_stats"]
+    template=SUMMARY_TEMPLATE,
+    input_variables=["user_query", "search_results", "execution_stats"],
 )
 
 CYPHER_GENERATION_PROMPT = PromptTemplate(
-    input_variables=["schema", "question", "fewshot_examples"], template=CYPHER_GENERATION_TEMPLATE
+    input_variables=["schema", "question", "fewshot_examples"],
+    template=CYPHER_GENERATION_TEMPLATE,
 )
