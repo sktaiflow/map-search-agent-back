@@ -38,8 +38,12 @@ class ToolkitContainer(containers.DeclarativeContainer):
     neo4j_search_tool = providers.Singleton(
         Neo4jSearchTool,
         llm=clients.openai_chat_llm,
-        graph_db=db.neo4j_db,
-        graphmodel=db.neo4j_model,
+        llm_embedding=clients.embedding_model,
+        neo4j_db=neo4j_container.neo4j_db_engine,
+        postgres_db=pgvector_container.postgres_db,
+        graphmodel=neo4j_container.neo4j_model,
+        vectormodel=pgvector_container.vectormodel,
+        cfg=global_config,
     )
 
     # 활성화된 모든 툴들 (status=True인 것만)

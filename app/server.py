@@ -72,7 +72,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(middleware_class=BaseHTTPMiddleware, dispatch=request_response_handler)
+app.add_middleware(
+    middleware_class=BaseHTTPMiddleware, dispatch=request_response_handler
+)
 app.add_middleware(middleware_class=BaseHTTPMiddleware, dispatch=common_middleware)
 app.add_exception_handler(Exception, error_handler)
 app.add_exception_handler(RequestValidationError, error_handler)

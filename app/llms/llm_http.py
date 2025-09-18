@@ -104,7 +104,8 @@ class OpenAIChatLLM:
 
         self.model = model
         self.client = ChatOpenAI(api_key=api_key, base_url=base_url, model=model)
-        self.async_client = oai_client
+        if oai_client:
+            self.async_client: AsyncOpenAI = oai_client
 
     async def agenerate_response(
         self,

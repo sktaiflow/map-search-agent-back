@@ -65,21 +65,16 @@ class MapSearchAgent(BaseAgent):
             raise e
 
     def postprocess(self, response: OutputState) -> InvokeResponse:
-        print("######### reponse:", response, "\n\n")
         if response.return_type == 1:
             response_data = {
-                "raw_result": response.raw_data,
-                "product_meta": response.product_meta,  # 이미 ID 리스트로 처리됨
-                "user_info": response.user_info_data,
+                "raw_result": response.raw_result,
             }
         else:
             response_data = {
                 "insights": response.insights,
                 "summary": response.summary,
                 "reasoning": response.reasoning,
-                "raw_result": response.raw_data,
-                "product_meta": response.product_meta,
-                "user_info": response.user_info_data,
+                "raw_result": response.raw_result,
                 "updated_at": response.updated_at,
             }
 

@@ -14,12 +14,12 @@ class InputState(BaseModel):
     )
     query: str = Field(..., description="그래프 입력")
     query_synonym: str = Field(..., description="동의어 변환 후 쿼리")
-    search_type: Optional[bool] = Field(
+    expand_search: Optional[bool] = Field(
         description="검색 타입, True: 기본 검색, False: 확장 검색",
         default=True,
     )
     return_type: Optional[int] = Field(
-        description="1: product_id List[str], 2: Neo4jSchema", default=1
+        description="0: Neo4jSchema, 1: product_id List[str]", default=0
     )
     transaction_id: Optional[str] = Field(description="트랜잭션 아이디")
     user_info_yn: Optional[bool] = Field(
@@ -32,19 +32,14 @@ class InputState(BaseModel):
 
 
 class OutputState(BaseModel):
-    plan: List[Dict[str, Any]] = Field(..., description="플랜")
-    raw_data: Dict[str, Any] = Field(..., description="원시 데이터")
-    summary: str = Field(..., min_length=1, description="요약 정보")
-    insights: str = Field(..., min_length=1, description="인사이트")
-    reasoning: str = Field(..., min_length=1, description="추론 과정")
-    updated_at: datetime = Field(..., description="업데이트 시간")
-    version: str = "map-search-agent-dev"
-    fewshot_examples: List[Dict[str, Any]] = Field(default_factory=list)
-    product_meta: List[Dict[str, Any]] = Field(default_factory=list)
+    insights: Optional[str] = Field(..., min_length=1, description="인사이트")
+    summary: Optional[str] = Field(..., min_length=1, description="요약 정보")
+    reasoning: Optional[str] = Field(..., min_length=1, description="추론 과정")
+    updated_at: Optional[datetime] = Field(..., description="업데이트 시간")
+    raw_result: Dict[str, Any] = Field(..., description="원시 데이터")
     return_type: Optional[int] = Field(
-        description="1: product_id List[str], 2: Neo4jSchema", default=1
+        description="0: Neo4jSchema, 1: product_id List[str]", default=0
     )
-    user_info_data: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class RetryBudget(BaseModel):
@@ -79,36 +74,51 @@ class LoopTelemetry(BaseModel):
 
 # TODO: 아래의 각 파라미터가 하는 역할 명확히 하기
 class PrivateStateModel(BaseModel):
+    # 확실히 필요한 것들
+    plan: List[Dict[str, Any]] = Field(
+        default_factory=list, description="도구 호출 순서"
+    )
+    # search_result는 plan 내에 포함
+    # search_result: List[Dict] = Field(default_factory=list)
+    trace: List[str] = Field(default_factory=list, description="디버깅용 트레이스 로그")
+    retry: RetryBudget = Field(default_factory=RetryBudget)
+    usage: UsageBudget = Field(default_factory=UsageBudget)
+    eval_status: EvalStatus = Field(default_factory=EvalStatus)
+    # 용도 확인 필요한 것들
     model_config = ConfigDict(arbitrary_types_allowed=True)
     is_reasoning: bool = Field(default=False, description="추론 여부")
     parsed: Optional[Dict] = None
-    plan: List[Dict[str, Any]] = Field(default_factory=list)
-    search_result: List[Dict] = Field(default_factory=list)
-    trace: List[str] = Field(default_factory=list)
     tool_latency_ms: Optional[int] = None
-    retry: RetryBudget = Field(default_factory=RetryBudget)
-    usage: UsageBudget = Field(default_factory=UsageBudget)
     best_so_far: BestSoFar = Field(default_factory=BestSoFar)
-    eval_status: EvalStatus = Field(default_factory=EvalStatus)
     loop_telemetry: LoopTelemetry = Field(default_factory=LoopTelemetry)
+    next_action_after_replan: Optional[str] = Field(
+        default=None, description="replan 이후 이동할 다음 단계"
+    )
 
 
 # TODO: 아래의 각 파라미터가 하는 역할 명확히 하기
 class OverallState(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    # 확실히 필요한 것들
     user_id: str = Field(default="")
     query: list[str] = Field(default=[])
     query_synonym: str = Field(default="")
+    return_type: int = Field(
+        default=0,
+        description="0: 상세 결과 반환, 1: product_id List[str]",
+    )
+    expand_search: bool = Field(
+        default=True,
+        description="검색 타입, True: 기본 검색, False: 확장 검색",
+    )
+    private: PrivateStateModel = Field(default_factory=PrivateStateModel)
+    # 용도 확인 필요한 것들
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     query_embedding: Optional[List[List[float]]] = Field(default=[])
     setting_date: Optional[str] = ""
     stream: Optional[bool] = Field(default=False)
-    return_type: int = Field(
-        default=2,
-        description="1: product_id List[str], 2: 상세 결과 반환",
-    )
     raw_data: List[str] = Field(default=[])
-    summary: str = Field(default="")
-    insights: str = Field(default="")
     fewshot_examples: List[Dict[str, Any]] = Field(default_factory=list)
     messages: Annotated[List[AnyMessage], add_messages] = Field(default_factory=list)
-    private: PrivateStateModel = Field(default_factory=PrivateStateModel)
+    # 최종 결과 관련 필드인데 여기에서 꼭 필요한지 검토
+    summary: str = Field(default="")
+    insights: str = Field(default="")

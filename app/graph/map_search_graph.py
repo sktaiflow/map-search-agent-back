@@ -15,7 +15,7 @@ from app.graph.nodes import (
     evaluate_node,
     output_node,
     replan_node,
-    should_replan,
+    next_action_after_replan,
 )
 from app.graph.schema import Deps
 from functools import partial
@@ -26,14 +26,14 @@ class MapSearchGraph(BaseGraph):
         self.deps = deps
         super().__init__(checkpointer)
 
-        if config.stack_type == StackType.LOCAL:
-            # Save graph image in the graphs folder
-            graph_dir = os.path.dirname(os.path.abspath(__file__))
-            os.makedirs(graph_dir, exist_ok=True)
-            filename = os.path.join(graph_dir, "graph.png")
-            with open(filename, "wb") as f:
-                f.write(self.compiled_graph.get_graph().draw_mermaid_png())
-            logger.info(f"Graph image saved as {filename}")
+        # if config.stack_type == StackType.LOCAL:
+        # Save graph image in the graphs folder
+        # graph_dir = os.path.dirname(os.path.abspath(__file__))
+        # os.makedirs(graph_dir, exist_ok=True)
+        # filename = os.path.join(graph_dir, "graph.png")
+        # with open(filename, "wb") as f:
+        #     f.write(self.compiled_graph.get_graph().draw_mermaid_png())
+        # logger.info(f"Graph image saved as {filename}")
 
     # TODO 노트 병렬쳐리 (start -> plan, embeding)
     def create_graph(self) -> StateGraph:
@@ -53,14 +53,14 @@ class MapSearchGraph(BaseGraph):
         workflow.add_edge(START, "plan")
         workflow.add_edge("plan", "execute")
         workflow.add_edge("execute", "evaluate")
+        workflow.add_edge("evaluate", "replan")
         workflow.add_conditional_edges(
-            "evaluate",
-            should_replan,
+            "replan",
+            next_action_after_replan,
             {
-                "replan": "replan",
+                "execute": "execute",
                 "output": "output",
             },
         )
-        workflow.add_edge("replan", "execute")
         workflow.add_edge("output", END)
         return workflow

@@ -14,7 +14,6 @@ class Deps:
     postgres_db: PostgreSQLDatabase
     pgvector_models: list[PGVectorModel]
     toolkit: Any
-    tools: Any
 
 
 class Plan(BaseModel):

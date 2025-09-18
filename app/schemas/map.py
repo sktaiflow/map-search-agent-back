@@ -11,14 +11,23 @@ from pydantic import BaseModel, Field, ConfigDict
 # =============================================================================
 # 입력 스키마들
 # =============================================================================
+class ToolArgsBase(BaseModel):
+    """툴 공통 입력 스키마"""
 
-class UserIdInput(BaseModel):
+    tool_select_reason: str = Field(
+        description="이 툴을 선택한 이유와 이 툴에서 얻고자 하는 결과값"
+    )
+
+
+class UserIdInput(ToolArgsBase):
     """사용자 ID 입력 스키마 (MAP API 공통)"""
+
     user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
 
 
-class PlanSubscriptionPreviewInput(BaseModel):
+class PlanSubscriptionPreviewInput(ToolArgsBase):
     """요금제 가입 가능성 조회 입력 스키마"""
+
     user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
     prod_id: str = Field(description="상품아이디")
 
@@ -26,6 +35,7 @@ class PlanSubscriptionPreviewInput(BaseModel):
 # =============================================================================
 # 응답 스키마들
 # =============================================================================
+
 
 class MobileService(BaseModel):
     """모바일 서비스 정보"""
@@ -38,16 +48,26 @@ class MobileService(BaseModel):
     svc_num: str = Field(..., alias="svcNum", description="서비스번호")
     svc_cd: str = Field(..., alias="svcCd", description="서비스구분코드")
     svc_st_cd: str = Field(..., alias="svcStCd", description="서비스상태코드")
-    svc_st_chg_cd: str = Field(..., alias="svcStChgCd", description="서비스상태변경코드")
-    svc_chg_rsn_cd: str = Field(..., alias="svcChgRsnCd", description="서비스변경사유코드")
+    svc_st_chg_cd: str = Field(
+        ..., alias="svcStChgCd", description="서비스상태변경코드"
+    )
+    svc_chg_rsn_cd: str = Field(
+        ..., alias="svcChgRsnCd", description="서비스변경사유코드"
+    )
     svc_typ_cd: str = Field(..., alias="svcTypCd", description="서비스이용종류코드")
     svc_scrb_dtm: str = Field(..., alias="svcScrbDtm", description="서비스가입일자")
-    scrb_req_rsn_cd: str = Field(..., alias="scrbReqRsnCd", description="가입신청사유코드")
+    scrb_req_rsn_cd: str = Field(
+        ..., alias="scrbReqRsnCd", description="가입신청사유코드"
+    )
     wlf_dc_cd: str = Field(..., alias="wlfDcCd", description="복지할인유형코드")
-    estation_agree_yn: str = Field(..., alias="estationAgreeYn", description="웹회원신청동의여부")
+    estation_agree_yn: str = Field(
+        ..., alias="estationAgreeYn", description="웹회원신청동의여부"
+    )
     fee_prod_id: str = Field(..., alias="feeProdId", description="요금상품ID")
     fee_prod_nm: str = Field(..., alias="feeProdNm", description="요금상품명")
-    fee_prod_chg_dt: str = Field(..., alias="feeProdChgDt", description="요금제변경일자")
+    fee_prod_chg_dt: str = Field(
+        ..., alias="feeProdChgDt", description="요금제변경일자"
+    )
     eqp_mdl_cd: str = Field(..., alias="eqpMdlCd", description="단말기모델코드")
     eqp_mdl_nm: str = Field(..., alias="eqpMdlNm", description="단말기모델명")
     eqp_ser_num: str = Field(..., alias="eqpSerNum", description="단말기일련번호")
@@ -60,7 +80,7 @@ class MobileService(BaseModel):
 
 class SupplementaryPlan(BaseModel):
     """보조요금제 정보"""
-    
+
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
     bas_fee_amt: str = Field(..., alias="basFeeAmt", description="기본료금액")
@@ -96,10 +116,14 @@ class AddOnDetailProduct(BaseModel):
 
 class AddOnDetailSubscriptions(BaseModel):
     """부가서비스 상세 가입정보"""
-    
+
     add_on_cnt: str = Field(..., alias="addOnCnt", description="가입중부가서비스갯수")
-    free_add_on_cnt: str = Field(..., alias="freeAddOnCnt", description="가입중무료부가서비스갯수")
-    paid_add_on_cnt: str = Field(..., alias="paidAddOnCnt", description="가입중유료부가서비스갯수")
+    free_add_on_cnt: str = Field(
+        ..., alias="freeAddOnCnt", description="가입중무료부가서비스갯수"
+    )
+    paid_add_on_cnt: str = Field(
+        ..., alias="paidAddOnCnt", description="가입중유료부가서비스갯수"
+    )
     free_add_on_list: List[AddOnDetailProduct] = Field(
         default=[], alias="freeAddOnList", description="무료부가서비스목록"
     )
@@ -119,7 +143,7 @@ class AddOnDetailSubscriptions(BaseModel):
 
 class ProductInfo(BaseModel):
     """상품 정보"""
-    
+
     prod_id: str = Field(..., alias="prodId", description="상품ID")
     prod_nm: str = Field(..., alias="prodNm", description="상품명")
     svc_prod_cd: str = Field(..., alias="svcProdCd", description="상품구분코드")
@@ -132,7 +156,9 @@ class PMProductInfo(BaseModel):
     """PM 상품 정보"""
 
     pm_product_id: str = Field(..., alias="pmProductId", description="PM상품ID")
-    legacy_product_id: str = Field(..., alias="legacyProductId", description="Legacy상품ID")
+    legacy_product_id: str = Field(
+        ..., alias="legacyProductId", description="Legacy상품ID"
+    )
     product_name: str = Field(..., alias="productName", description="상품명")
 
     class Config:
@@ -176,7 +202,9 @@ class CustomerBenefit(BaseModel):
 class DeviceInfo(BaseModel):
     """기기 정보"""
 
-    device_model_code: str = Field(..., alias="deviceModelCode", description="단말모델코드")
+    device_model_code: str = Field(
+        ..., alias="deviceModelCode", description="단말모델코드"
+    )
     device_name: str = Field(..., alias="deviceName", description="단말모델명")
     device_pet_name: str = Field(..., alias="devicePetName", description="팻네임")
 
@@ -186,6 +214,7 @@ class DeviceInfo(BaseModel):
 
 class RuleCheckResult(BaseModel):
     """규칙 체크 결과"""
+
     error_code: str = Field(..., alias="errorCode", description="에러코드")
     error_message: str = Field(..., alias="errorMessage", description="에러메시지")
 
@@ -273,7 +302,9 @@ class PMCondition(BaseModel):
     rule_check_result: List[RuleCheckResult] = Field(
         default=[], alias="ruleCheckResult", description="규칙체크결과목록"
     )
-    information_list: InformationList = Field(..., alias="informationList", description="정보목록")
+    information_list: InformationList = Field(
+        ..., alias="informationList", description="정보목록"
+    )
 
     class Config:
         populate_by_name = True

@@ -13,6 +13,7 @@ from app import logger
 from app.database.postgresql import PostgreSQLDatabase
 from app.models.vectorstore.base import BaseModel as PGVectorModel
 from app.models.vectorstore import list_vector_store_models
+from app.models.vectorstore.semantic_retrieval import SemanticSearchModel
 
 ## neo4j
 from app.models.graphmodel import AsyncGraphModel, GraphModelConfig
@@ -42,6 +43,14 @@ async def init_pgvector_models(
         raise
 
 
+def _resolve_semantic_search_model(models: list[PGVectorModel] | None) -> SemanticSearchModel:
+    models = models or []
+    for model in models:
+        if isinstance(model, type) and issubclass(model, SemanticSearchModel):
+            return model()
+    return SemanticSearchModel()
+
+
 class PGVectorDBContainer(containers.DeclarativeContainer):
     postgres_db = providers.Singleton(
         PostgreSQLDatabase,
@@ -51,6 +60,11 @@ class PGVectorDBContainer(containers.DeclarativeContainer):
     pgvector_models = providers.Resource(
         init_pgvector_models,
         postgres_db=postgres_db,
+    )
+
+    vectormodel = providers.Singleton(
+        lambda models: _resolve_semantic_search_model(models),
+        pgvector_models,
     )
 
 
