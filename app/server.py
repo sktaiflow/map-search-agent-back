@@ -61,6 +61,7 @@ app = FastAPI(
     docs_url="/docs",
     openapi_url="/openapi.json",
     lifespan=lifespan,
+    root_path="/map-agent",  # ALB에서 /map-agent/* 경로로 전달되므로 prefix 처리
 )
 
 app.add_api_route(path="/api/healthz", endpoint=healthz)
