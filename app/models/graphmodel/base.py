@@ -37,6 +37,7 @@ class BaseAsyncGraphModel:
 
         async def work(tx: AsyncManagedTransaction):
             res = await tx.run(cypher, params or {})
+            # return [r.data() async for r in res]
             return [r async for r in res]
 
         return await session.execute_read(work)

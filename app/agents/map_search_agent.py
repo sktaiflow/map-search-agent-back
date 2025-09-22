@@ -1,7 +1,12 @@
 from app.agents.base import BaseAgent, BaseAgentConfig
 from typing import Any, Dict, List
 from uuid import UUID
-from app.schemas.api.schema import InvokeRequest, InvokeResponse, SynonymsRequest, SynonymsResponse
+from app.schemas.api.schema import (
+    InvokeRequest,
+    InvokeResponse,
+    SynonymsRequest,
+    SynonymsResponse,
+)
 from app.graph.base import BaseGraph
 from app.clients.synonym import SynonymClient
 from app.graph.states import OutputState
@@ -47,7 +52,12 @@ class MapSearchAgent(BaseAgent):
             graph_result = await self.graph.compiled_graph.ainvoke(
                 input=input_data, config=runnable_config
             )
-            content = self.postprocess(graph_result)
+            output_state = (
+                graph_result
+                if isinstance(graph_result, OutputState)
+                else OutputState.model_validate(graph_result)
+            )
+            content = self.postprocess(output_state)
             return content
 
         except Exception as e:
@@ -57,18 +67,14 @@ class MapSearchAgent(BaseAgent):
     def postprocess(self, response: OutputState) -> InvokeResponse:
         if response.return_type == 1:
             response_data = {
-                "raw_result": response.raw_data,
-                "product_meta": response.product_meta,  # 이미 ID 리스트로 처리됨
-                "user_info": response.user_info_data,
+                "raw_result": response.raw_result,
             }
         else:
             response_data = {
                 "insights": response.insights,
                 "summary": response.summary,
                 "reasoning": response.reasoning,
-                "raw_result": response.raw_data,
-                "product_meta": response.product_meta,
-                "user_info": response.user_info_data,
+                "raw_result": response.raw_result,
                 "updated_at": response.updated_at,
             }
 

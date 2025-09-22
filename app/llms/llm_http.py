@@ -92,7 +92,11 @@ def parse_chat_completion(resp: Any) -> LLMResult:
 
 class OpenAIChatLLM:
     def __init__(
-        self, base_url: str, api_key: str, model: str, oai_client: Optional[AsyncOpenAI] = None
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        oai_client: Optional[AsyncOpenAI] = None,
     ):
         # TODO: remove base_url, api_key
         self.base_url = base_url or f"{global_config.openai_api_base}"
@@ -100,7 +104,8 @@ class OpenAIChatLLM:
 
         self.model = model
         self.client = ChatOpenAI(api_key=api_key, base_url=base_url, model=model)
-        self.async_client = oai_client
+        if oai_client:
+            self.async_client: AsyncOpenAI = oai_client
 
     async def agenerate_response(
         self,
