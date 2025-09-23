@@ -2,6 +2,7 @@ from typing import Dict, Any, List, Iterable
 import asyncio
 import json
 from datetime import datetime
+from utils.logger import logger
 
 from app.graph.states import OverallState, InputState
 from app.graph.configuration import Configuration as Config
@@ -133,23 +134,6 @@ async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> 
     )
 
     return {"private": private_dict}
-
-
-# TODO: 사용하지 않는 코드라면 제거하기
-# async def to_output_node(state: OverallState, config: RunnableConfig) -> dict:
-#     """OverallState -> OutputState 스키마로 매핑"""
-#     plan = state.private.plan or []
-#     now = datetime.now(KST)
-
-#     return {
-#         "plan": plan,
-#         "raw_data": {},
-#         "summary": "초기 계획만 생성되었습니다.",
-#         "insights": "",
-#         "reasoning": "LLM 계획 수립 단계만 수행됨.",
-#         "updated_at": now.strftime("%Y-%m-%dT%H:%M"),
-#         "version": "map-search-agent-dev",
-#     }
 
 
 # 실제 도구를 호출하는 노드
@@ -546,14 +530,14 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
         seed=cfg.seed,
     )
 
-    print("===== Result Node =====")
-    print(result_response.message)
     payload = json.loads(result_response.message)
     keep_ids = set(payload.get("unique_ids", []))
 
     if state.return_type == 1:
         # 상품 고유 ID 목록만 반환
         summary_text = "상품 ID 목록만 반환하도록 요청되었습니다."
+        logger.info("===== TRACE =====")
+        logger.info(f"{trace}")
 
         return {"raw_result": {"product_meta": keep_ids, "user_info": []}}
 
@@ -646,6 +630,8 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
     )
 
     trace.append("LLM 기반 후처리를 완료했습니다.")
+    logger.info("===== TRACE =====")
+    logger.info(f"{trace}")
 
     # TODO: 마지막 출력 단계에서 실패한 플랜도 함께 출력할지, 실패한 플랜은 제외하고 출력할지 검토 필요
     return {
