@@ -202,17 +202,18 @@ EVALUATION_PROMPT = PromptTemplate(
 
 REPLAN_FAILURE_TEMPLATE = """
 당신은 검색 에이전트의 오퍼레이터입니다.
-직전 도구 실행이 실패했습니다. 
+직전 단계의 도구 실행이 실패했습니다. 
 아래 정보를 참고하여 같은 질문을 해결하기 위해 어떤 도구를 어떤 인자로 호출할지 결정하세요.
-동일한 도구를 호출할 경우 실패한 단계와 동일한 질문을 사용하지 말고 실패한 이유를 분석해서 새로운 질문을 만들어야 합니다. 
+동일한 도구를 사용하더라도 도구 호출 파라미터를 변경하면 올바른 결과를 얻을 가능성이 있습니다.
+동일한 도구를 호출할 경우 실패한 단계와 동일한 질문을 사용하지 말고 실패한 이유를 분석해서 새로운 질문을 만드세요.
 
 OpenAI 함수 호출 스펙이 tools 파라미터로 주어집니다. 
 해당 도구 중 하나를 선택하여 함수 호출 형태의 JSON으로 응답하세요. 
-추가 실행이 불필요하다면 도구를 호출하지 말고 이유를 {{"comment": "..."}} 형태로 반환하세요.
 
 ### 참고 정보
 - 원본 질문: {original_question}
-- 실패한 단계 정보: {tool_result}
+- 실패한 단계의 도구 호출 인자: {last_args}
+- 실패한 단계의 도구 호출 결과: {tool_result}
 - 실패 이유: {last_evaluation}
 """
 
@@ -220,6 +221,7 @@ REPLAN_FAILURE_PROMPT = PromptTemplate(
     template=REPLAN_FAILURE_TEMPLATE,
     input_variables=[
         "original_question",
+        "last_args",
         "tool_result",
         "last_evaluation",
     ],
