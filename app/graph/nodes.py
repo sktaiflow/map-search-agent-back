@@ -447,15 +447,9 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
         # 직전 단계 도구 호출 평가 탈락
         prompt_message = REPLAN_FAILURE_PROMPT.format(
             original_question=original_question,
-            failed_step_info=json.dumps(
-                {
-                    "args": last_args,
-                    "tool_result": last_tool_result,
-                    "last_evaluation": last_evaluation,
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
+            last_args=json.dumps(last_args, ensure_ascii=False),
+            tool_result=json.dumps(last_tool_result, ensure_ascii=False),
+            last_evaluation=json.dumps(last_evaluation, ensure_ascii=False),
         )
     else:
         # 직전 단계 도구 호출 평가 통과
@@ -651,6 +645,7 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
 
     trace.append("LLM 기반 후처리를 완료했습니다.")
 
+    # TODO: 마지막 출력 단계에서 실패한 플랜도 함께 출력할지, 실패한 플랜은 제외하고 출력할지 검토 필요
     return {
         "insights": insights,
         "summary": summary,
