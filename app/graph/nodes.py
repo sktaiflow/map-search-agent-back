@@ -2,6 +2,7 @@ from typing import Dict, Any, List, Iterable
 import asyncio
 import json
 from datetime import datetime
+from time import perf_counter
 from utils.logger import logger
 
 from app.graph.states import OverallState, InputState
@@ -46,6 +47,12 @@ def convert_to_openai_tools(tools: Any) -> List[Dict[str, Any]]:
     return openai_tools
 
 
+# 노드 실행 시간을 trace에 남기는 공통 함수
+def _append_node_timing(trace: List[str], node_name: str, start_time: float) -> None:
+    elapsed_ms = perf_counter() - start_time
+    trace.append(f"node name: {node_name}, elapsed_time: {elapsed_ms:.2f} seconds")
+
+
 # # TODO: 동의어 키워드로 쪼개서 호출해서 처리하는 로직 필요
 # async def mock_up_replace_query_with_synonym(query: str) -> str:
 #     """동의어 처리"""
@@ -82,6 +89,7 @@ async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> 
 
     # query = state.query_synonym
     trace = list(state.private.trace or [])
+    start_time = perf_counter()
 
     # LLM 프롬프트 구성
     prompt = PLANNING_PROMPT.partial(
@@ -125,6 +133,8 @@ async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> 
     else:
         trace.append("LLM이 호출할 도구를 찾지 못하였습니다.")
 
+    _append_node_timing(trace, "plan", start_time)
+
     private_dict = state.private.model_dump()
     private_dict.update(
         {
@@ -143,6 +153,7 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
     """
     plan = list(state.private.plan or [])
     trace = list(state.private.trace or [])
+    start_time = perf_counter()
 
     # TODO: 액티브 툴 목록 캐싱 필요
     active_tools = await deps.toolkit.all_active_tools()
@@ -154,6 +165,7 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
         or (isinstance(plan[-1], dict) and not plan[-1].get("tool"))
     ):
         trace.append("실행할 계획이 없어 스킵합니다.")
+        _append_node_timing(trace, "execute", start_time)
         private_state = state.private.model_dump()
         private_state.update({"trace": trace})
         return {"private": private_state}
@@ -211,6 +223,7 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
 
     if not tool_instance:
         trace.append(f"{step_index}단계 실패: {tool_name} 도구를 찾지 못했습니다.")
+        _append_node_timing(trace, "execute", start_time)
         private_state = state.private.model_dump()
         private_state.update({"trace": trace})
         return {"private": private_state}
@@ -238,6 +251,8 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
     # TODO: 여기서 plan을 이렇게 직접 건드리면 OverallState에 바로 변경내용이 반영되는데, 이렇게 해도 되는지 검토 필요
     plan[-1]["executed"] = True
     plan[-1]["tool_result"] = tool_result
+    _append_node_timing(trace, "execute", start_time)
+
     private_state = state.private.model_dump()
     private_state.update(
         {
@@ -256,6 +271,7 @@ async def evaluate_node(
     """execute_node 결과를 LLM으로 평가하고 상태를 갱신"""
     cfg = Config.from_runnable_config(config)
     trace = list(state.private.trace or [])
+    start_time = perf_counter()
     plan = list(state.private.plan or [])
 
     # 플랜이 없거나, 실행되었으나 평가되지 않은 플랜이 없으면 스킵
@@ -263,6 +279,7 @@ async def evaluate_node(
         trace.append(
             f"평가할 실행 결과가 없습니다. 가장 최근의 플랜은 이미 평가되었습니다."
         )
+        _append_node_timing(trace, "evaluate", start_time)
         private_state = state.private.model_dump()
         private_state.update({"trace": trace})
         return {"private": private_state}
@@ -370,6 +387,8 @@ async def evaluate_node(
     current_step["evaluation"] = eval_status.get("evaluation_detail", {})
     plan[-1].update(current_step)
 
+    _append_node_timing(trace, "evaluate", start_time)
+
     private_state = state.private.model_dump()
     private_state.update(
         {
@@ -386,6 +405,7 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
     """LLM 판단에 따라 다음 실행 단계를 설계"""
     cfg = Config.from_runnable_config(config)
     trace = list(state.private.trace or [])
+    start_time = perf_counter()
     plans = list(state.private.plan or [])
     current_step = plans[-1] if plans else {}
 
@@ -414,6 +434,7 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
         trace.append(
             f"재시도 한도 {retry_budget.retry_count}/{retry_budget.max_retries}를 초과하여 재계획을 중단합니다."
         )
+        _append_node_timing(trace, "replan", start_time)
         private_state = state.private.model_dump()
         private_state.update(
             {
@@ -481,6 +502,8 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
         trace.append(llm_msg)
         next_action = "output"
 
+    _append_node_timing(trace, "replan", start_time)
+
     private_state = state.private.model_dump()
     private_state.update(
         {
@@ -500,6 +523,7 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
 
     plans = list(state.private.plan or [])
     trace = list(state.private.trace or [])
+    start_time = perf_counter()
     trace.append("최종 응답 생성을 시작합니다.")
 
     raw_result = {
@@ -536,6 +560,7 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
     if state.return_type == 1:
         # 상품 고유 ID 목록만 반환
         summary_text = "상품 ID 목록만 반환하도록 요청되었습니다."
+        _append_node_timing(trace, "output", start_time)
         logger.info("===== TRACE =====")
         logger.info(f"{trace}")
 
@@ -630,6 +655,7 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
     )
 
     trace.append("LLM 기반 후처리를 완료했습니다.")
+    _append_node_timing(trace, "output", start_time)
     logger.info("===== TRACE =====")
     logger.info(f"{trace}")
 
