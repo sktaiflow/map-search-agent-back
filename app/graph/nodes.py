@@ -337,7 +337,7 @@ async def evaluate_node(
             original_question=original_question,
             retry_count=state.private.retry.retry_count,
             max_retries=state.private.retry.max_retries,
-            steps_json=json.dumps(steps_payload, ensure_ascii=False, indent=2),
+            steps_json=json.dumps(steps_payload, ensure_ascii=False),
         )
 
         try:
@@ -455,7 +455,7 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
         # 직전 단계 도구 호출 평가 통과
         prompt_message = REPLAN_SUCCESS_PROMPT.format(
             original_question=original_question,
-            all_plans=json.dumps(plans, ensure_ascii=False, indent=2),
+            all_plans=json.dumps(plans, ensure_ascii=False),
         )
 
     cfg_llm_kwargs = {
@@ -534,18 +534,20 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
     # LLM으로 검색 결과를 정제하여 질문과 직접 관련된 항목만 남긴다.
     result_prompt = RESULT_PROMPT.format(
         user_query=original_question,
-        plans=json.dumps(plans, ensure_ascii=False, indent=2),
+        plans=json.dumps(plans, ensure_ascii=False),
     )
 
     result_response = await deps.llm_client.agenerate_response(
         messages=[{"role": "system", "content": result_prompt}],
         model=cfg.llm_model,
         temperature=0.0,
-        max_tokens=500,
+        max_tokens=1000,
         response_format={"type": "json_object"},
         seed=cfg.seed,
     )
 
+    print("===== Result Node =====")
+    print(result_response.message)
     payload = json.loads(result_response.message)
     keep_ids = set(payload.get("unique_ids", []))
 
@@ -558,7 +560,7 @@ async def output_node(state: OverallState, deps: Deps, config: RunnableConfig) -
     # return_type == 0인 경우 상품 메타데이터와 insight, summary, reasoning 리턴
     accepted_plans = [plan for plan in plans if plan.get("accepted")]
     num_accepted = len(accepted_plans)
-    accepted_plans = json.dumps(accepted_plans, ensure_ascii=False, indent=2)
+    accepted_plans = json.dumps(accepted_plans, ensure_ascii=False)
 
     async def generate_insights() -> str:
         execution_summary = f"총 {len(plans)}단계 중 {num_accepted}개 성공"

@@ -32,11 +32,13 @@ class InputState(BaseModel):
 
 
 class OutputState(BaseModel):
-    insights: Optional[str] = Field(..., min_length=1, description="인사이트")
-    summary: Optional[str] = Field(..., min_length=1, description="요약 정보")
-    reasoning: Optional[str] = Field(..., min_length=1, description="추론 과정")
-    updated_at: Optional[datetime] = Field(..., description="업데이트 시간")
     raw_result: Dict[str, Any] = Field(..., description="원시 데이터")
+    insights: Optional[str] = Field(default="", min_length=1, description="인사이트")
+    summary: Optional[str] = Field(default="", min_length=1, description="요약 정보")
+    reasoning: Optional[str] = Field(default="", min_length=1, description="추론 과정")
+    updated_at: Optional[datetime] = Field(
+        default=datetime.now(), description="업데이트 시간"
+    )
     return_type: Optional[int] = Field(
         description="0: Neo4jSchema, 1: product_id List[str]", default=0
     )
