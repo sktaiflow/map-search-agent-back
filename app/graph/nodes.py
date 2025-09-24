@@ -233,6 +233,8 @@ async def execute_node(state: OverallState, deps: Deps, config: RunnableConfig) 
         # 도구를 실제로 실행하는 부분
         result = await tool_instance.arun(query_params)
 
+        logger.info(f"### Tool result: {result}")
+
         latency = int((datetime.now() - step_start).total_seconds() * 1000)
         trace.append(f"{step_index}단계 성공 ({latency}ms)")
         tool_result = format_record_result(

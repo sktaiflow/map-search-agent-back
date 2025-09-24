@@ -1,5 +1,9 @@
 from typing import Dict, Any, Optional
-from app.clients.http_base import HTTPBaseClient, InvalidHttpStatus, HTTPBaseClientResponse
+from app.clients.http_base import (
+    HTTPBaseClient,
+    InvalidHttpStatus,
+    HTTPBaseClientResponse,
+)
 
 # from utils.trace import traced, trace
 from app import logger
@@ -8,7 +12,9 @@ import utils.json as json
 
 class ExternalRequestError(Exception):
     def __init__(self, api: str, status_code: Optional[int] = None, **details) -> None:
-        ctx = ", ".join([f"{k}={v}" for k, v in {"status_code": status_code, **details}.items()])
+        ctx = ", ".join(
+            [f"{k}={v}" for k, v in {"status_code": status_code, **details}.items()]
+        )
         super().__init__(f"Fail to request {api} ({ctx})")
         self.api = api
         self.status_code = status_code
@@ -47,13 +53,20 @@ class MAPClient:
         try:
             url = f"{self._host}/{endpoint}"
             ## 헤더 API KEY 추가
-            headers = {"x-apim-key": self._api_key, "content-type": "application/json", **headers}
+            headers = {
+                "x-apim-key": self._api_key,
+                "content-type": "application/json",
+                **headers,
+            }
             logger.info(type="map-request", url=url, method=method, extra=kwargs)
-            response = await self._http_client.request(method, url, headers=headers, **kwargs)
+            response = await self._http_client.request(
+                method, url, headers=headers, **kwargs
+            )
             if response.status != 200:
                 raise InvalidHttpStatus(response.status, response.body)
 
             response_data = response.json()
+            logger.info(f"MAP Response: {response_data}")
 
             if response.status // 100 != 2:
                 raise InvalidHttpStatus(response.status, response.body)
