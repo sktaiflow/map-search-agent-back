@@ -45,9 +45,9 @@ class BaseConfig(BaseSettings):
     map_base_url: str = ""
     map_api_key: str = ""
 
-    map_method_api_key_plan_add_on: str = ""
-    map_method_api_key_plan_basic: str = ""
-    map_method_api_key_contract_mobile: str = ""
+    map_api_method_key_plan_add_on: str = ""
+    map_api_method_key_plan_basic: str = ""
+    map_api_method_key_contract_mobile: str = ""
 
     # synonym api config
     synonym_base_url: str = ""
