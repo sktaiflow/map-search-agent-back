@@ -369,6 +369,7 @@ async def evaluate_node(
                 + ("성공" if accepted else "실패")
                 + f" / 점수: {score:.2f}"
             )
+            trace.append(f"평가 상세: {json.dumps(detail, ensure_ascii=False)}")
 
         except Exception as error:
             # TODO: LLM 호출이나 응답 파싱에 실패한 경우엔 어떻게 할지 아직 미정

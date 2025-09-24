@@ -133,8 +133,8 @@ class Neo4jSearchTool(StandardizedTool):
 
     name: str = "neo4j_search"
     description: str = (
-        "자연어 쿼리를 Neo4j 그래프 데이터베이스에서 검색합니다. "
-        "상품 정보, 요금제, 할인 혜택 등을 자연어로 질문하면 관련 데이터를 찾아드립니다."
+        "요금제, 할인 혜택 등의 상품 정보에 대한 검색 질의를 처리합니다."
+        "상품에 대한 정보를 찾고자 할 때 호출되어야 하는 도구입니다."
     )
     args_schema: Any = Neo4jSearchRequest
     response_model: Any = CypherResponse
