@@ -16,6 +16,7 @@ from app.schemas.map import (
     AddOnDetailSubscriptions,
     PlanSubscriptionPreview,
 )
+from utils.logger import logger
 
 
 class GetContractServicesTool(StandardizedTool):
