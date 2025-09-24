@@ -179,6 +179,8 @@ class Neo4jSearchTool(StandardizedTool):
                 embedding, return_type=return_type
             )
 
+            logger.info(f"Few-shot examples:\n{fewshot_examples}")
+
             # 3. Cypher 생성
             cypher_payload = await self._generate_cypher(query, fewshot_examples)
 
