@@ -1,7 +1,5 @@
 import os
-import importlib
 import boto3
-import sys
 
 from configs.default import BaseConfig, StackType
 import utils.json as json
@@ -27,7 +25,6 @@ def get_config(stack_type: str) -> BaseConfig:
         SecretId=DEFAULT_SECRET_ID,
     )
     secret = json.loads(response["SecretString"])
-    logger.info(f"secrets loaded: {secret}")
 
     # 환경 변수 설정
     for key, value in secret.items():
