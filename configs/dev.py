@@ -6,9 +6,9 @@ class DevConfig(BaseConfig):
     log_level: str = "INFO"
 
     # MAP API keys (환경별 설정)
-    map_method_api_key_plan_add_on: str = ""
-    map_method_api_key_plan_basic: str = ""
-    map_method_api_key_contract_mobile: str = ""
+    map_api_method_key_plan_add_on: str = ""
+    map_api_method_key_plan_basic: str = ""
+    map_api_method_key_contract_mobile: str = ""
 
     # PostgreSQL 설정 (환경별 설정 - AWS Secrets Manager에서 주입)
     postgres_db_host: str = ""

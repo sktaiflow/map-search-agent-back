@@ -19,19 +19,19 @@ class ToolkitContainer(containers.DeclarativeContainer):
     get_contract_services_tool = providers.Singleton(
         GetContractServicesTool,
         map_client=clients.map_api,
-        method_api_key=global_config.map_method_api_key_contract_mobile,
+        method_api_key=global_config.map_api_method_key_contract_mobile,
     )
 
     get_plan_subscriptions_tool = providers.Singleton(
         GetPlanSubscriptionsTool,
         map_client=clients.map_api,
-        method_api_key=global_config.map_method_api_key_plan_add_on,
+        method_api_key=global_config.map_api_method_key_plan_add_on,
     )
 
     check_plan_eligibility_tool = providers.Singleton(
         CheckPlanEligibilityTool,
         map_client=clients.map_api,
-        method_api_key=global_config.map_method_api_key_plan_basic,
+        method_api_key=global_config.map_api_method_key_plan_basic,
     )
 
     # Neo4j Search 툴
