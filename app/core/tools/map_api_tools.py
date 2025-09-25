@@ -6,6 +6,7 @@ MAP API 툴들 - StandardizedTool 기반으로 구현
 
 from typing import Any, Dict, List, Type
 from pydantic import BaseModel
+from aiohttp import ClientTimeout
 
 from app.clients.map import MAPClient
 from app.core.tools.base import StandardizedTool
@@ -132,7 +133,10 @@ class CheckPlanEligibilityTool(StandardizedTool):
                 f"plan/basic-plan_{self.method_api_key}/plan-subscription-previews"
             )
             response = await self.map_client._request(
-                "GET", endpoint, params={"svcMgmtNum": user_id, "prodId": prod_id}
+                "GET",
+                endpoint,
+                params={"svcMgmtNum": user_id, "prodId": prod_id},
+                timeout=ClientTimeout(total=10),
             )
             response_data = response.json()
             return self._validate_response(response_data)
