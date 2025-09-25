@@ -74,7 +74,9 @@ class InvalidHttpStatus(Exception):
 
 
 class HTTPBaseClientResponse:
-    def __init__(self, status: int, headers: CIMultiDictProxy[str], body: bytes) -> None:
+    def __init__(
+        self, status: int, headers: CIMultiDictProxy[str], body: bytes
+    ) -> None:
         self.status = status
         self.headers = headers
         self.body = body
@@ -97,7 +99,11 @@ class HTTPBaseClient:
         retry: Optional[Retry] = None,
     ) -> None:
         self._session = session
-        self.timeout = timeout or ClientTimeout(connect=0.5, sock_connect=1, sock_read=3)
+        self.timeout = timeout or ClientTimeout(
+            connect=0.5,
+            sock_connect=1,
+            sock_read=5,
+        )
         self.retry = retry or Retry()
         self._owns_session = session is None  # (외부주입인지 체크)
 
@@ -119,7 +125,11 @@ class HTTPBaseClient:
         await self.close()
 
     async def close(self):
-        if self._owns_session and self._session is not None and not self._session.closed:
+        if (
+            self._owns_session
+            and self._session is not None
+            and not self._session.closed
+        ):
             await self._session.close()
 
     async def request(

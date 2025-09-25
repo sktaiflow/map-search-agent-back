@@ -422,7 +422,7 @@ class PMCondition(BaseModel):
         ..., alias="productRelationError", description="상품연관조건오류"
     )
     campaign_relation_error: CampaignRelationError = Field(
-        ..., alias="CampaignRelationError", description="혜택연관조건오류"
+        ..., alias="campaignRelationError", description="혜택연관조건오류"
     )
 
     class Config:
