@@ -1,22 +1,22 @@
 import uuid
-from sqlalchemy import (
-    Column,
-    String,
-    Index,
-    Float,
-    DateTime,
-    text,
-    Integer,
-    Text,
-    Boolean,
-    ARRAY,
-    UniqueConstraint,
-)
-from sqlalchemy.dialects.postgresql import UUID
-from pgvector.sqlalchemy import Vector
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy import select, delete
 from typing import TypeVar
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    ARRAY,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Index,
+    Integer,
+    String,
+    Text,
+    delete,
+    select,
+    text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.vectorstore.base import BaseModel
@@ -29,22 +29,22 @@ _T = TypeVar("_T", bound="BaseModel")
 class SemanticSearchModel(BaseModel):
     __tablename__ = "map_db_vector_store"
 
+    # --- 기존 컬럼 (유지) ---
     doc_id = Column(Integer, primary_key=True, autoincrement=True)
     query = Column(Text, nullable=False)
     cypher_query = Column(Text, nullable=False)
     query_embedding = Column(Vector(config.vector_store_embedding_model_dims))
     usage_count = Column(Integer, default=0)
-    quality_score = Column(Float, default=0.0)
-    unknown_num = Column(Integer, default=0)
-    unknown_bool = Column(Boolean, default=True)
-    unknown_null = Column(Integer, default=0)
     domain_tags = Column(ARRAY(Text))
-    created_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
+    quality_score = Column(Float, default=1.0)
+    success_rate = Column(Float, default=1.0)
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
+    updated_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False, onupdate=text("CURRENT_TIMESTAMP"))
 
     __table_args__ = (
         Index("ix_doc_id", "doc_id", "updated_at"),
-        UniqueConstraint("query", name="uq_query"),
     )
 
     @classmethod

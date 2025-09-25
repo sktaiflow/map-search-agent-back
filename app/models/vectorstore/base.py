@@ -1,17 +1,15 @@
 import uuid
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import select, update, inspect
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
-from sqlalchemy import Column, DateTime, func, delete
-from sqlalchemy.dialects.postgresql import insert
-from typing import Optional, Type, TypeVar
-from sqlalchemy import text
 from contextvars import ContextVar, Token
-
-
 from datetime import datetime, timedelta, timezone
-from utils.logger import logger
+from typing import Optional, Type, TypeVar
+
+from sqlalchemy import Column, DateTime, delete, func, inspect, select, text, update
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import declarative_base
+
 from utils.decorators import session_required
+from utils.logger import logger
 
 _T = TypeVar("_T", bound="BaseModel")
 
@@ -73,14 +71,13 @@ class BaseModel(Base):
                         cypher_query TEXT NOT NULL,
                         query_embedding vector(1536),
                         usage_count INTEGER DEFAULT 0,
-                        quality_score FLOAT DEFAULT 0.0,
-                        unknown_num INTEGER DEFAULT 0,
-                        unknown_bool BOOLEAN DEFAULT true,
-                        unknown_null INTEGER DEFAULT 0,
+                        quality_score FLOAT DEFAULT 1.0,
+                        success_rate FLOAT DEFAULT 1.0,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        last_used_at TIMESTAMP,
                         domain_tags TEXT[],
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        UNIQUE(query)
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """
                 )
