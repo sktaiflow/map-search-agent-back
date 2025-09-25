@@ -102,7 +102,7 @@ class HTTPBaseClient:
         self.timeout = timeout or ClientTimeout(
             connect=0.5,
             sock_connect=1,
-            sock_read=10,
+            sock_read=3,
         )
         self.retry = retry or Retry()
         self._owns_session = session is None  # (외부주입인지 체크)

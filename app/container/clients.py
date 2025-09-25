@@ -46,7 +46,7 @@ class ClientContainer(containers.DeclarativeContainer):
                 max_keepalive_connections=2048,
                 keepalive_expiry=10,
             ),
-            timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=0.5),
+            timeout=ClientTimeout(connect=0.5, sock_connect=0.5, sock_read=5),
             retry=Retry(total=1, base=0.15, cap=0.25),
         ),
         host=global_config.map_base_url,
