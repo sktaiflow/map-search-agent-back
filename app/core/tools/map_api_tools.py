@@ -121,7 +121,7 @@ class CheckPlanEligibilityTool(StandardizedTool):
 
         Args:
             user_id: 고객아이디 (서비스관리번호)
-            prod_id: 상품아이디
+            prod_id: 상품아이디 (상품코드매핑ID)
             tool_select_reason: 도구 선택 이유 (예: 고객이 특정 요금제에 가입 가능한지 확인하기 위해)
 
         Returns:
