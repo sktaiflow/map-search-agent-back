@@ -22,14 +22,14 @@ class ToolArgsBase(BaseModel):
 class UserIdInput(ToolArgsBase):
     """사용자 ID 입력 스키마 (MAP API 공통)"""
 
-    user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
+    user_id: str = Field(description="고객아이디 (user_id, SvcMgmtNum)")
 
 
 class PlanSubscriptionPreviewInput(ToolArgsBase):
     """요금제 가입 가능성 조회 입력 스키마"""
 
-    user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
-    prod_id: str = Field(description="상품아이디")
+    user_id: str = Field(description="고객아이디 (user_id, SvcMgmtNum)")
+    prod_id: str = Field(description="상품아이디 (pmProductID, 고유ID)")
 
 
 # =============================================================================

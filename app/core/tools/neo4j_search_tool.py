@@ -253,7 +253,7 @@ class Neo4jSearchTool(StandardizedTool):
             else:
                 response = {
                     "case": "1",
-                    "cypher": cypher,
+                    "cypher": cypher_text,
                     "data": [],
                     "message": "검색 결과가 없습니다.",
                     "record_count": 0,
