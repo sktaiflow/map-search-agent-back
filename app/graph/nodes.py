@@ -327,12 +327,17 @@ async def evaluate_node(
         tool_reason = current_step.get("args", {}).get("tool_select_reason", "")
         # 툴 실행 결과로 리턴받은 데이터
         # TODO: 툴 리턴을 항상 dict[str, Any]로 해서 그 안에 result -> data 로 접근 할 수 있도록 수정
-        if isinstance(tool_result, dict):
-            # neo4j tool
-            tool_result_data = tool_result.get("result", {}).get("data", [])
-        elif isinstance(tool_result, list):
-            # map tool
-            tool_result_data = tool_result
+        tool_result_raw = tool_result.get("result", {})
+
+        if isinstance(tool_result_raw, dict):
+            # neo4j tool - result가 dict인 경우
+            tool_result_data = tool_result_raw.get("data", [])
+        elif isinstance(tool_result_raw, list):
+            # map tool - result가 list인 경우
+            tool_result_data = tool_result_raw
+        else:
+            # 예상하지 못한 타입인 경우 빈 리스트로 처리
+            tool_result_data = []
 
         steps_payload = {
             "tool_name": tool_name,
