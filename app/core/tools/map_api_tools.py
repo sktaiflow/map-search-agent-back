@@ -13,9 +13,8 @@ from app.schemas.map import (
     UserIdInput,
     PlanSubscriptionPreviewInput,
     MobileService,
-    AddOnDetailSubscriptions,
     PlanSubscriptionPreview,
-    ContractServiceSummary,
+    ContractServiceSummaryList,
 )
 
 
@@ -67,7 +66,7 @@ class GetPlanSubscriptionsTool(StandardizedTool):
         "현재 이용 중인 요금제와 부가서비스를 확인할 수 있습니다."
     )
     args_schema: Any = UserIdInput
-    response_model: Any = ContractServiceSummary
+    response_model: Any = ContractServiceSummaryList
     status: bool = True
 
     # 의존성 주입될 컴포넌트들

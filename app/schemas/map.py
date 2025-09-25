@@ -5,7 +5,7 @@ MAP API와 관련된 모든 입력 및 응답 스키마를 정의합니다.
 """
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, RootModel
 
 
 # =============================================================================
@@ -136,6 +136,12 @@ class ContractServiceSummary(BaseModel):
 
     class Config:
         populate_by_name = True
+
+
+class ContractServiceSummaryList(RootModel[List[ContractServiceSummary]]):
+    """서비스 관리 번호별 가입 상품/할인 요약의 목록"""
+
+    pass
 
 
 class SupplementaryPlan(BaseModel):
