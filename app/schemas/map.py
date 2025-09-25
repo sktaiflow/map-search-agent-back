@@ -22,7 +22,7 @@ class ToolArgsBase(BaseModel):
 class UserIdInput(ToolArgsBase):
     """사용자 ID 입력 스키마 (MAP API 공통)"""
 
-    user_id: str = Field(description="고객아이디 (혹은 서비스관리번호- SvcMgmtNum)")
+    user_id: str = Field(description="고객아이디 (user_id, SvcMgmtNum)")
 
 
 class PlanSubscriptionPreviewInput(ToolArgsBase):

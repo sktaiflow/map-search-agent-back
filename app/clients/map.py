@@ -66,7 +66,6 @@ class MAPClient:
                 raise InvalidHttpStatus(response.status, response.body)
 
             response_data = response.json()
-            logger.info(f"MAP Response: {response_data}")
 
             if response.status // 100 != 2:
                 raise InvalidHttpStatus(response.status, response.body)
