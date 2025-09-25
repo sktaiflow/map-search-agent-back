@@ -117,7 +117,9 @@ async def plan_node(state: OverallState, deps: Deps, config: RunnableConfig) -> 
     if llm_response.is_toolcall and llm_response.tool_calls:
         first_call = llm_response.tool_calls[0]
         if len(llm_response.tool_calls) > 1:
-            trace.append("여러 개의 도구 호출이 감지되어 첫 번째 호출만 사용합니다.")
+            trace.append(
+                f"여러 개의 도구 호출이 감지되었으나 첫 번째 호출만 사용합니다: {[call.name for call in llm_response.tool_calls]}"
+            )
         first_tool = {
             "step": 1,
             "tool": first_call.name,
@@ -458,12 +460,14 @@ async def replan_node(state: OverallState, deps: Deps, config: RunnableConfig) -
             last_args=json.dumps(last_args, ensure_ascii=False),
             tool_result=json.dumps(last_tool_result, ensure_ascii=False),
             last_evaluation=json.dumps(last_evaluation, ensure_ascii=False),
+            user_id=state.user_id,
         )
     else:
         # 직전 단계 도구 호출 평가 통과
         prompt_message = REPLAN_SUCCESS_PROMPT.format(
             original_question=original_question,
             all_plans=json.dumps(plans, ensure_ascii=False),
+            user_id=state.user_id,
         )
 
     cfg_llm_kwargs = {

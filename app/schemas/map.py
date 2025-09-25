@@ -76,6 +76,66 @@ class MobileService(BaseModel):
     eqp_mktg_dt: str = Field(..., alias="eqpMktgDt", description="단말기출시일자")
     nw_mthd_cd: str = Field(..., alias="nwMthdCd", description="네트워크방식코드")
     cust_num: str = Field(..., alias="custNum", description="고객번호")
+    cust_nm: str = Field(..., alias="custNm", description="고객명")
+    ctz_corp_biz_num: str = Field(
+        ..., alias="ctzCorpBizNum", description="주민번호/사업자등록번호"
+    )
+    ssn_birth_dt: str = Field(..., alias="ssnBirthDt", description="생년월일")
+    ssn_sex_cd: str = Field(..., alias="ssnSexCd", description="성별코드")
+    cust_typ_cd: str = Field(..., alias="custTypCd", description="고객유형코드")
+    cust_dtl_typ_cd: str = Field(
+        ..., alias="custDtlTypCd", description="고객세부유형코드"
+    )
+    age: str = Field(..., alias="age", description="고객나이")
+    acnt_num: str = Field(..., alias="acntNum", description="계정번호")
+    acnt_typ_cd: str = Field(..., alias="acntTypCd", description="계정유형코드")
+    pay_mthd_cd: str = Field(..., alias="payMthdCd", description="납부방법코드")
+
+
+class SubscriptionProduct(BaseModel):
+    """가입 상품 요약 정보"""
+
+    prod_id: str = Field(..., alias="prodId", description="상품ID")
+    prod_nm: str = Field(..., alias="prodNm", description="상품명")
+    svc_prod_cd: str = Field(
+        ...,
+        alias="svcProdCd",
+        description="서비스상품구분코드 (1:기본요금제/2:부가요금제/3:부가서비스)",
+    )
+    scrb_dt: str = Field(..., alias="scrbDt", description="가입일자 (YYYYMMDD)")
+
+    class Config:
+        populate_by_name = True
+
+
+class SubscriptionDiscount(BaseModel):
+    """가입할인혜택목록"""
+
+    dc_id: str = Field(..., alias="dcId", description="할인ID")
+    dc_nm: str = Field(..., alias="dcNm", description="할인명")
+    eff_sta_dtm: str = Field(
+        ..., alias="effStaDtm", description="할인적용일시 (YYYYMMDDHH24miss)"
+    )
+
+    class Config:
+        populate_by_name = True
+
+
+class ContractServiceSummary(BaseModel):
+    """서비스 관리 번호별 가입 상품/할인 요약"""
+
+    svc_mgmt_num: str = Field(..., alias="svcMgmtNum", description="서비스관리번호")
+    svc_num: str = Field(..., alias="svcNum", description="서비스번호")
+    twld_exps_yn: str = Field(..., alias="twldExpsYn", description="Tworld노출여부")
+    scrb_prod_list: List[SubscriptionProduct] = Field(
+        default_factory=list, alias="scrbProdList", description="가입상품목록"
+    )
+    scrb_dc_list: List[SubscriptionDiscount] = Field(
+        default_factory=list, alias="scrbDcList", description="가입할인혜택목록"
+    )
+
+    class Config:
+        populate_by_name = True
 
 
 class SupplementaryPlan(BaseModel):
@@ -175,6 +235,42 @@ class PMCampaignInfo(BaseModel):
         populate_by_name = True
 
 
+class ProductRelationError(BaseModel):
+    """상품 연관 조건 미충족 목록"""
+
+    pre_termination_required_product_list: List[PMProductInfo] = Field(
+        default_factory=list,
+        alias="preTerminationRequiredProductList",
+        description="사전해지필요상품목록",
+    )
+    pre_signup_required_product_list: List[PMProductInfo] = Field(
+        default_factory=list,
+        alias="preSignupRequiredProductList",
+        description="사전가입필요상품목록",
+    )
+
+    class Config:
+        populate_by_name = True
+
+
+class CampaignRelationError(BaseModel):
+    """혜택 연관 조건 미충족 목록"""
+
+    pre_termination_required_campaign_list: List[PMCampaignInfo] = Field(
+        default_factory=list,
+        alias="preTerminationRequiredCampaignList",
+        description="사전해지필요혜택목록",
+    )
+    pre_signup_required_campaign_list: List[PMCampaignInfo] = Field(
+        default_factory=list,
+        alias="preSignupRequiredCampaignList",
+        description="사전가입필요혜택목록",
+    )
+
+    class Config:
+        populate_by_name = True
+
+
 class BenefitInfo(BaseModel):
     """혜택 정보"""
 
@@ -194,6 +290,7 @@ class CustomerBenefit(BaseModel):
     benefit_name: str = Field(..., alias="benefitName", description="혜택명")
     signup_status: str = Field(..., alias="signupStatus", description="가입상태")
     applied_status: str = Field(..., alias="appliedStatus", description="적용상태")
+    next_plan_yn: str = Field(..., alias="nextPlanYN", description="유지/해지여부")
 
     class Config:
         populate_by_name = True
@@ -276,6 +373,16 @@ class InformationList(BaseModel):
         populate_by_name = True
 
 
+class SubscriptionConditionSummary(BaseModel):
+    """가입 조건 요약"""
+
+    scrb_cond_src: str = Field(..., alias="scrbCondSrc", description="가입조건출처")
+    scrb_psbl_yn: str = Field(..., alias="scrbPsblYn", description="가입가능여부")
+
+    class Config:
+        populate_by_name = True
+
+
 class LegacyCondition(BaseModel):
     """레거시 조건"""
 
@@ -305,6 +412,12 @@ class PMCondition(BaseModel):
     information_list: InformationList = Field(
         ..., alias="informationList", description="정보목록"
     )
+    product_relation_error: ProductRelationError = Field(
+        ..., alias="productRelationError", description="상품연관조건오류"
+    )
+    campaign_relation_error: CampaignRelationError = Field(
+        ..., alias="CampaignRelationError", description="혜택연관조건오류"
+    )
 
     class Config:
         populate_by_name = True
@@ -315,6 +428,9 @@ class PlanSubscriptionPreview(BaseModel):
 
     leg_cond: LegacyCondition = Field(..., alias="legCond", description="레거시조건")
     pm_cond: PMCondition = Field(..., alias="pmCond", description="PM조건")
+    scrb_cond_smry: SubscriptionConditionSummary = Field(
+        ..., alias="scrbCondSmry", description="가입조건요약"
+    )
 
     class Config:
         populate_by_name = True

@@ -9,8 +9,8 @@ PLANNING_TEMPLATE = """당신은 LangGraph 시스템에서 '계획 수립'을 �
 - 사용자의 요청을 주의 깊게 읽고, 이번 단계에서 호출해야 할 도구 하나를 선택합니다.
 - 호출해야 할 도구가 선택되면, 해당 도구에 어떤 파라미터를 전달할지 결정합니다.
 - 제공된 도구의 스키마(name, arguments)를 반드시 그대로 사용합니다.
-- 필요한 경우 아래의 데이터를 툴의 파라미터로 사용할 수 있습니다.
-사용자 ID: {user_id}"""
+- 사용자ID(user_id 또는 svcMgmtNum)가 필요한 도구에는 반드시 user_id 값을 그대로 사용하세요.
+user_id: {user_id}"""
 
 INSIGHTS_TEMPLATE = """
 당신은 사용자의 모바일 상품 검색 결과를 분석하여 가성비와 사용자 의도를 고려한 적절한 답변을 제공하는 AI입니다.
@@ -210,6 +210,8 @@ REPLAN_FAILURE_TEMPLATE = """
 
 OpenAI 함수 호출 스펙이 tools 파라미터로 주어집니다. 
 해당 도구 중 하나를 선택하여 함수 호출 형태의 JSON으로 응답하세요. 
+사용자ID(user_id 또는 svcMgmtNum)가 필요한 도구에는 반드시 user_id 값을 그대로 사용하세요.
+user_id: {user_id}
 
 ### 참고 정보
 - 원본 질문: {original_question}
@@ -225,6 +227,7 @@ REPLAN_FAILURE_PROMPT = PromptTemplate(
         "last_args",
         "tool_result",
         "last_evaluation",
+        "user_id",
     ],
 )
 
@@ -233,7 +236,10 @@ REPLAN_SUCCESS_TEMPLATE = """
 직전 도구 실행은 성공했습니다. 이제 남은 질문을 해결하기 위해 추가 도구 호출이 필요한지 판단하세요.
 
 OpenAI 함수 호출 스펙이 tools 파라미터로 주어집니다. 
-추가 실행이 필요하다면 해당 도구 중 하나를 선택해 함수 호출 형태의 JSON으로 응답하세요. 
+추가 실행이 필요하다면 해당 도구 중 하나를 선택해 함수 호출 형태의 JSON으로 응답하세요.
+사용자ID(user_id 또는 svcMgmtNum)가 필요한 도구에는 반드시 user_id 값을 그대로 사용하세요.
+user_id: {user_id}
+
 더 이상 실행이 필요 없다면 도구를 호출하지 말고 이유를 {{"comment": "..."}} 형태로 반환하세요.
 
 ### 참고 정보
@@ -246,6 +252,7 @@ REPLAN_SUCCESS_PROMPT = PromptTemplate(
     input_variables=[
         "original_question",
         "all_plans",
+        "user_id",
     ],
 )
 
